@@ -6664,12 +6664,12 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
 (function(){
  const phoneApps=document.getElementById('phoneApps');
  if(phoneApps){
-  phoneApps.innerHTML='<div class="phoneAppsPage"><button class="phoneApp" data-app="localisation"><span>🗺️</span>Carte</button><button class="phoneApp" data-app="yango"><span>🚖</span>Yango</button><button class="phoneApp" data-app="jeux"><span>🎮</span>Apps Jeux</button></div>';
+  phoneApps.innerHTML='<div class="phoneAppsPage"><button class="phoneApp" data-app="localisation"><span>🗺️</span>Carte</button><button class="phoneApp" data-app="mobilite"><span>🚕</span>Mobilité</button><button class="phoneApp" data-app="jeux"><span>🎮</span>Apps Jeux</button></div>';
   phoneApps.querySelectorAll('.phoneApp').forEach(b=>b.addEventListener('click',()=>openPhoneApp(b.dataset.app)));
   const phoneNav=document.getElementById('phonePageDots')?.parentElement;if(phoneNav)phoneNav.style.display='none';
  }
  window.__ABJ_ORIGINAL_OPEN_PHONE_APP=openPhoneApp;
- const coreApps=new Set(['localisation','yango','jeux','appstore']);
+ const coreApps=new Set(['localisation','mobilite','jeux','appstore']);
  const isDownloadedApp=(id)=>{
   const saved=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];
   let legacy={};try{legacy=JSON.parse(safeGet('abj-installed-apps:'+normalizeIvorianMobile(activeGameAccount))||'{}')||{};}catch(e){}
