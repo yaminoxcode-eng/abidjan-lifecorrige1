@@ -194,19 +194,60 @@
   @media(max-width:390px){#touchControls .touchPad{grid-template-columns:repeat(3,46px);grid-template-rows:repeat(2,46px)}#touchControls .touchActions{grid-template-columns:repeat(2,48px)}#touchControls{padding:0 8px}.phoneAppsPage{gap:6px}}
 
 </style>
+<style>
+/* Accueil Abidjan Life — identité africaine contemporaine */
+#startScreen.abj-home{display:flex;align-items:center;justify-content:center;overflow:auto;padding:clamp(14px,3vw,38px);background:radial-gradient(ellipse at 78% 28%,#1c655b 0%,transparent 35%),linear-gradient(125deg,#081d20 0%,#102e30 52%,#173b36 100%);color:#fff}
+.abj-home-shell{width:min(1180px,100%);min-height:min(780px,94vh);display:flex;flex-direction:column;justify-content:center;gap:clamp(20px,3vh,34px);position:relative}
+.abj-home-nav{display:flex;align-items:center;justify-content:space-between;gap:15px}
+.abj-brand{display:flex;align-items:center;gap:12px;text-align:left}.abj-brand-mark{width:44px;height:44px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(145deg,#e9b75d,#b66d34);color:#142b25;font-family:Georgia,serif;font-size:28px;font-weight:900;box-shadow:0 7px 24px #0004}.abj-brand b{display:block;font-size:14px;letter-spacing:2.4px}.abj-brand small{display:block;margin-top:3px;color:#c7d4c9;font-size:9px;letter-spacing:2.2px}
+.abj-nav-tag{font-size:10px;letter-spacing:1.7px;color:#d6e2d8;border:1px solid #ffffff25;border-radius:30px;padding:10px 14px}.abj-nav-tag i,.abj-eyebrow span{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e8b75c;margin-right:8px;box-shadow:0 0 12px #e8b75c}
+.abj-home-hero{display:grid;grid-template-columns:1fr 1.04fr;align-items:center;gap:clamp(22px,5vw,70px);min-height:390px}
+.abj-hero-copy{text-align:left;position:relative;z-index:2}.abj-eyebrow{font-size:10px;font-weight:800;letter-spacing:2.3px;color:#eac77f;margin-bottom:18px}
+.abj-hero-copy h1{font-family:Georgia,'Times New Roman',serif;font-size:clamp(48px,7vw,86px);line-height:.98;letter-spacing:-2.8px;margin:0 0 20px;text-shadow:0 8px 30px #0005}.abj-hero-copy h1 em{font-weight:500;color:#e9bb68}.abj-home-lead{max-width:475px;color:#d2dfd6;font-size:clamp(14px,1.5vw,17px);line-height:1.75;margin:0 0 27px}
+#abj-home #startBtn,#startScreen.abj-home #startBtn{display:flex;align-items:center;justify-content:space-between;gap:35px;min-width:245px;padding:15px 18px 15px 22px;border-radius:8px;background:linear-gradient(110deg,#e9b75d,#d98d48);color:#182a24;font-size:15px;font-weight:900;letter-spacing:.3px;box-shadow:0 12px 30px #0004;transition:transform .18s,filter .18s}
+#startScreen.abj-home #startBtn:hover{transform:translateY(-3px);filter:brightness(1.08)}#startScreen.abj-home #startBtn b{font-size:22px}
+.abj-home-note{margin-top:14px;color:#a9c1b5;font-size:10px;letter-spacing:.6px}
+.abj-hero-art{height:clamp(280px,35vw,430px);min-height:280px;position:relative;overflow:hidden;border:1px solid #ffffff28;border-radius:20px;background:linear-gradient(160deg,#e8b86a 0%,#c8794d 37%,#245b51 38%,#102d2b 100%);box-shadow:0 28px 65px #0005}
+.abj-sun{position:absolute;width:clamp(110px,16vw,190px);height:clamp(110px,16vw,190px);border-radius:50%;background:#f5d58d;right:13%;top:11%;box-shadow:0 0 70px #ffd88a77}
+.abj-art-grid{position:absolute;inset:0;background:linear-gradient(90deg,#ffffff12 1px,transparent 1px),linear-gradient(#ffffff12 1px,transparent 1px);background-size:34px 34px;mask-image:linear-gradient(transparent,#000)}
+.abj-skyline{position:absolute;bottom:26%;left:5%;right:5%;height:56%;display:flex;align-items:end;gap:5px}.abj-skyline i{display:block;flex:1;background:linear-gradient(90deg,#173e39,#28675a);border:1px solid #f1d18b66;box-shadow:inset -8px 0 #081f1c33}.abj-skyline i:nth-child(1){height:48%}.abj-skyline i:nth-child(2){height:78%}.abj-skyline i:nth-child(3){height:58%}.abj-skyline i:nth-child(4){height:100%;flex:1.15;background:linear-gradient(90deg,#234e48,#173c38)}.abj-skyline i:nth-child(5){height:68%}.abj-skyline i:nth-child(6){height:88%}.abj-skyline i:nth-child(7){height:53%}
+.abj-art-road{position:absolute;bottom:-18%;left:-8%;width:120%;height:43%;transform:rotate(-9deg);background:#172b2b;border-top:7px solid #e8b75d;box-shadow:0 -5px #ffffff33}.abj-art-road span{position:absolute;top:52%;left:0;right:0;border-top:3px dashed #f5e1ac99}
+.abj-art-label{position:absolute;right:18px;bottom:18px;display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid #ffffff44;border-radius:9px;background:#071b1bd9}.abj-art-label b{font-family:Georgia,serif;font-size:27px;color:#e9bd6c}.abj-art-label small{font-size:9px;letter-spacing:1.8px;color:#e2e8d9}
+.abj-home-features{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.abj-home-features article{display:grid;grid-template-columns:38px 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;text-align:left;padding:14px;border:1px solid #ffffff22;border-radius:12px;background:#ffffff0a}.abj-home-features article>span{grid-row:1/3;width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:#e6b65d20;font-size:19px}.abj-home-features b{font-size:12px;color:#f4e5c5}.abj-home-features small{font-size:10px;line-height:1.45;color:#b8cbc0;margin-top:3px}
+.abj-home-footer{display:flex;justify-content:space-between;color:#91aa9e;font-size:9px;letter-spacing:1.7px;border-top:1px solid #ffffff20;padding-top:14px}.abj-home-controls{margin:0!important;color:#a9bdb2!important;font-size:10px!important;line-height:1.8!important;text-align:center}
+@media(max-width:760px){#startScreen.abj-home{align-items:flex-start;padding:18px 14px}.abj-home-shell{min-height:0;gap:20px;padding:8px 0}.abj-home-nav{align-items:flex-start}.abj-nav-tag{font-size:8px;letter-spacing:1px;padding:8px}.abj-home-hero{grid-template-columns:1fr;gap:18px;min-height:0}.abj-hero-copy h1{font-size:clamp(48px,13vw,68px)}.abj-home-lead{font-size:14px}.abj-hero-art{height:230px;min-height:230px}.abj-home-features{grid-template-columns:1fr;gap:8px}.abj-home-features article{padding:10px}.abj-home-footer{font-size:8px}.abj-home-controls{font-size:9px!important}}
+</style>
 </head>
 <body>
 
-<div id="startScreen">
-  <h1>🌍 Abidjan Life</h1>
-  <p>
-    Commence chez toi, explore les rues et découvre les quartiers d’Abidjan en monde ouvert.<br>
-    Routes, bâtiments et lieux urbains issus d’OpenStreetMap, avec trottoirs, éclairage, commerces et repères de quartier.
-  </p>
-  <button id="startBtn">Commencer l'aventure</button>
-  <div class="controls">
-    <b>ZQSD / WASD</b> déplacement · <b>Shift</b> courir · <b>Espace</b> sauter<br>
-    <b>E</b> entrer/sortir, parler · <b>F</b> interagir avec un objet ou un meuble · <b>Souris</b> caméra · <b>Échap</b> libérer la souris · <b>M</b> téléphone · carte et transports dans l’application Plans
+<div id="startScreen" class="abj-home">
+  <div class="abj-home-shell">
+    <header class="abj-home-nav">
+      <div class="abj-brand"><span class="abj-brand-mark">A</span><span><b>ABIDJAN LIFE</b><small>LA VILLE EST À TOI</small></span></div>
+      <div class="abj-nav-tag"><i></i> MONDE OUVERT · CÔTE D’IVOIRE</div>
+    </header>
+    <main class="abj-home-hero">
+      <div class="abj-hero-copy">
+        <div class="abj-eyebrow"><span></span> UNE VILLE · MILLE HISTOIRES</div>
+        <h1>Ta vie.<br><em>Ton Abidjan.</em></h1>
+        <p class="abj-home-lead">Vis ta propre histoire au cœur d’un Abidjan vivant. Trouve ton quartier, travaille, entreprends, rencontre du monde et construis ton avenir.</p>
+        <button id="startBtn"><span>Entrer dans la ville</span><b>↗</b></button>
+        <div class="abj-home-note">Aventure urbaine immersive · Inspirée de la vie à Abidjan</div>
+      </div>
+      <div class="abj-hero-art" aria-hidden="true">
+        <div class="abj-sun"></div><div class="abj-art-grid"></div>
+        <div class="abj-skyline"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="abj-art-road"><span></span></div>
+        <div class="abj-art-label"><b>225</b><small>ABIDJAN · CI</small></div>
+      </div>
+    </main>
+    <section class="abj-home-features">
+      <article><span>🏙️</span><b>Explore la ville</b><small>Découvre les communes, les rues et les lieux de vie.</small></article>
+      <article><span>👤</span><b>Crée ton histoire</b><small>Choisis ton personnage, ton départ et tes ambitions.</small></article>
+      <article><span>📱</span><b>Vis au quotidien</b><small>Travail, transports, logement, études et rencontres.</small></article>
+    </section>
+    <footer class="abj-home-footer"><span>ABIDJAN LIFE ONLINE</span><span>UNE CRÉATION AF GAMER CI</span></footer>
+    <div class="controls abj-home-controls"><b>ZQSD / WASD</b> Se déplacer · <b>Shift</b> Courir · <b>Espace</b> Sauter · <b>E</b> Interagir · <b>F</b> Objets · <b>M</b> Téléphone · <b>Souris</b> Caméra</div>
   </div>
 </div>
 
@@ -6340,7 +6381,7 @@ function v16ValidateTrafficRoutes(){
   const s=state();let label='Aucun rêve sélectionné',ratio=0,done=false,blocked=false;
   if(dream==='grand-patron'){const n=s.companies.length;ratio=Math.min(1,n/3);done=n>=3;label='Grand patron · '+n+'/3 entreprises';}
   else if(dream==='proprietaire'){const built=s.properties.some(p=>p&&p.building&&p.building.status==='complete')||(lifeState.projects||[]).some(p=>p&&p.type==='house'&&p.status==='complete');ratio=built?1:0;done=built;label='Propriétaire · '+(built?'Maison construite':'Construis ta maison');}
-  else if(dream==='maire'){blocked=true;label='Maire de ta commune · Élections municipales non encore disponibles';}
+  else if(dream==='maire'){const election=s.municipalElection||{};done=!!election.won;ratio=done?1:Math.min(1,(Number(election.support)||0)/500);blocked=!election.registered&&!done;label='Maire de ta commune · '+(done?'Élu(e) de '+(election.commune||'ta commune'):(election.registered?'Campagne électorale · '+(Number(election.support)||0)+'/500 soutiens':'Inscription électorale à la mairie · 500 points de respect requis'));}
   else if(dream==='intellectuel'){const certs=lifeState.education&&lifeState.education.certificates||[];done=certs.some(x=>/licence/i.test(String(x)));ratio=done?1:0;blocked=!done;label='Intellectuel · '+(done?'Licence obtenue':'Licence universitaire non encore disponible (les formations actuelles délivrent des attestations)');}
   else if(dream==='star-rue-princesse'){const n=Math.max(0,Number(lifeState.respect)||0);ratio=Math.min(1,n/4000);done=n>=4000;label='Star de la rue Princesse · '+Math.floor(n).toLocaleString('fr-FR')+'/4 000 respect';}
   const t=document.getElementById('dreamProgressText'),f=document.getElementById('dreamProgressFill');
@@ -6713,5 +6754,36 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
 })();
 </script>
 
-<script>(function(){const s=document.createElement('style');s.textContent='#leafletMap{z-index:8!important}#bigMapCanvas{z-index:2}';document.head.appendChild(s);})();</script></body>
+<script>(function(){const s=document.createElement('style');s.textContent='#leafletMap{z-index:8!important}#bigMapCanvas{z-index:2}';document.head.appendChild(s);})();</script><script>
+/* Systèmes de progression : licence universitaire et élections municipales (simulation) */
+(function(){
+ const $=id=>document.getElementById(id);
+ function ensureElection(){lifeState.v19=lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{};return lifeState.v19.municipalElection||(lifeState.v19.municipalElection={registered:false,won:false,support:0,campaigns:0,commune:'',candidate:''});}
+ const oldMairie=window.renderMairieApp;
+ if(typeof oldMairie==='function')window.renderMairieApp=function(){
+  oldMairie();
+  const c=$('phoneAppContent');if(!c)return;
+  const e=ensureElection(),commune=(typeof getDistrictNames==='function'&&getDistrictNames().commune)||'ta commune';
+  const respect=Math.max(0,Number(lifeState.respect)||0),registered=e.registered,won=e.won;
+  const html='<section class="v19card" id="municipalElectionCard"><h3>🗳️ Élections municipales</h3><p>Participe à une élection fictive dans le monde d’Abidjan Life. Inscris-toi, mène ta campagne et présente-toi au scrutin de ta commune.</p><div class="v19stat">Commune : <b>'+String(e.commune||commune)+'</b><br>Respect : <b>'+Math.floor(respect).toLocaleString('fr-FR')+'</b> · Soutiens : <b>'+Math.min(500,Number(e.support)||0)+'/500</b></div>'+(won?'<p style="color:#8ce0a4;font-weight:800">🏆 Tu as été élu(e) maire de '+String(e.commune||commune)+' !</p>':!registered?'<p>Conditions : 500 points de respect et 20 000 FCFA de frais de candidature. Inscription au guichet de la mairie.</p><button id="abjRegisterCandidate" '+(respect<500||lifeState.money<20000?'disabled':'')+'>Déposer ma candidature · 20 000 FCFA</button>':('<p>Candidat(e) : <b>'+String(e.candidate||'Toi')+'</b></p><p>Chaque action de campagne coûte 5 000 FCFA et apporte 100 soutiens.</p><button id="abjCampaign" '+(Number(e.support)>=500||lifeState.money<5000?'disabled':'')+'>Mener une action de campagne · 5 000 FCFA</button><button id="abjVote" '+(Number(e.support)<500?'disabled':'')+'>Organiser le scrutin</button>'))+'<p id="abjElectionStatus" style="font-size:12px;color:#ffe0a0"></p></section>';
+  c.insertAdjacentHTML('beforeend',html);
+  const register=$('abjRegisterCandidate');if(register)register.onclick=()=>{if(respect<500||lifeState.money<20000)return;lifeState.money-=20000;e.registered=true;e.commune=commune;e.candidate=lifeState.playerProfile&&lifeState.playerProfile.name||'Candidat';e.support=0;e.campaigns=0;saveLifeProgress(false);window.renderMairieApp();};
+  const campaign=$('abjCampaign');if(campaign)campaign.onclick=()=>{const x=ensureElection();if(!x.registered||x.support>=500||lifeState.money<5000)return;lifeState.money-=5000;x.support=Math.min(500,(Number(x.support)||0)+100);x.campaigns=(Number(x.campaigns)||0)+1;saveLifeProgress(false);window.renderMairieApp();};
+  const vote=$('abjVote');if(vote)vote.onclick=()=>{const x=ensureElection();if(!x.registered||x.support<500)return;x.won=true;lifeState.playerProfile=lifeState.playerProfile||{};lifeState.playerProfile.mayorOf=x.commune;saveLifeProgress(false);if(typeof showMessage==='function')showMessage('🏆 Résultat des élections : tu es élu(e) maire de '+x.commune+' !');window.renderMairieApp();};
+ };
+ const oldEducation=window.renderEducationApp;
+ if(typeof oldEducation==='function')window.renderEducationApp=function(){
+  oldEducation();
+  const c=$('phoneAppContent');if(!c)return;
+  const edu=lifeState.education=lifeState.education||{certificates:[]};edu.certificates=Array.isArray(edu.certificates)?edu.certificates:[];
+  const count=new Set(edu.certificates.filter(x=>typeof x==='string'&&x!=='licence-universitaire')).size;
+  const pos=currentInterior&&lastExteriorPosition?lastExteriorPosition:(player?player.position:{x:0,z:0});
+  const nearby=typeof poi!=='undefined'&&poi.some(p=>(p.type==='ecole'||p.type==='universite')&&Math.hypot(p.x-pos.x,p.z-pos.z)<=300);
+  const has=edu.certificates.includes('licence-universitaire');
+  c.insertAdjacentHTML('beforeend','<section class="v19card" id="abjDegreeCard"><h3>🎓 Cycle universitaire · Licence</h3><p>Obtiens une licence universitaire après avoir validé cinq formations différentes, puis rends-toi près d’un campus pour retirer ton diplôme.</p><div class="v19stat">Formations validées : <b>'+Math.min(5,count)+'/5</b> · Frais de délivrance : <b>50 000 FCFA</b></div>'+(has?'<p style="color:#8ce0a4;font-weight:800">✓ Licence universitaire obtenue et enregistrée dans tes diplômes.</p>':'<button id="abjClaimDegree" '+(count<5||!nearby||lifeState.money<50000?'disabled':'')+'>Obtenir ma licence · 50 000 FCFA</button><small style="display:block;color:#c6d8e5;margin-top:7px">'+(count<5?'Valide encore '+(5-count)+' formation(s).':!nearby?'Rends-toi à moins de 300 m d’un établissement universitaire.':lifeState.money<50000?'Solde insuffisant.':'Toutes les conditions sont remplies.')+'</small>')+'</section>');
+  const claim=$('abjClaimDegree');if(claim)claim.onclick=()=>{const x=lifeState.education;if(!x||new Set(x.certificates.filter(v=>v!=='licence-universitaire')).size<5||!nearby||lifeState.money<50000)return;lifeState.money-=50000;x.certificates.push('licence-universitaire');x.degree={name:'Licence universitaire',issuedAt:String(lifeState.hour).padStart(2,'0')+':'+String(Math.floor(lifeState.minute)),day:lifeState.housing&&lifeState.housing.gameDay||1};lifeState.bankTransactions=lifeState.bankTransactions||[];lifeState.bankTransactions.push({type:'debit',label:'Délivrance licence universitaire',amount:50000,date:x.degree.issuedAt});lifeState.bankTransactions=lifeState.bankTransactions.slice(-80);saveLifeProgress(false);window.renderEducationApp();if(typeof showMessage==='function')showMessage('🎓 Félicitations ! Ta licence universitaire est enregistrée.');};
+ };
+})();
+</script>
+</body>
 </html>
