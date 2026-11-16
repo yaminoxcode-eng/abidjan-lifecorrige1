@@ -2165,7 +2165,8 @@ function buildMappedRoadsideInfill(){
  if(!scene||!trafficRoadSegments.length)return;
  const mobile=mobilePerformanceMode,max=mobile?110:320,palette=[0xd9c5a4,0xc7b394,0xe2d6c1,0xc4c9bd,0xd1ad88,0xb8c1b7],roofs=[0x765144,0x8b4939,0x626a68,0x9b7650];
  let seed=492731;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
- const roads=trafficRoadSegments.filter(r=>['secondary','tertiary','residential','living_street','unclassified','service'].includes(r.type)&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>24);
+ const cx=player?player.position.x:0,cz=player?player.position.z:0;
+ const roads=trafficRoadSegments.filter(r=>['secondary','tertiary','residential','living_street','unclassified','service'].includes(r.type)&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>24&&Math.hypot((r.a.x+r.b.x)*.5-cx,(r.a.z+r.b.z)*.5-cz)<3600);
  for(let i=roads.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[roads[i],roads[j]]=[roads[j],roads[i]];}
  function roadClear(x,z){let best=Infinity,bestWidth=0;for(const r of osmRoadSegments){if(Math.abs((r.a.x+r.b.x)*.5-x)>36||Math.abs((r.a.z+r.b.z)*.5-z)>36)continue;const dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,l2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-r.a.x)*dx+(z-r.a.z)*dz)/l2)),d=Math.hypot(x-(r.a.x+t*dx),z-(r.a.z+t*dz));if(d<best){best=d;bestWidth=r.width||5;}}return best>bestWidth/2+3.4;}
  let made=0;
@@ -2181,7 +2182,7 @@ function buildMappedRoadsideInfill(){
  console.info('Habitat de complément aligné sur les rues OSM :',made,'bâtiments');
 }
 function buildMappedStreetTrees(){
- if(!scene||!trafficRoadSegments.length)return;const max=mobilePerformanceMode?70:190,roads=trafficRoadSegments.filter(r=>['primary','secondary','tertiary','residential','living_street'].includes(r.type)&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>40);
+ if(!scene||!trafficRoadSegments.length)return;const max=mobilePerformanceMode?70:190,cx=player?player.position.x:0,cz=player?player.position.z:0,roads=trafficRoadSegments.filter(r=>['primary','secondary','tertiary','residential','living_street'].includes(r.type)&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>40&&Math.hypot((r.a.x+r.b.x)*.5-cx,(r.a.z+r.b.z)*.5-cz)<3600);
  let seed=91377;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};for(let i=roads.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[roads[i],roads[j]]=[roads[j],roads[i]];}
  let planted=0;for(const r of roads){if(planted>=max)break;const dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,len=Math.hypot(dx,dz)||1,nx=-dz/len,nz=dx/len,t=.25+rnd()*.5,side=rnd()<.5?1:-1,offset=(r.width||5)/2+4.1,x=r.a.x+dx*t+nx*offset*side,z=r.a.z+dz*t+nz*offset*side;if(overlapsExisting(x,z,2.8,2.8,3))continue;createTree(x,z);planted++;}
  console.info('Arbres de rue alignés sur le réseau OSM :',planted);
@@ -3025,13 +3026,13 @@ function createStall(x, z) {
 }
 
 function createTree(x, z) {
-  const s = 0.75 + Math.random() * 0.55;
-  const ground=terrainHeight(x,z);
-  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22 * s, 0.32 * s, 2.3 * s, 6), new THREE.MeshLambertMaterial({ color: 0x5d4037 }));
-  trunk.position.set(x, ground+1.15*s, z); trunk.castShadow = true; scene.add(trunk);
-  const leaves = new THREE.Mesh(new THREE.SphereGeometry(1.3 * s, 8, 6), new THREE.MeshLambertMaterial({ color: 0x2e7d32 }));
-  leaves.position.set(x, ground+3*s, z); leaves.castShadow = true; scene.add(leaves);
-  addObstacle(x, z, 0.75 * s, 0.75 * s, 2.8 * s);
+  const s=0.75+Math.random()*0.55,ground=terrainHeight(x,z),g=new THREE.Group();
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.22*s,.32*s,2.3*s,6),new THREE.MeshLambertMaterial({color:0x5d4037}));
+  trunk.position.set(0,1.15*s,0);trunk.castShadow=true;g.add(trunk);
+  const leaves=new THREE.Mesh(new THREE.SphereGeometry(1.3*s,8,6),new THREE.MeshLambertMaterial({color:0x2e7d32}));
+  leaves.position.set(0,3*s,0);leaves.castShadow=true;g.add(leaves);
+  g.position.set(x,ground,z);scene.add(g);registerDistanceManagedBuilding(g);
+  addObstacle(x,z,.75*s,.75*s,2.8*s);return g;
 }
 
 function createSign(x, z, text) {
@@ -6857,8 +6858,10 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
 </script>
 <script>
 (function(){
- const oldTick=V11tick;let trafficRefresh=0;
- V11tick=function(dt){oldTick(dt);if(!worldReady||!osmLoaded||!player)return;trafficRefresh+=Math.max(0,Number(dt)||0);if(trafficRefresh<5)return;trafficRefresh=0;
+ const oldTick=V11tick;let trafficRefresh=0,decorRefresh=0,lastDecorX=0,lastDecorZ=0;
+ V11tick=function(dt){oldTick(dt);if(!worldReady||!osmLoaded||!player)return;
+  decorRefresh+=Math.max(0,Number(dt)||0);if(decorRefresh>8&&Math.hypot(player.position.x-lastDecorX,player.position.z-lastDecorZ)>1200){decorRefresh=0;lastDecorX=player.position.x;lastDecorZ=player.position.z;buildMappedRoadsideInfill();buildMappedStreetTrees();}
+  trafficRefresh+=Math.max(0,Number(dt)||0);if(trafficRefresh<5)return;trafficRefresh=0;
   const target=mobilePerformanceMode?52:105,near=vehicles.filter(v=>v&&v.userData&&v.userData.type==='osmTraffic'&&Math.hypot(v.position.x-player.position.x,v.position.z-player.position.z)<2200);
   for(const v of vehicles){if(!v||!v.userData||v.userData.type!=='osmTraffic')continue;v.visible=Math.hypot(v.position.x-player.position.x,v.position.z-player.position.z)<5200;}
   if(near.length<target-12)createAbidjanTraffic(Math.min(32,target-near.length));
