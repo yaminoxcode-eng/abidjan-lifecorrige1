@@ -4020,7 +4020,7 @@ function interactWithCityLife(){
   }else if(type==='emploi'||type==='workplace'){
     if(lifeState.jobCooldown>0){showMessage('⏳ Tu as besoin d’une pause avant de reprendre le travail.');return true;}
     const quickPay=Math.round(1500*(hasPlayerTrait('grouilleur')?1.10:1));lifeState.money+=quickPay;lifeState.energy=Math.max(0,lifeState.energy-14*(hasPlayerTrait('sportif')?.85:1));addPlayerRespect(hasPlayerTrait('beau-parleur')?20:10);lifeState.jobCooldown=35;
-    showMessage('💼 Journée de travail à '+label+' : +1 500 FCFA, énergie diminuée.');
+    showMessage('💼 Journée de travail à '+label+' : +'+quickPay.toLocaleString('fr-FR')+' FCFA, énergie diminuée.');
   }else if(type==='ecole'||type==='school'){
     lifeState.social=Math.min(100,lifeState.social+8);lifeState.energy=Math.max(0,lifeState.energy-4);
     showMessage('🎓 Tu participes à une activité à '+label+'.');
@@ -4727,7 +4727,7 @@ function renderEmploymentApp(){
     if(lifeState.hour<job.start||lifeState.hour>=job.end){document.getElementById('jobStatus').textContent='Service indisponible à cette heure. Reviens entre '+job.start+'h et '+job.end+'h.';return;}
     if(lifeState.jobCooldown>0){document.getElementById('jobStatus').textContent='Tu dois te reposer avant le prochain service.';return;}
     if(lifeState.energy<20){document.getElementById('jobStatus').textContent='Ton énergie est trop basse. Repose-toi avant de travailler.';return;}
-    const earned=Math.round(job.salary*(hasPlayerTrait('grouilleur')?1.10:1));lifeState.money+=earned;lifeState.bankTransactions=lifeState.bankTransactions||[];lifeState.bankTransactions.push({type:'credit',label:'Salaire : '+job.name,amount:earned,date:String(lifeState.hour).padStart(2,'0')+':'+String(Math.floor(lifeState.minute)).padStart(2,'0')});lifeState.bankTransactions=lifeState.bankTransactions.slice(-30);lifeState.energy=Math.max(0,lifeState.energy-18*(hasPlayerTrait('sportif')?.85:1));lifeState.hunger=Math.max(0,lifeState.hunger-8);lifeState.workXP++;addPlayerRespect(hasPlayerTrait('beau-parleur')?20:10);lifeState.jobCooldown=60;saveLifeProgress(false);renderEmploymentApp();document.getElementById('jobStatus').textContent='Service terminé : +'+job.salary.toLocaleString('fr-FR')+' FCFA. Repos nécessaire avant le prochain service.';
+    const earned=Math.round(job.salary*(hasPlayerTrait('grouilleur')?1.10:1));lifeState.money+=earned;lifeState.bankTransactions=lifeState.bankTransactions||[];lifeState.bankTransactions.push({type:'credit',label:'Salaire : '+job.name,amount:earned,date:String(lifeState.hour).padStart(2,'0')+':'+String(Math.floor(lifeState.minute)).padStart(2,'0')});lifeState.bankTransactions=lifeState.bankTransactions.slice(-30);lifeState.energy=Math.max(0,lifeState.energy-18*(hasPlayerTrait('sportif')?.85:1));lifeState.hunger=Math.max(0,lifeState.hunger-8);lifeState.workXP++;addPlayerRespect(hasPlayerTrait('beau-parleur')?20:10);lifeState.jobCooldown=60;saveLifeProgress(false);renderEmploymentApp();document.getElementById('jobStatus').textContent='Service terminé : +'+earned.toLocaleString('fr-FR')+' FCFA. Repos nécessaire avant le prochain service.';
   };
 }
 
