@@ -3886,7 +3886,7 @@ function loadLifeProgress(){
     const saved=JSON.parse(raw);
     if(saved.worldPosition && Number.isFinite(saved.worldPosition.x) && Number.isFinite(saved.worldPosition.z)) pendingSavedWorldPosition={x:saved.worldPosition.x,z:saved.worldPosition.z,yaw:Number.isFinite(saved.worldPosition.yaw)?saved.worldPosition.yaw:0};
     if(Number.isFinite(saved.bankBalance))lifeState.bankBalance=Math.max(0,saved.bankBalance);if(Number.isFinite(saved.waveDailyWithdrawn))lifeState.waveDailyWithdrawn=Math.max(0,saved.waveDailyWithdrawn);if(typeof saved.waveDayKey==='string')lifeState.waveDayKey=saved.waveDayKey;if(Array.isArray(saved.waveNotifs))lifeState.waveNotifs=saved.waveNotifs.slice(0,12);if(saved.phoneSkin&&typeof saved.phoneSkin==='object'){lifeState.phoneSkin=saved.phoneSkin;try{applyPhoneSkin(lifeState.phoneSkin);}catch(e){}}['hunger','energy','social','hygiene','respect','health','money','hour','minute','workXP'].forEach(k=>{
-      if(Number.isFinite(saved[k])) lifeState[k]=Math.max(0,Math.min(k==='hour'?23:(k==='minute'?59:(k==='money'?getMoneyCap():100)),saved[k]));
+      if(Number.isFinite(saved[k])) lifeState[k]=Math.max(0,Math.min(k==='hour'?23:(k==='minute'?59:(k==='money'?getMoneyCap():(k==='respect'?10000000:100))),saved[k]));
     });
     if(typeof saved.job==='string')lifeState.job=saved.job;
     if(saved.housing&&typeof saved.housing==='object'){const savedRent=Math.max(0,Math.min(50000,Number(saved.housing.lease&&saved.housing.lease.rent)||0));lifeState.housing={ownedDoorId:typeof saved.housing.ownedDoorId==='string'?saved.housing.ownedDoorId:null,lease:saved.housing.lease&&typeof saved.housing.lease.doorId==='string'?{doorId:saved.housing.lease.doorId,rent:savedRent,deposit:Math.max(0,Math.min(100000,Number(saved.housing.lease.deposit)||savedRent*2)),startedDay:Math.max(1,Math.floor(Number(saved.housing.lease.startedDay)||1))}:null,arrears:Math.max(0,Math.min(10000000,Number(saved.housing.arrears)||0)),gameDay:Math.max(1,Math.floor(Number(saved.housing.gameDay)||1)),lastBilledDay:Math.max(1,Math.floor(Number(saved.housing.lastBilledDay)||1))};}
@@ -6345,8 +6345,7 @@ function v16ValidateTrafficRoutes(){
   else if(dream==='star-rue-princesse'){const n=Math.max(0,Number(lifeState.respect)||0);ratio=Math.min(1,n/4000);done=n>=4000;label='Star de la rue Princesse · '+Math.floor(n).toLocaleString('fr-FR')+'/4 000 respect';}
   const t=document.getElementById('dreamProgressText'),f=document.getElementById('dreamProgressFill');
   if(t)t.textContent=label;if(f)f.style.width=Math.round(ratio*100)+'%';
-  if(done&&!s.dreamCompleted){s.dreamCompleted=true;showMessage('🏆 Rêve accompli : '+label);saveLifeProgress(false);}
-  if(!done&&s.dreamCompleted)s.dreamCompleted=false;
+  if(done&&s.completedDreamId!==dream){s.completedDreamId=dream;showMessage('🏆 Rêve accompli : '+label);saveLifeProgress(false);}
  }
 
  const v19=state();
