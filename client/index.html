@@ -500,6 +500,7 @@ let npcUpdateAccumulator=0,vehicleUpdateAccumulator=0;
 let distanceCullAccumulator=0;
 const distanceManagedBuildings=[];
 let player = null;
+let pendingSavedWorldPosition = null;
 let npcs = [], vehicles = [], trafficLights = [], obstacles = [], doors = [], poi = [], particles = [], parks = [], allBuildings = [];
 let interiors = {};
 let currentInterior = null, currentFloor = 0, currentApartment = null;
@@ -788,7 +789,16 @@ async function accountContinue(){
     }
     if(!response.ok){showAccountStatus(data.error||'Connexion au serveur impossible. Vérifie le numéro et le mot de passe.',true);return;}
     safeSet('abj-online-token:'+phone,data.token);
-    if(data.player?.save){safeSet('abidjan-life-life-v1:'+phone,JSON.stringify(data.player.save));}
+    const __accountSaveKey='abidjan-life-life-v1:'+phone;
+    if(data.player?.save){
+      safeSet(__accountSaveKey,JSON.stringify(data.player.save));
+    }else if(data.player?.position && (Math.abs(Number(data.player.position.x)||0)>0.01 || Math.abs(Number(data.player.position.z)||0)>0.01)){
+      try{
+        const __localRaw=safeGet(__accountSaveKey),__local=__localRaw?JSON.parse(__localRaw):{};
+        if(!__local.worldPosition)__local.worldPosition=data.player.position;
+        safeSet(__accountSaveKey,JSON.stringify(__local));
+      }catch(e){}
+    }
     activateGameAccount(phone);
     return;
   }
@@ -3503,6 +3513,18 @@ function resolveInteriorCollisions(pos,interior,radius,axis){
 
 function startPlayerAtHome(){
   if(initialHomeEntered||!player||!doors.length)return;
+  if(pendingSavedWorldPosition && Number.isFinite(pendingSavedWorldPosition.x) && Number.isFinite(pendingSavedWorldPosition.z)){
+    const saved=pendingSavedWorldPosition;
+    player.position.set(saved.x,terrainHeight(saved.x,saved.z)+0.02,saved.z);
+    player.rotation.y=Number(saved.yaw)||0;
+    movementState.onGround=true;movementState.yVelocity=0;
+    camera.position.set(player.position.x+6,player.position.y+4.2,player.position.z+8);
+    camera.lookAt(player.position.x,player.position.y+1.2,player.position.z);
+    initialHomeEntered=true;
+    pendingSavedWorldPosition=null;
+    console.info('Position sauvegardée restaurée.');
+    return;
+  }
   const homes=doors.filter(d=>d.home&&interiors[d.id]&&!d.buildingType);
   if(!homes.length){initialHomeEntered=true;return;}
   // Maison la plus proche du noyau Plateau (évite un spawn isolé au milieu de nulle part)
@@ -3882,6 +3904,7 @@ function loadLifeProgress(){
   try{
     const raw=safeGet(LIFE_SAVE_KEY); if(!raw)return;
     const saved=JSON.parse(raw);
+    if(saved.worldPosition && Number.isFinite(saved.worldPosition.x) && Number.isFinite(saved.worldPosition.z)) pendingSavedWorldPosition={x:saved.worldPosition.x,z:saved.worldPosition.z,yaw:Number.isFinite(saved.worldPosition.yaw)?saved.worldPosition.yaw:0};
     if(Number.isFinite(saved.bankBalance))lifeState.bankBalance=Math.max(0,saved.bankBalance);if(Number.isFinite(saved.waveDailyWithdrawn))lifeState.waveDailyWithdrawn=Math.max(0,saved.waveDailyWithdrawn);if(typeof saved.waveDayKey==='string')lifeState.waveDayKey=saved.waveDayKey;if(Array.isArray(saved.waveNotifs))lifeState.waveNotifs=saved.waveNotifs.slice(0,12);if(saved.phoneSkin&&typeof saved.phoneSkin==='object'){lifeState.phoneSkin=saved.phoneSkin;try{applyPhoneSkin(lifeState.phoneSkin);}catch(e){}}['hunger','energy','social','health','money','hour','minute','workXP'].forEach(k=>{
       if(Number.isFinite(saved[k])) lifeState[k]=Math.max(0,Math.min(k==='hour'?23:(k==='minute'?59:(k==='money'?getMoneyCap():100)),saved[k]));
     });
@@ -3906,14 +3929,30 @@ function saveLifeProgress(show=true){
     const __saveKey=activeGameAccount?'abidjan-life-life-v1:'+normalizeIvorianMobile(activeGameAccount):LIFE_SAVE_KEY;
     const __previous=safeGet(__saveKey);
     if(__previous){safeSet(__saveKey+':backup:2',safeGet(__saveKey+':backup:1')||__previous);safeSet(__saveKey+':backup:1',__previous);}
-    safeSet(__saveKey,JSON.stringify({
+    const __worldPosition = (currentInterior && lastExteriorPosition)
+      ? {x:lastExteriorPosition.x,z:lastExteriorPosition.z,yaw:Number(lastExteriorPosition.rotation)||0}
+      : (player ? {x:player.position.x,z:player.position.z,yaw:player.rotation?.y||0} : pendingSavedWorldPosition);
+    const __saveData = {
       schemaVersion:2,
       hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,health:lifeState.health,
       money:lifeState.money,bankBalance:lifeState.bankBalance,waveDailyWithdrawn:lifeState.waveDailyWithdrawn,waveDayKey:lifeState.waveDayKey,waveNotifs:lifeState.waveNotifs,phoneSkin:lifeState.phoneSkin,hour:lifeState.hour,minute:lifeState.minute,documents:lifeState.documents,education:lifeState.education,cheats:lifeState.cheats,creatorTier:lifeState.creatorTier||'none',playerProfile:lifeState.playerProfile,
       job:lifeState.job,workXP:lifeState.workXP,bankTransactions:lifeState.bankTransactions,contacts:lifeState.contacts,messages:lifeState.messages,inventory:lifeState.inventory,homeDecor:lifeState.homeDecor,delivery:lifeState.delivery,creator:lifeState.creator,housing:lifeState.housing,projects:lifeState.projects||[],
+      worldPosition:__worldPosition,
       savedAt:new Date().toISOString()
-    }));
-    if(show)showMessage('💾 Vie quotidienne sauvegardée sur cet appareil.');
+    };
+    safeSet(__saveKey,JSON.stringify(__saveData));
+    if(activeGameAccount){
+      window.ABJ_PENDING_REMOTE_SAVE={phone:normalizeIvorianMobile(activeGameAccount),save:__saveData};
+      const __socket=window.ABJ_GAME_SOCKET;
+      if(__socket?.connected){
+        const __pending=window.ABJ_PENDING_REMOTE_SAVE;
+        __socket.emit('player:save',__pending.save,result=>{
+          if(result?.ok && window.ABJ_PENDING_REMOTE_SAVE?.save?.savedAt===__pending.save.savedAt) window.ABJ_PENDING_REMOTE_SAVE=null;
+          else if(result && !result.ok) console.warn('Sauvegarde serveur refusée; copie locale conservée.');
+        });
+      }
+    }
+    if(show)showMessage('💾 Progression sauvegardée.');
   }catch(e){showMessage('Impossible de sauvegarder dans ce navigateur.');}
 }
 function updateLifeSimulation(delta){
@@ -6486,7 +6525,18 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   const t=token();if(!t||!window.io||socket?.connected)return;
   try{
    socket=window.io(api(),{transports:['websocket','polling'],auth:{token:t,gameVersion:window.ABJ_BUILD_VERSION}});
-   socket.on('connect',()=>{console.info('Abidjan Life multijoueur connecté');});
+   socket.on('connect',()=>{
+    console.info('Abidjan Life multijoueur connecté');
+    let pending=window.ABJ_PENDING_REMOTE_SAVE;
+    if(!pending && activeGameAccount){
+     try{const raw=safeGet('abidjan-life-life-v1:'+normalizeIvorianMobile(activeGameAccount));if(raw)pending={phone:normalizeIvorianMobile(activeGameAccount),save:JSON.parse(raw)};}catch(e){}
+    }
+    if(pending?.save)socket.emit('player:save',pending.save,result=>{
+     if(result?.ok && window.ABJ_PENDING_REMOTE_SAVE?.save?.savedAt===pending.save.savedAt)window.ABJ_PENDING_REMOTE_SAVE=null;
+     else if(result?.ok && !window.ABJ_PENDING_REMOTE_SAVE)console.info('Sauvegarde locale synchronisée avec le serveur.');
+     else if(result && !result.ok)console.warn('La synchronisation de progression a échoué.');
+    });
+   });
    socket.on('connect_error',e=>console.warn('Connexion multijoueur refusée :',e.message));
    socket.on('world:players',list=>(list||[]).forEach(updateRemote));
    socket.on('player:joined',updateRemote);socket.on('player:moved',updateRemote);
