@@ -771,18 +771,24 @@ async function accountContinue(){
   const accounts=readGameAccounts();
 
   if(accountFlow==='login'){
-    const account=findGameAccount(accounts,phone);
     if(!pass){showAccountStatus('Entre ton mot de passe.', true);return;}
-    // Les privilèges Creator sont volontairement réservés à une validation serveur.
-    // Le HTML ne contient aucun mot de passe maître ni mécanisme d'élévation local.
-    if(!account){
-      showAccountStatus('Aucun compte pour ce numéro. Clique sur « Créer un compte » pour en ouvrir un.', true);
-      return;
+    const localAccount=findGameAccount(accounts,phone);
+    const api=window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
+    let response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});
+    let data=await response.json().catch(()=>({}));
+    if(!response.ok && response.status===401 && localAccount){
+      const legacyHash=await passwordDigest(pass);
+      if(!/^[a-f0-9]{64}$/i.test(legacyHash)){
+        showAccountStatus('Ton ancien compte utilise un format de mot de passe non migrable automatiquement. Ta sauvegarde locale reste intacte.',true);return;
+      }
+      let save=null;
+      try{const raw=safeGet('abidjan-life-life-v1:'+phone);save=raw?JSON.parse(raw):null;}catch(e){}
+      response=await fetch(api+'/api/auth/migrate-local',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,legacyPasswordHash:legacyHash,email:localAccount.email,security:{...localAccount.security,birthDay:localAccount.security?.birthDay||1,birthMonth:localAccount.security?.birthMonth||1},save})});
+      data=await response.json().catch(()=>({}));
     }
-    if(await passwordDigest(pass)!==account.passwordHash){
-      showAccountStatus('Mot de passe incorrect. Utilise « Mot de passe oublié » si nécessaire.', true);
-      return;
-    }
+    if(!response.ok){showAccountStatus(data.error||'Connexion au serveur impossible. Vérifie le numéro et le mot de passe.',true);return;}
+    safeSet('abj-online-token:'+phone,data.token);
+    if(data.player?.save){safeSet('abidjan-life-life-v1:'+phone,JSON.stringify(data.player.save));}
     activateGameAccount(phone);
     return;
   }
@@ -812,20 +818,14 @@ async function accountContinue(){
       showAccountStatus('Remplis les trois questions de sécurité (parent, animal, sport).', true);
       return;
     }
-    accounts[phone]={
-      email,
-      passwordHash:await passwordDigest(pass),
-      createdAt:new Date().toISOString(),
-      isCreator:isCreatorAccount(phone),
-      security:{
-        birthDay:day,
-        birthMonth:month,
-        parentName:normalizeSecurityAnswer(parent),
-        petName:normalizeSecurityAnswer(pet),
-        sport:normalizeSecurityAnswer(sport)
-      }
-    };
+    const security={birthDay:day,birthMonth:month,parentName:normalizeSecurityAnswer(parent),petName:normalizeSecurityAnswer(pet),sport:normalizeSecurityAnswer(sport)};
+    const api=window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
+    const response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email,birthDay:day,birthMonth:month,security})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok){showAccountStatus(data.error||'Création du compte impossible sur le serveur.',true);return;}
+    accounts[phone]={email,passwordHash:await passwordDigest(pass),createdAt:new Date().toISOString(),isCreator:false,security};
     writeGameAccounts(accounts);
+    safeSet('abj-online-token:'+phone,data.token);
     activateGameAccount(phone);
     return;
   }
@@ -6457,32 +6457,72 @@ function v16ValidateTrafficRoutes(){
 
 
 <script>
-// ABIDJAN LIFE — gestionnaire de mises à jour automatiques + présence multijoueur.
-window.ABJ_BUILD_VERSION = window.ABJ_BUILD_VERSION || '1.0.0';
-window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://URL-RENDER-A-CONFIGURER';
+// ABIDJAN LIFE — mises à jour et multijoueur.
+window.ABJ_BUILD_VERSION = window.ABJ_BUILD_VERSION || '1.0.1';
+window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorrige1.onrender.com';
 (function(){
- const KEY='abj-update-last-applied'; let updateBusy=false;
- async function checkUpdate(){
-  if(updateBusy||!window.ABJ_ONLINE_SERVER||window.ABJ_ONLINE_SERVER.includes('URL-RENDER'))return;
+ 'use strict';
+ const api=()=>window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
+ const token=()=>activeGameAccount?safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount)):null;
+ let socket=null,lastSend=0,remote=new Map();
+ function makeRemoteAvatar(data){
+  if(!window.scene||!window.THREE)return null;
+  const group=new THREE.Group(),p=data.profile||{};
+  const skin=new THREE.MeshLambertMaterial({color:Number(p.skin)||0x7a4a24});
+  const shirt=new THREE.MeshLambertMaterial({color:Number(p.shirt)||0xe74c3c});
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,1.05,8),shirt);body.position.y=.85;group.add(body);
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.27,10,8),skin);head.position.y=1.55;group.add(head);
+  group.userData.onlinePlayerId=data.id;group.userData.isOnlinePlayer=true;
+  scene.add(group);return group;
+ }
+ function updateRemote(data){
+  if(!data||!data.id||!data.position)return;
+  let obj=remote.get(data.id);if(!obj){obj=makeRemoteAvatar(data);if(!obj)return;remote.set(data.id,obj);}
+  obj.position.set(Number(data.position.x)||0,0,Number(data.position.z)||0);
+  if(Number.isFinite(data.position.yaw))obj.rotation.y=data.position.yaw;
+ }
+ function removeRemote(id){const obj=remote.get(id);if(obj&&window.scene)scene.remove(obj);remote.delete(id);}
+ function connectOnline(){
+  const t=token();if(!t||!window.io||socket?.connected)return;
   try{
-   const r=await fetch(window.ABJ_ONLINE_SERVER.replace(/\/$/,'')+'/api/updates/current',{cache:'no-store'});
-   if(!r.ok)return; const m=await r.json();
-   if(!m.active||!m.version||m.version===window.ABJ_BUILD_VERSION)return;
-   if(m.force||!sessionStorage.getItem(KEY+'-'+m.version)){
-    updateBusy=true; sessionStorage.setItem(KEY+'-'+m.version,'1');
-    const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:#071321ee;color:white;display:grid;place-items:center;font:16px system-ui;text-align:center;padding:24px';
-    const panel=document.createElement('div'),title=document.createElement('h2'),version=document.createElement('p'),notes=document.createElement('p'),loading=document.createElement('p');
-    title.textContent='🚀 Mise à jour disponible';version.textContent='Abidjan Life va passer à la version '+m.version+'.';notes.textContent=m.notes||'Améliorations et corrections.';loading.textContent='La page va se recharger automatiquement…';
-    panel.append(title,version,notes,loading);overlay.appendChild(panel);document.body.appendChild(overlay);
-    setTimeout(()=>{if(m.clientUrl){const u=new URL(m.clientUrl);u.searchParams.set('abjVersion',m.version);location.replace(u.toString());}else location.reload();},900);
-   }
-  }catch(e){console.debug('Update check indisponible',e);}
+   socket=window.io(api(),{transports:['websocket','polling'],auth:{token:t,gameVersion:window.ABJ_BUILD_VERSION}});
+   socket.on('connect',()=>{console.info('Abidjan Life multijoueur connecté');});
+   socket.on('connect_error',e=>console.warn('Connexion multijoueur refusée :',e.message));
+   socket.on('world:players',list=>(list||[]).forEach(updateRemote));
+   socket.on('player:joined',updateRemote);socket.on('player:moved',updateRemote);
+   socket.on('player:left',removeRemote);
+   socket.on('session:replaced',()=>{socket.disconnect();showAccountStatus('Ton compte vient d’être connecté sur un autre appareil.',true);});
+   socket.on('update:available',checkUpdate);
+   window.ABJ_GAME_SOCKET=socket;
+  }catch(e){console.warn('Socket.IO indisponible',e);}
  }
- if(window.io&&window.ABJ_ONLINE_SERVER&&!window.ABJ_ONLINE_SERVER.includes('URL-RENDER')){
-  try{const live=window.io(window.ABJ_ONLINE_SERVER,{transports:['websocket','polling'],auth:{version:window.ABJ_BUILD_VERSION}});live.on('update:required',checkUpdate);window.ABJ_LIVE_SOCKET=live;}catch(e){console.debug('Présence en ligne indisponible',e);}
+ async function checkUpdate(){
+  try{
+   const r=await fetch(api()+'/api/updates/latest',{cache:'no-store'});
+   if(!r.ok)return;const m=await r.json();
+   if(!m.version||m.version===window.ABJ_BUILD_VERSION)return;
+   const key='abj-update-last-applied-'+m.version;
+   if(sessionStorage.getItem(key))return;
+   sessionStorage.setItem(key,'1');
+   const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:#071321ee;color:white;display:grid;place-items:center;font:16px system-ui;text-align:center;padding:24px';
+   const panel=document.createElement('div'),title=document.createElement('h2'),version=document.createElement('p'),notes=document.createElement('p'),loading=document.createElement('p');
+   title.textContent='🚀 Mise à jour disponible';version.textContent='Abidjan Life va passer à la version '+m.version+'.';notes.textContent=m.releaseNotes||'Améliorations et corrections.';loading.textContent='Rechargement…';panel.append(title,version,notes,loading);overlay.appendChild(panel);document.body.appendChild(overlay);
+   setTimeout(()=>{if(m.clientUrl){const u=new URL(m.clientUrl);u.searchParams.set('abjVersion',m.version);location.replace(u.toString());}else location.reload();},1200);
+  }catch(e){console.debug('Vérification des mises à jour indisponible',e);}
  }
- window.ABJ_CHECK_UPDATE=checkUpdate; checkUpdate(); setInterval(checkUpdate,60000);
- window.addEventListener('focus',checkUpdate);
+ // La position est envoyée à fréquence limitée; les systèmes solo restent inchangés.
+ setInterval(()=>{
+  if(!socket?.connected||!window.player||!window.worldReady)return;
+  const now=Date.now();if(now-lastSend<120)return;lastSend=now;
+  const pos=new THREE.Vector3();player.getWorldPosition(pos);
+  const p=lifeState.playerProfile||{};
+  socket.emit('player:update',{version:window.ABJ_BUILD_VERSION,position:{x:pos.x,z:pos.z,yaw:player.rotation?.y||0},profile:{name:p.name||'Citoyen',gender:p.gender||'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50},needs:{hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,health:lifeState.health,money:lifeState.money}});
+ },120);
+ const oldActivate=activateGameAccount;
+ activateGameAccount=function(phone){oldActivate(phone);setTimeout(connectOnline,700);};
+ window.ABJ_CONNECT_ONLINE=connectOnline;
+ window.ABJ_CHECK_UPDATE=checkUpdate;
+ checkUpdate();setInterval(checkUpdate,60000);window.addEventListener('focus',checkUpdate);
 })();
 </script>
 
