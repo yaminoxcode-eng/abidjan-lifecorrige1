@@ -6466,7 +6466,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
  const token=()=>activeGameAccount?safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount)):null;
  let socket=null,lastSend=0,remote=new Map();
  function makeRemoteAvatar(data){
-  if(!window.scene||!window.THREE)return null;
+  if(typeof scene==='undefined'||!scene||!window.THREE)return null;
   const group=new THREE.Group(),p=data.profile||{};
   const skin=new THREE.MeshLambertMaterial({color:Number(p.skin)||0x7a4a24});
   const shirt=new THREE.MeshLambertMaterial({color:Number(p.shirt)||0xe74c3c});
@@ -6481,7 +6481,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   obj.position.set(Number(data.position.x)||0,0,Number(data.position.z)||0);
   if(Number.isFinite(data.position.yaw))obj.rotation.y=data.position.yaw;
  }
- function removeRemote(id){const obj=remote.get(id);if(obj&&window.scene)scene.remove(obj);remote.delete(id);}
+ function removeRemote(id){const obj=remote.get(id);if(obj&&typeof scene!=='undefined'&&scene)scene.remove(obj);remote.delete(id);}
  function connectOnline(){
   const t=token();if(!t||!window.io||socket?.connected)return;
   try{
@@ -6512,7 +6512,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
  }
  // La position est envoyée à fréquence limitée; les systèmes solo restent inchangés.
  setInterval(()=>{
-  if(!socket?.connected||!window.player||!window.worldReady)return;
+  if(!socket?.connected||!player||!worldReady)return;
   const now=Date.now();if(now-lastSend<120)return;lastSend=now;
   const pos=new THREE.Vector3();player.getWorldPosition(pos);
   const p=lifeState.playerProfile||{};
