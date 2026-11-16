@@ -334,7 +334,8 @@
         <select id="creatorPants" style="display:none"><option value="0x2c3e50">Bleu marine</option><option value="0x171717">Noir</option><option value="0x6a4932">Marron</option><option value="0x9b9b9b">Gris</option><option value="0x315c43">Vert</option></select>
       </div>
     </div>
-    <div class="creatorActions"><button id="creatorCancel">Retour</button><button id="creatorStart">Entrer dans Abidjan</button></div>
+    <section id="creatorLifeChoices" style="display:none;margin:18px auto 8px;max-width:980px;padding:18px;border:1px solid #d5ad65;border-radius:18px;background:linear-gradient(145deg,#102738,#091521);color:#fff;text-align:left"><h3 style="margin:0 0 6px;color:#ffe0a0">Tes traits et ton rêve</h3><p style="margin:0 0 12px;color:#bfd0dc;font-size:13px">Choisis exactement 2 traits, puis 1 rêve pour ton personnage.</p><div id="creator3DPreview" style="display:flex;justify-content:center;align-items:center;min-height:220px;margin:4px auto 12px"></div><div id="creatorTraitChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px"></div><p id="creatorTraitCount" style="font-size:12px;color:#ffe0a0;margin:10px 0">Traits choisis : 0/2</p><h3 style="margin:14px 0 8px;color:#ffe0a0">Ton rêve</h3><div id="creatorDreamChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px"></div><div id="creatorChoiceSummary" style="margin-top:14px;padding:12px;border-radius:12px;background:#ffffff12;color:#e6edf2;font-size:13px">Ton récapitulatif apparaîtra ici.</div><button type="button" id="creatorChoicesBack" style="margin-top:12px;padding:9px 14px;border-radius:10px;border:1px solid #ffffff45;background:#263b4b;color:white">← Retour à l’apparence</button></section>
+    <div class="creatorActions"><button id="creatorCancel">Retour</button><button id="creatorStart">Continuer</button></div>
     <p class="creatorNote">Tu pourras retrouver et modifier ton apparence dans une prochaine mise à jour.</p>
   </div>
 </div>
@@ -3893,7 +3894,7 @@ function loadLifeProgress(){
     if(saved.creator&&typeof saved.creator==='object')lifeState.creator={certified:!!saved.creator.certified,displayName:String(saved.creator.displayName||'').slice(0,32),youtubeFollowers:Math.max(0,Number(saved.creator.youtubeFollowers)||0),tiktokFollowers:Math.max(0,Number(saved.creator.tiktokFollowers)||0),posts:Array.isArray(saved.creator.posts)?saved.creator.posts.filter(p=>p&&typeof p.platform==='string'&&typeof p.caption==='string').slice(-40):[],lastPayoutDay:Number.isInteger(saved.creator.lastPayoutDay)?saved.creator.lastPayoutDay:-1};
     if(Array.isArray(saved.bankTransactions))lifeState.bankTransactions=saved.bankTransactions.filter(t=>t&&typeof t.label==='string'&&Number.isFinite(t.amount)).slice(0,30);
     if(saved.cheats&&typeof saved.cheats==='object')lifeState.cheats={money:!!saved.cheats.money,hunger:!!saved.cheats.hunger,energy:!!saved.cheats.energy,social:!!saved.cheats.social,health:!!saved.cheats.health};if(saved.creatorTier==='S'||saved.creatorTier==='Z'||saved.creatorTier==='SZ')lifeState.creatorTier=saved.creatorTier;else if(isCreatorAccount(activeGameAccount))lifeState.creatorTier='SZ';clampMoney();
-    if(saved.playerProfile&&typeof saved.playerProfile==='object')lifeState.playerProfile={name:String(saved.playerProfile.name||'Mon personnage').slice(0,24),gender:saved.playerProfile.gender==='femme'?'femme':'homme',skin:Number(saved.playerProfile.skin)||0x7a4a24,hair:Number(saved.playerProfile.hair)||0x17120f,shirt:Number(saved.playerProfile.shirt)||0xe74c3c,pants:Number(saved.playerProfile.pants)||0x2c3e50};
+    if(saved.playerProfile&&typeof saved.playerProfile==='object')lifeState.playerProfile={name:String(saved.playerProfile.name||'Mon personnage').slice(0,24),gender:saved.playerProfile.gender==='femme'?'femme':'homme',skin:Number(saved.playerProfile.skin)||0x7a4a24,hair:Number(saved.playerProfile.hair)||0x17120f,shirt:Number(saved.playerProfile.shirt)||0xe74c3c,pants:Number(saved.playerProfile.pants)||0x2c3e50,traits:Array.isArray(saved.playerProfile.traits)?saved.playerProfile.traits.filter(x=>typeof x==='string').slice(0,2):[],dream:typeof saved.playerProfile.dream==='string'?saved.playerProfile.dream:''};
   }catch(e){console.warn('Sauvegarde Abidjan Life illisible',e);}
 }
 function saveLifeProgress(show=true){
@@ -6455,7 +6456,63 @@ function v16ValidateTrafficRoutes(){
  function safeName(n){return String(n||'').trim().replace(/\s+/g,' ').slice(0,22)}
  // Écran de statut obligatoire après validation du personnage, avant l'entrée dans le monde.
  const creatorBtn=$('creatorStart'),status=$('statusStartOverlay');
- if(creatorBtn&&status){creatorBtn.addEventListener('click',function(e){e.preventDefault();e.stopImmediatePropagation();const val=id=>$(id)?.value;lifeState.playerProfile={name:safeName(val('creatorName'))||'Mon personnage',gender:val('creatorGender')||'homme',skin:parseInt(val('creatorSkin')),hair:parseInt(val('creatorHair')),shirt:parseInt(val('creatorShirt')),pants:parseInt(val('creatorPants'))};if(isCreatorAccount(activeGameAccount))applyCreatorPrivileges();$('creatorOverlay').classList.remove('open');status.classList.add('open');},{capture:true});}
+ const traitCatalog=[
+  {id:'grouilleur',name:'Grouilleur',desc:'+10 % sur les revenus de chaque travail'},
+  {id:'gourmand',name:'Gourmand',desc:'Les repas remplissent 20 % de faim en plus'},
+  {id:'enjailleur',name:'Enjailleur',desc:'+25 % de moral pendant les sorties'},
+  {id:'sportif',name:'Sportif',desc:'15 % de fatigue en moins au travail'},
+  {id:'beau-parleur',name:'Beau parleur',desc:'Respect gagné au travail multiplié par 2'},
+  {id:'toujours-propre',name:'Toujours propre',desc:'L’hygiène baisse deux fois moins vite'},
+  {id:'cerveau',name:'Cerveau',desc:'Les courses coûtent 50 % moins cher'}
+ ];
+ const dreamCatalog=[
+  {id:'grand-patron',name:'Grand patron',desc:'Posséder 3 entreprises'},
+  {id:'proprietaire',name:'Propriétaire',desc:'Construire ta propre maison'},
+  {id:'maire',name:'Maire de ta commune',desc:'Gagner les élections dans ta commune de départ'},
+  {id:'intellectuel',name:'Intellectuel',desc:'Obtenir une licence'},
+  {id:'star-rue-princesse',name:'Star de la rue Princesse',desc:'Atteindre 4 000 points de respect'}
+ ];
+ let chosenTraits=[],chosenDream='',creatorChoiceStep=false,creatorPreviewScene=null,creatorPreviewRenderer=null,creatorPreviewActor=null,creatorPreviewFrame=0;
+ function renderCreatorChoiceLists(){
+  const traitBox=$('creatorTraitChoices'),dreamBox=$('creatorDreamChoices');if(!traitBox||!dreamBox)return;
+  traitBox.innerHTML=traitCatalog.map(t=>'<button type="button" data-trait="'+t.id+'" style="text-align:left;padding:10px;border:1px solid '+(chosenTraits.includes(t.id)?'#e9c16f':'#ffffff30')+';border-radius:11px;background:'+(chosenTraits.includes(t.id)?'#725522':'#ffffff0d')+';color:#fff"><b>'+t.name+'</b><small style="display:block;margin-top:4px;color:#d1dce4">'+t.desc+'</small></button>').join('');
+  dreamBox.innerHTML=dreamCatalog.map(d=>'<button type="button" data-dream="'+d.id+'" style="text-align:left;padding:10px;border:1px solid '+(chosenDream===d.id?'#e9c16f':'#ffffff30')+';border-radius:11px;background:'+(chosenDream===d.id?'#725522':'#ffffff0d')+';color:#fff"><b>'+d.name+'</b><small style="display:block;margin-top:4px;color:#d1dce4">'+d.desc+'</small></button>').join('');
+  $('creatorTraitCount').textContent='Traits choisis : '+chosenTraits.length+'/2';
+  const traitNames=chosenTraits.map(id=>traitCatalog.find(t=>t.id===id)?.name).filter(Boolean);
+  const dream=dreamCatalog.find(d=>d.id===chosenDream);
+  $('creatorChoiceSummary').innerHTML='<b>Récapitulatif de ton personnage</b><br>Nom : '+String($('creatorName').value||'Mon personnage').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]))+'<br>Traits : '+(traitNames.join(' + ')||'À choisir')+'<br>Rêve : '+(dream?dream.name:'À choisir');
+  creatorBtn.textContent=chosenTraits.length===2&&chosenDream?'Confirmer et continuer':'Choisis 2 traits et 1 rêve';
+  creatorBtn.disabled=chosenTraits.length!==2||!chosenDream;
+ }
+ function stopCreator3DPreview(){if(creatorPreviewFrame)cancelAnimationFrame(creatorPreviewFrame);creatorPreviewFrame=0;if(creatorPreviewRenderer){creatorPreviewRenderer.dispose();creatorPreviewRenderer=null;}creatorPreviewScene=null;creatorPreviewActor=null;}
+ function startCreator3DPreview(){
+  const host=$('creator3DPreview');if(!host||!window.THREE||typeof createCharacter!=='function')return;
+  stopCreator3DPreview();host.innerHTML='';
+  try{
+   const scene3=new THREE.Scene();scene3.background=new THREE.Color(0x102738);
+   const camera3=new THREE.PerspectiveCamera(32,220/220,.1,50);camera3.position.set(3.2,2.25,4.4);camera3.lookAt(0,1.2,0);
+   const renderer3=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer3.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer3.setSize(220,220);host.appendChild(renderer3.domElement);
+   scene3.add(new THREE.HemisphereLight(0xffffff,0x43515d,2));const light=new THREE.DirectionalLight(0xffffff,2.2);light.position.set(3,5,4);scene3.add(light);
+   const actor=createCharacter({gender:$('creatorGender').value,skin:parseInt($('creatorSkin').value),hair:parseInt($('creatorHair').value),shirt:parseInt($('creatorShirt').value),pants:parseInt($('creatorPants').value)});
+   scene3.add(actor);creatorPreviewScene=scene3;creatorPreviewRenderer=renderer3;creatorPreviewActor=actor;
+   const tick=()=>{if(!creatorPreviewRenderer||!$('creatorLifeChoices')||$('creatorLifeChoices').style.display==='none')return;creatorPreviewActor.rotation.y+=.008;creatorPreviewRenderer.render(creatorPreviewScene,camera3);creatorPreviewFrame=requestAnimationFrame(tick);};tick();
+  }catch(err){host.textContent='Aperçu 3D indisponible sur cet appareil.';console.warn('Aperçu créateur 3D',err);}
+ }
+ if(creatorBtn&&status){
+  $('creatorChoicesBack')?.addEventListener('click',()=>{creatorChoiceStep=false;stopCreator3DPreview();$('creatorLifeChoices').style.display='none';document.querySelector('.creatorLayout').style.display='';creatorBtn.textContent='Continuer';creatorBtn.disabled=false;});
+  $('creatorTraitChoices')?.addEventListener('click',e=>{const btn=e.target.closest('[data-trait]');if(!btn)return;const id=btn.dataset.trait;if(chosenTraits.includes(id))chosenTraits=chosenTraits.filter(x=>x!==id);else if(chosenTraits.length<2)chosenTraits.push(id);renderCreatorChoiceLists();});
+  $('creatorDreamChoices')?.addEventListener('click',e=>{const btn=e.target.closest('[data-dream]');if(!btn)return;chosenDream=btn.dataset.dream;renderCreatorChoiceLists();});
+  creatorBtn.addEventListener('click',function(e){
+   e.preventDefault();e.stopImmediatePropagation();
+   if(!creatorChoiceStep){creatorChoiceStep=true;chosenTraits=[];chosenDream='';document.querySelector('.creatorLayout').style.display='none';$('creatorLifeChoices').style.display='block';renderCreatorChoiceLists();startCreator3DPreview();return;}
+   if(chosenTraits.length!==2||!chosenDream){renderCreatorChoiceLists();return;}
+   const val=id=>$(id)?.value;
+   lifeState.playerProfile={name:safeName(val('creatorName'))||'Mon personnage',gender:val('creatorGender')||'homme',skin:parseInt(val('creatorSkin')),hair:parseInt(val('creatorHair')),shirt:parseInt(val('creatorShirt')),pants:parseInt(val('creatorPants')),traits:chosenTraits.slice(0,2),dream:chosenDream};
+   stopCreator3DPreview();if(isCreatorAccount(activeGameAccount))applyCreatorPrivileges();
+   $('creatorOverlay').classList.remove('open');$('creatorLifeChoices').style.display='none';document.querySelector('.creatorLayout').style.display='';
+   creatorChoiceStep=false;creatorBtn.disabled=false;status.classList.add('open');
+  },{capture:true});
+ }
  function begin(statusId){const cfg={aise:{cash:2000000,bank:2000000,spawn:(()=>{const q=geoToWorld(5.36,-3.99);return [q.x,q.z];})(),home:'Cocody',comfort:92,social:72},equilibre:{cash:1000000,bank:1000000,spawn:(()=>{const q=geoToWorld(5.32,-4.08);return [q.x,q.z];})(),home:'Yopougon',comfort:72,social:62},debrouillard:{cash:100000,bank:100000,spawn:(()=>{const q=geoToWorld(5.43,-4.02);return [q.x,q.z];})(),home:'Abobo – Échelle',comfort:48,social:55}}[statusId];if(!cfg)return;v.status=statusId;v.statusSpawn=cfg.spawn;v.startingCash=cfg.cash;v.startingBank=cfg.bank;v.startingSocial=cfg.social;v.startingComfort=cfg.comfort;v.weeklyFamilySupport=statusId==='aise';v.lastFamilyGiftDay=0;lifeState.money=cfg.cash;lifeState.bankBalance=cfg.bank;lifeState.hunger=100;lifeState.energy=100;lifeState.social=cfg.social;lifeState.health=100;v.comfort=cfg.comfort;v.hygiene=100;v.hungerFoodSeeded=false;status.classList.remove('open');$('startScreen').style.display='none';$('mapStatus').textContent='Préparation de la ville…';gameStarted=true;try{init();animate();save();}catch(err){const box=$('errorBox');if(box){box.style.display='block';box.textContent='ERREUR INIT: '+err.message;}console.error(err);}}
  status?.querySelectorAll('[data-start-status]').forEach(b=>b.addEventListener('click',()=>begin(b.dataset.startStatus)));
  // Nom du joueur unique dans ce navigateur (la réservation mondiale nécessite un serveur partagé).
@@ -6622,7 +6679,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
  function restoreDownloadedPhoneApps(){
   const page=document.querySelector('#phoneApps .phoneAppsPage');if(!page)return;
   const ids=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];
-  ids.forEach(id=>{const a=downloadedAppMeta[id];if(!a||page.querySelector('[data-app="'+id+'']))return;const b=document.createElement('button');b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+a.emoji+'</span>'+a.name;b.addEventListener('click',()=>openPhoneApp(id));page.appendChild(b);});
+  ids.forEach(id=>{const a=downloadedAppMeta[id];const alreadyInstalled=Array.from(page.querySelectorAll('.phoneApp')).some(button=>button.dataset.app===id);if(!a||alreadyInstalled)return;const b=document.createElement('button');b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+a.emoji+'</span>'+a.name;b.addEventListener('click',()=>openPhoneApp(id));page.appendChild(b);});
  }
  const activateBeforePhoneRestore=activateGameAccount;
  activateGameAccount=function(phone){activateBeforePhoneRestore(phone);setTimeout(restoreDownloadedPhoneApps,250);};
