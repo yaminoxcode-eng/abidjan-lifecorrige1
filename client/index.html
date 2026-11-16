@@ -3523,6 +3523,7 @@ function startPlayerAtHome(){
     initialHomeEntered=true;
     pendingSavedWorldPosition=null;
     console.info('Position sauvegardée restaurée.');
+    saveLifeProgress(false);
     return;
   }
   const homes=doors.filter(d=>d.home&&interiors[d.id]&&!d.buildingType);
@@ -3546,6 +3547,7 @@ function startPlayerAtHome(){
     }
   }catch(e){}
   enterBuilding(nearest);
+  saveLifeProgress(false);
 }
 
 function enterBuilding(door) {
