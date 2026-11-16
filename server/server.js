@@ -819,12 +819,44 @@ io.on('connection', (socket) => {
       JSON.stringify(save).length < 2000000
     ) {
       const previousSave = account.save;
+      const previousPosition = account.position;
+      const previousProfile = account.profile;
+      const previousNeeds = account.needs;
       account.save = save;
+      const savedPosition = save.worldPosition || save.position;
+      if (savedPosition && Number.isFinite(savedPosition.x) && Number.isFinite(savedPosition.z) &&
+          Math.abs(savedPosition.x) <= 25000 && Math.abs(savedPosition.z) <= 25000) {
+        account.position = state.position = {
+          x: savedPosition.x, z: savedPosition.z,
+          yaw: Number.isFinite(savedPosition.yaw) ? savedPosition.yaw : 0
+        };
+      }
+      if (save.playerProfile && typeof save.playerProfile === 'object') {
+        const p = save.playerProfile;
+        account.profile = state.profile = {
+          name: clean(p.name, 24) || 'Citoyen',
+          gender: p.gender === 'femme' ? 'femme' : 'homme',
+          skin: Number(p.skin) || 0x7a4a24,
+          hair: Number(p.hair) || 0x17120f,
+          shirt: Number(p.shirt) || 0xe74c3c,
+          pants: Number(p.pants) || 0x2c3e50
+        };
+      }
+      if (['hunger','energy','social','health','money'].some(k => Number.isFinite(save[k]))) {
+        account.needs = state.needs = {
+          hunger: clamp(save.hunger), energy: clamp(save.energy),
+          social: clamp(save.social), health: clamp(save.health),
+          money: clamp(save.money, 0, 1e12)
+        };
+      }
       try {
         await persistAccount(account);
         ok = true;
       } catch (error) {
         account.save = previousSave;
+        account.position = state.position = previousPosition;
+        account.profile = state.profile = previousProfile;
+        account.needs = state.needs = previousNeeds;
         console.error('Échec sauvegarde progression:', error.message);
       }
     }
