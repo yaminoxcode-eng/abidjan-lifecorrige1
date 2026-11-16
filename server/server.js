@@ -14,6 +14,9 @@ const CLIENT_ORIGINS = (process.env.CLIENT_ORIGINS || '*').split(',').map(s => s
 const UPDATE_ADMIN_TOKEN = process.env.UPDATE_ADMIN_TOKEN || '';
 const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.26.0';
 const DEFAULT_CLIENT_URL = process.env.CLIENT_URL || '';
+const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const persistentStorageEnabled = !!(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
 
 let updateManifest = {
   version: DEFAULT_GAME_VERSION,
@@ -44,12 +47,81 @@ app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors({ origin: CLIENT_ORIGINS.includes('*') ? true : CLIENT_ORIGINS }));
 app.use(express.json({ limit: '64kb' }));
 
-// Prototype gratuit : mémoire vive uniquement.
-// Un redémarrage Render efface comptes et progression.
+// Les comptes actifs sont en mémoire et persistés dans Supabase.
+// La clé service_role reste exclusivement côté serveur (variable Render).
 const accounts = new Map();
 const activePlayers = new Map();
 const recoveryTickets = new Map();
 const attempts = new Map();
+
+async function supabaseRequest(path, options = {}) {
+  if (!persistentStorageEnabled) return null;
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    throw new Error(`Supabase HTTP ${response.status}: ${detail.slice(0, 300)}`);
+  }
+  if (response.status === 204) return null;
+  const body = await response.text();
+  return body ? JSON.parse(body) : null;
+}
+
+function accountToRow(a) {
+  return {
+    phone: a.phone,
+    email: a.email,
+    password_hash: a.passwordHash,
+    security: a.security || {},
+    profile: a.profile || {},
+    position: a.position || { x: 0, z: 0, yaw: 0 },
+    needs: a.needs || null,
+    save: a.save || null,
+    created_at: a.createdAt ? new Date(a.createdAt).toISOString() : new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+}
+
+function rowToAccount(row) {
+  return {
+    phone: row.phone,
+    email: row.email,
+    passwordHash: row.password_hash,
+    security: row.security || {},
+    profile: row.profile || {},
+    position: row.position || { x: 0, z: 0, yaw: 0 },
+    needs: row.needs || null,
+    save: row.save || null,
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now()
+  };
+}
+
+async function persistAccount(account) {
+  if (!persistentStorageEnabled) return true;
+  await supabaseRequest('game_accounts?on_conflict=phone', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(accountToRow(account))
+  });
+  return true;
+}
+
+async function loadPersistentAccounts() {
+  if (!persistentStorageEnabled) {
+    console.warn('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY absents : stockage mémoire uniquement.');
+    return;
+  }
+  const rows = await supabaseRequest('game_accounts?select=phone,email,password_hash,security,profile,position,needs,save,created_at');
+  for (const row of rows || []) accounts.set(row.phone, rowToAccount(row));
+  console.log(`Supabase connecté : ${accounts.size} compte(s) chargé(s).`);
+}
 
 const clean = (v, max = 80) => String(v ?? '').trim().slice(0, max);
 
@@ -122,7 +194,7 @@ app.get('/', (_req, res) => res.json({
   status: 'ok',
   players: activePlayers.size,
   accounts: accounts.size,
-  storage: 'memory-only'
+  storage: persistentStorageEnabled ? 'supabase' : 'memory-only'
 }));
 
 app.get('/health', (_req, res) => res.status(200).json({
@@ -380,7 +452,7 @@ app.post('/api/auth/register', async (req, res) => {
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  accounts.set(phone, {
+  const account = {
     phone,
     email,
     passwordHash,
@@ -403,7 +475,15 @@ app.post('/api/auth/register', async (req, res) => {
     needs: null,
     save: null,
     createdAt: Date.now()
-  });
+  };
+
+  try {
+    await persistAccount(account);
+  } catch (error) {
+    console.error('Échec enregistrement nouveau compte:', error.message);
+    return res.status(503).json({ error: 'Impossible de sécuriser le compte maintenant. Réessaie.' });
+  }
+  accounts.set(phone, account);
 
   res.status(201).json({
     token: issueToken(phone),
@@ -498,6 +578,12 @@ app.post('/api/auth/migrate-local', async (req, res) => {
     migratedFromLocal: true
   };
 
+  try {
+    await persistAccount(a);
+  } catch (error) {
+    console.error('Échec enregistrement migration:', error.message);
+    return res.status(503).json({ error: 'Impossible de sauvegarder le compte sur le serveur. Réessaie.' });
+  }
   accounts.set(phone, a);
 
   res.status(201).json({
@@ -583,7 +669,15 @@ app.post('/api/auth/reset', async (req, res) => {
 
   if (!a) return res.status(404).json({ error: 'Compte introuvable.' });
 
+  const previousHash = a.passwordHash;
   a.passwordHash = await bcrypt.hash(password, 12);
+  try {
+    await persistAccount(a);
+  } catch (error) {
+    a.passwordHash = previousHash;
+    console.error('Échec sauvegarde nouveau mot de passe:', error.message);
+    return res.status(503).json({ error: 'Le nouveau mot de passe n’a pas pu être enregistré. Réessaie.' });
+  }
   recoveryTickets.delete(String(req.body.recoveryTicket));
 
   res.json({ ok: true });
@@ -625,7 +719,8 @@ io.on('connection', (socket) => {
     position: account.position,
     needs: account.needs,
     version: clean(socket.handshake.auth?.gameVersion, 32) || 'inconnue',
-    lastUpdate: 0
+    lastUpdate: 0,
+    lastPersist: 0
   };
 
   activePlayers.set(socket.id, state);
@@ -706,9 +801,14 @@ io.on('connection', (socket) => {
       position: state.position,
       needs: state.needs
     });
+
+    if (persistentStorageEnabled && now - state.lastPersist >= 5000) {
+      state.lastPersist = now;
+      persistAccount(account).catch(error => console.error('Échec sauvegarde périodique:', error.message));
+    }
   });
 
-  socket.on('player:save', (save, ack) => {
+  socket.on('player:save', async (save, ack) => {
     let ok = false;
 
     if (
@@ -716,14 +816,24 @@ io.on('connection', (socket) => {
       typeof save === 'object' &&
       JSON.stringify(save).length < 2000000
     ) {
+      const previousSave = account.save;
       account.save = save;
-      ok = true;
+      try {
+        await persistAccount(account);
+        ok = true;
+      } catch (error) {
+        account.save = previousSave;
+        console.error('Échec sauvegarde progression:', error.message);
+      }
     }
 
-    if (typeof ack === 'function') ack({ ok });
+    if (typeof ack === 'function') ack({ ok, persistent: persistentStorageEnabled });
   });
 
   socket.on('disconnect', () => {
+    if (persistentStorageEnabled) {
+      persistAccount(account).catch(error => console.error('Échec sauvegarde déconnexion:', error.message));
+    }
     activePlayers.delete(socket.id);
     socket.broadcast.emit('player:left', socket.id);
   });
@@ -736,6 +846,14 @@ function clamp(v, min = 0, max = 100) {
     : 0;
 }
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Abidjan Life Online listening on ${PORT}`);
-});
+loadPersistentAccounts()
+  .then(() => {
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`Abidjan Life Online listening on ${PORT}`);
+      console.log(`Stockage comptes : ${persistentStorageEnabled ? 'Supabase PostgreSQL' : 'mémoire uniquement (configuration requise)'}`);
+    });
+  })
+  .catch(error => {
+    console.error('Impossible de charger les comptes Supabase :', error.message);
+    process.exit(1);
+  });
