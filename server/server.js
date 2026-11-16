@@ -104,7 +104,9 @@ function rowToAccount(row) {
 }
 
 async function persistAccount(account) {
-  if (!persistentStorageEnabled) return true;
+  if (!persistentStorageEnabled) {
+    throw new Error('Stockage Supabase non configuré : écriture refusée pour protéger les données.');
+  }
   await supabaseRequest('game_accounts?on_conflict=phone', {
     method: 'POST',
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
