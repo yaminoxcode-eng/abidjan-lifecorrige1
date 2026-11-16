@@ -51,6 +51,11 @@ app.use(express.json({ limit: '64kb' }));
 // La clé service_role reste exclusivement côté serveur (variable Render).
 const accounts = new Map();
 const activePlayers = new Map();
+let sharedWorldState = null;
+let worldStateOwner = null;
+function publicPlayer(p){return {id:p.id,profile:p.profile,position:p.position,needs:p.needs,vehicle:p.vehicle||null};}
+function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.size});}
+
 const recoveryTickets = new Map();
 const attempts = new Map();
 
@@ -703,6 +708,11 @@ io.use((socket, next) => {
   }
 });
 
+
+app.get('/api/players', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ count: activePlayers.size, players: [...activePlayers.values()].map(p => ({ name: clean(p.profile?.name, 24) || 'Citoyen' })) });
+});
 io.on('connection', (socket) => {
   const account = accounts.get(socket.phone);
 
@@ -720,12 +730,18 @@ io.on('connection', (socket) => {
     profile: account.profile,
     position: account.position,
     needs: account.needs,
+    vehicle: null,
     version: clean(socket.handshake.auth?.gameVersion, 32) || 'inconnue',
     lastUpdate: 0,
-    lastPersist: 0
+    lastPersist: 0,
+    lastWorldSync: 0
   };
 
   activePlayers.set(socket.id, state);
+  if (!worldStateOwner) worldStateOwner = socket.id;
+  socket.emit('world:host', { id: worldStateOwner });
+  if (sharedWorldState) socket.emit('world:state', sharedWorldState);
+  broadcastPlayerCount();
 
   socket.emit(
     'world:players',
@@ -735,7 +751,8 @@ io.on('connection', (socket) => {
         id: p.id,
         profile: p.profile,
         position: p.position,
-        needs: p.needs
+        needs: p.needs,
+        vehicle: p.vehicle || null
       }))
   );
 
@@ -743,7 +760,8 @@ io.on('connection', (socket) => {
     id: socket.id,
     profile: state.profile,
     position: state.position,
-    needs: state.needs
+    needs: state.needs,
+    vehicle: state.vehicle
   });
 
   socket.on('player:update', (payload = {}) => {
@@ -785,6 +803,31 @@ io.on('connection', (socket) => {
       };
     }
 
+    if (payload.vehicle && typeof payload.vehicle === 'object') {
+      const v = payload.vehicle;
+      state.vehicle = Number.isFinite(v.x) && Number.isFinite(v.z) ? {
+        kind: 'yango', x: v.x, z: v.z,
+        yaw: Number.isFinite(v.yaw) ? v.yaw : 0,
+        boarded: !!v.boarded, phase: clean(v.phase, 20)
+      } : null;
+    } else state.vehicle = null;
+
+    if (payload.worldState && socket.id === worldStateOwner) {
+      const w = payload.worldState;
+      const nowWorld = Date.now();
+      if (nowWorld - state.lastWorldSync > 850 && Number.isFinite(w.hour) && Number.isFinite(w.minute)) {
+        sharedWorldState = {
+          hour: Math.max(0, Math.min(23, Math.floor(w.hour))),
+          minute: Math.max(0, Math.min(59.99, Number(w.minute))),
+          weather: ['pluie','tres-chaud','chaud','ensoleille'].includes(w.weather) ? w.weather : 'ensoleille',
+          temperature: Math.max(15, Math.min(50, Number(w.temperature) || 31)),
+          updatedAt: nowWorld
+        };
+        state.lastWorldSync = nowWorld;
+        socket.broadcast.emit('world:state', sharedWorldState);
+      }
+    }
+
     if (payload.needs && typeof payload.needs === 'object') {
       const n = payload.needs;
 
@@ -801,7 +844,8 @@ io.on('connection', (socket) => {
       id: socket.id,
       profile: state.profile,
       position: state.position,
-      needs: state.needs
+      needs: state.needs,
+      vehicle: state.vehicle
     });
 
     if (persistentStorageEnabled && now - state.lastPersist >= 5000) {
@@ -870,6 +914,11 @@ io.on('connection', (socket) => {
     }
     activePlayers.delete(socket.id);
     socket.broadcast.emit('player:left', socket.id);
+    if (worldStateOwner === socket.id) {
+      worldStateOwner = activePlayers.keys().next().value || null;
+      if (worldStateOwner) io.to(worldStateOwner).emit('world:host', { id: worldStateOwner });
+    }
+    broadcastPlayerCount();
   });
 });
 
