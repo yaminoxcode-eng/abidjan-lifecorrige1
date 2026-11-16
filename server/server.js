@@ -731,6 +731,7 @@ io.on('connection', (socket) => {
     position: account.position,
     needs: account.needs,
     vehicle: null,
+    moving: false,
     version: clean(socket.handshake.auth?.gameVersion, 32) || 'inconnue',
     lastUpdate: 0,
     lastPersist: 0,
@@ -752,6 +753,7 @@ io.on('connection', (socket) => {
         profile: p.profile,
         position: p.position,
         needs: p.needs,
+        moving: !!p.moving,
         vehicle: p.vehicle || null
       }))
   );
@@ -761,6 +763,7 @@ io.on('connection', (socket) => {
     profile: state.profile,
     position: state.position,
     needs: state.needs,
+    moving: !!state.moving,
     vehicle: state.vehicle
   });
 
@@ -781,6 +784,7 @@ io.on('connection', (socket) => {
       Math.abs(pos.x) <= 25000 &&
       Math.abs(pos.z) <= 25000
     ) {
+      state.moving = Math.hypot(pos.x - (Number(state.position?.x) || 0), pos.z - (Number(state.position?.z) || 0)) > 0.025;
       state.position = {
         x: pos.x,
         z: pos.z,
@@ -845,6 +849,7 @@ io.on('connection', (socket) => {
       profile: state.profile,
       position: state.position,
       needs: state.needs,
+      moving: !!state.moving,
       vehicle: state.vehicle
     });
 
