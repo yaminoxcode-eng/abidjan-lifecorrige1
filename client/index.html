@@ -224,6 +224,17 @@
 #startScreen.abj-home .abj-home-note{text-align:left}
 @media(max-width:760px){#startScreen.abj-home .abj-hero-copy h1{font-size:clamp(48px,13vw,68px)}#startScreen.abj-home .abj-home-lead{font-size:14px}}
 </style>
+<style>
+#creatorCard{width:min(1120px,100%);max-height:96vh;padding:24px 28px;background:linear-gradient(145deg,#173b35,#0c201f);border:1px solid #d9b66b99}
+.creatorLayout{grid-template-columns:minmax(175px,220px) minmax(280px,1fr) minmax(205px,270px);gap:22px;align-items:stretch;min-height:390px}
+.creatorColumnLabel{display:block;color:#e7c77d;font-size:9px;font-weight:900;letter-spacing:2px;margin:2px 0 8px}
+.creatorOptions{padding:12px;border-radius:16px;background:#06181655;border:1px solid #ffffff18}
+.creatorCenter{padding:10px;min-height:360px}
+.creatorCenter #creatorPreview{width:min(100%,280px);height:340px;display:block;overflow:hidden;border-radius:24px;background:radial-gradient(ellipse at 50% 28%,#47776a,#102a28 68%,#081b1a);border:1px solid #d9b66b88;box-shadow:0 18px 42px #0007}
+.creatorDetail{min-height:340px;background:#0b211e;border-color:#d9b66b44}
+#creatorCard .creatorNote{color:#b9cec1!important;text-align:center}
+@media(max-width:760px){#creatorCard{padding:14px}.creatorLayout{grid-template-columns:1fr;gap:12px}.creatorCenter{min-height:0;order:0}.creatorCenter #creatorPreview{width:100%;max-width:250px;height:270px}.creatorOptions{order:1;flex-direction:row;flex-wrap:wrap}.creatorOptionBtn{flex:1 1 42%}.creatorDetail{order:2;min-height:auto}}
+</style>
 </head>
 <body>
 
@@ -357,20 +368,20 @@
     <h2 id="creatorTitle">Créer ton personnage</h2>
     <p>Personnage au centre · options à gauche · réglages à droite.</p>
     <div class="creatorLayout">
-      <div class="creatorOptions" id="creatorOptions">
+      <div class="creatorOptions" id="creatorOptions"><small class="creatorColumnLabel">OPTIONS</small>
         <button type="button" class="creatorOptionBtn active" data-opt="gender">Apparence<small id="optLabelGender">Homme</small></button>
         <button type="button" class="creatorOptionBtn" data-opt="skin">Teint<small id="optLabelSkin">Brun</small></button>
         <button type="button" class="creatorOptionBtn" data-opt="hair">Cheveux<small id="optLabelHair">Noir</small></button>
         <button type="button" class="creatorOptionBtn" data-opt="shirt">Haut<small id="optLabelShirt">Rouge</small></button>
         <button type="button" class="creatorOptionBtn" data-opt="pants">Pantalon<small id="optLabelPants">Bleu marine</small></button>
       </div>
-      <div class="creatorCenter">
-        <div id="creatorPreview" aria-live="polite">🧑‍♂️</div>
+      <div class="creatorCenter"><small class="creatorColumnLabel">APERÇU EN DIRECT</small>
+        <div id="creatorPreview" aria-live="polite" aria-label="Aperçu 3D du personnage"></div>
         <label class="creatorNameLabel">Nom du personnage
           <input id="creatorName" maxlength="24" value="Mon personnage" autocomplete="off">
         </label>
       </div>
-      <div class="creatorDetail" id="creatorDetail">
+      <div class="creatorDetail" id="creatorDetail"><small class="creatorColumnLabel">RÉGLAGES</small>
         <h3 id="creatorDetailTitle">Apparence</h3>
         <p id="creatorDetailHint">Choisis le genre de ton personnage.</p>
         <div id="creatorDetailBody"></div>
@@ -384,7 +395,7 @@
     </div>
     <section id="creatorLifeChoices" style="display:none;margin:18px auto 8px;max-width:980px;padding:18px;border:1px solid #d5ad65;border-radius:18px;background:linear-gradient(145deg,#102738,#091521);color:#fff;text-align:left"><h3 style="margin:0 0 6px;color:#ffe0a0">Tes traits et ton rêve</h3><p style="margin:0 0 12px;color:#bfd0dc;font-size:13px">Choisis exactement 2 traits, puis 1 rêve pour ton personnage.</p><div id="creator3DPreview" style="display:flex;justify-content:center;align-items:center;min-height:220px;margin:4px auto 12px"></div><div id="creatorTraitChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px"></div><p id="creatorTraitCount" style="font-size:12px;color:#ffe0a0;margin:10px 0">Traits choisis : 0/2</p><h3 style="margin:14px 0 8px;color:#ffe0a0">Ton rêve</h3><div id="creatorDreamChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px"></div><div id="creatorChoiceSummary" style="margin-top:14px;padding:12px;border-radius:12px;background:#ffffff12;color:#e6edf2;font-size:13px">Ton récapitulatif apparaîtra ici.</div><button type="button" id="creatorChoicesBack" style="margin-top:12px;padding:9px 14px;border-radius:10px;border:1px solid #ffffff45;background:#263b4b;color:white">← Retour à l’apparence</button></section>
     <div class="creatorActions"><button id="creatorCancel">Retour</button><button id="creatorStart">Continuer</button></div>
-    <p class="creatorNote">Tu pourras retrouver et modifier ton apparence dans une prochaine mise à jour.</p>
+    <p class="creatorNote">Ton apparence et ton identité seront enregistrées avec ta partie.</p>
   </div>
 </div>
 <div id="lifeHud" aria-label="Besoins du personnage">
@@ -1044,8 +1055,8 @@ const CREATOR_OPTION_META = {
     title: 'Apparence',
     hint: 'Choisis le genre de ton personnage.',
     choices: [
-      {value:'homme', label:'Homme', emoji:'\U0001F9D1\u200D\u2642\uFE0F'},
-      {value:'femme', label:'Femme', emoji:'\U0001F9D1\u200D\u2640\uFE0F'}
+      {value:'homme', label:'Homme', emoji:'👨'},
+      {value:'femme', label:'Femme', emoji:'👩'}
     ]
   },
   skin: {
@@ -1169,15 +1180,34 @@ function openCharacterCreator(){
     const o=document.getElementById('accountOverlay'); if(o) o.classList.add('open');
   }
 }
-function updateCreatorPreview(){
-  const gender=document.getElementById('creatorGender').value;
-  const preview=document.getElementById('creatorPreview');
-  if(preview){
-    preview.textContent=gender==='femme'?'\U0001F9D1\u200D\u2640\uFE0F':'\U0001F9D1\u200D\u2642\uFE0F';
-    preview.style.filter='drop-shadow(0 3px 3px #0008)';
-  }
-  syncCreatorOptionLabels();
+let abjIdentityPreviewRenderer=null,abjIdentityPreviewScene=null,abjIdentityPreviewCamera=null,abjIdentityPreviewActor=null,abjIdentityPreviewFrame=0;
+function disposeIdentityActor(actor){if(!actor)return;actor.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}});}
+function stopIdentityPreview(){
+ if(abjIdentityPreviewFrame)cancelAnimationFrame(abjIdentityPreviewFrame);abjIdentityPreviewFrame=0;
+ if(abjIdentityPreviewRenderer){const canvas=abjIdentityPreviewRenderer.domElement;abjIdentityPreviewRenderer.dispose();if(canvas&&canvas.parentNode)canvas.parentNode.removeChild(canvas);}
+ disposeIdentityActor(abjIdentityPreviewActor);abjIdentityPreviewRenderer=null;abjIdentityPreviewScene=null;abjIdentityPreviewCamera=null;abjIdentityPreviewActor=null;
 }
+function renderIdentityPreview(){
+ const host=document.getElementById('creatorPreview'),overlay=document.getElementById('creatorOverlay');if(!host||!overlay||!window.THREE)return;
+ if(!abjIdentityPreviewRenderer){
+  host.innerHTML='';const s=new THREE.Scene();s.background=new THREE.Color(0x102b2a);
+  const cam=new THREE.PerspectiveCamera(32,280/340,.1,60);cam.position.set(3.2,2.25,4.5);cam.lookAt(0,1.22,0);
+  const ren=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'low-power'});ren.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));ren.setSize(280,340);ren.domElement.style.cssText='width:100%;height:100%;display:block;border-radius:24px';
+  s.add(new THREE.HemisphereLight(0xfff4df,0x3d554b,1.7));const key=new THREE.DirectionalLight(0xffe4bb,2.1);key.position.set(3,6,4);s.add(key);
+  const fill=new THREE.DirectionalLight(0x8cc9b2,.65);fill.position.set(-4,2,-3);s.add(fill);
+  const platform=new THREE.Mesh(new THREE.CylinderGeometry(1.1,1.2,.12,40),new THREE.MeshStandardMaterial({color:0x24463d,metalness:.18,roughness:.72}));platform.position.y=-.08;s.add(platform);
+  host.appendChild(ren.domElement);abjIdentityPreviewRenderer=ren;abjIdentityPreviewScene=s;abjIdentityPreviewCamera=cam;
+ }
+ disposeIdentityActor(abjIdentityPreviewActor);
+ const actor=createCharacter({gender:document.getElementById('creatorGender').value,skin:parseInt(document.getElementById('creatorSkin').value),hair:parseInt(document.getElementById('creatorHair').value),shirt:parseInt(document.getElementById('creatorShirt').value),pants:parseInt(document.getElementById('creatorPants').value)});
+ abjIdentityPreviewScene.add(actor);abjIdentityPreviewActor=actor;
+ if(!abjIdentityPreviewFrame){
+  const tick=()=>{if(!abjIdentityPreviewRenderer||!overlay.classList.contains('open')||document.getElementById('creatorLifeChoices')?.style.display==='block'){stopIdentityPreview();return;}if(abjIdentityPreviewActor)abjIdentityPreviewActor.rotation.y+=.006;abjIdentityPreviewRenderer.render(abjIdentityPreviewScene,abjIdentityPreviewCamera);abjIdentityPreviewFrame=requestAnimationFrame(tick);};
+  abjIdentityPreviewRenderer.render(abjIdentityPreviewScene,abjIdentityPreviewCamera);abjIdentityPreviewFrame=requestAnimationFrame(tick);
+ }
+}
+function updateCreatorPreview(){renderIdentityPreview();syncCreatorOptionLabels();}
+
 function launchGameFromCreator(){
   const value=id=>document.getElementById(id).value;
   lifeState.playerProfile={name:value('creatorName').trim().slice(0,24)||'Mon personnage',gender:value('creatorGender'),skin:parseInt(value('creatorSkin')),hair:parseInt(value('creatorHair')),shirt:parseInt(value('creatorShirt')),pants:parseInt(value('creatorPants'))};
@@ -1191,6 +1221,8 @@ function launchGameFromCreator(){
 }
 document.getElementById('startBtn').addEventListener('click',openAccountGate);
 document.getElementById('creatorStart').addEventListener('click',launchGameFromCreator);
+document.getElementById('creatorStart').addEventListener('click',stopIdentityPreview,true);
+document.getElementById('creatorCancel').addEventListener('click',stopIdentityPreview);
 document.getElementById('creatorCancel').addEventListener('click',()=>document.getElementById('creatorOverlay').classList.remove('open'));
 document.getElementById('creatorOptions').addEventListener('click',function(e){
   const btn=e.target.closest('.creatorOptionBtn');
@@ -1504,14 +1536,15 @@ function generateCity() {
     document.getElementById('mapStatus').textContent = osmRoadSegments.length.toLocaleString('fr-FR') + ' segments de routes et rues · ' + allBuildings.length.toLocaleString('fr-FR') + ' bâtiments · ' + poi.length.toLocaleString('fr-FR') + ' commerces et lieux · ' + doors.length + ' maisons accessibles';
     // Le réseau OSM apporte la géographie réelle ; ce noyau urbain garantit
     // une ville visible et dense autour du point de départ même si OSM est incomplet.
-    buildPlayableUrbanCore();
-    document.getElementById('mapStatus').textContent += ' · © OpenStreetMap contributors';
+    buildMappedRoadsideInfill();
+    buildMappedStreetTrees();
+    document.getElementById('mapStatus').textContent += ' · rues, bâtiments et espaces verts issus du réseau cartographique';
     if (!npcPopulationCreated) {
       // Population volontairement modérée : priorité à la stabilité et au temps de calcul.
       createNPCs(mobilePerformanceMode?75:155);
       npcPopulationCreated = true;
     }
-    createAbidjanTraffic(mobilePerformanceMode?48:105);
+    createAbidjanTraffic(mobilePerformanceMode?65:150);
     buildUrbanTrafficSignals();
     worldReady = true;
     startPlayerAtHome();
@@ -1878,8 +1911,8 @@ function buildOSMRoads(ways, nodes) {
     }
   });
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();
-  const mesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0x34383a}));mesh.receiveShadow=!mobilePerformanceMode;mesh.name='osm-road-network';scene.add(mesh);
-  if(walkVertices.length){const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(walkVertices,3));wg.setIndex(walkIndices);wg.computeVertexNormals();const wm=new THREE.Mesh(wg,new THREE.MeshLambertMaterial({color:0xbdb8ad,side:THREE.DoubleSide}));wm.receiveShadow=!mobilePerformanceMode;wm.name='osm-pedestrian-paths';scene.add(wm);}
+  const mesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0x252b2e}));mesh.receiveShadow=!mobilePerformanceMode;mesh.name='osm-road-network';scene.add(mesh);
+  if(walkVertices.length){const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(walkVertices,3));wg.setIndex(walkIndices);wg.computeVertexNormals();const wm=new THREE.Mesh(wg,new THREE.MeshLambertMaterial({color:0xcac5b9,side:THREE.DoubleSide}));wm.receiveShadow=!mobilePerformanceMode;wm.name='osm-pedestrian-paths';scene.add(wm);}
   rebuildPedestrianGrid();
   decorateOSMStreets();
   const seen=new Set();
@@ -1938,7 +1971,7 @@ function decorateOSMStreets(){
     crossingCount++;
   }
   function addMerged(v,idx,color){if(!v.length)return;const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(v,3));geo.setIndex(idx);geo.computeVertexNormals();const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color,side:THREE.DoubleSide}));m.receiveShadow=true;scene.add(m);}
-  addMerged(sidewalkV,sidewalkI,0xaaa79d);addMerged(lineV,lineI,0xe5d8a9);
+  addMerged(sidewalkV,sidewalkI,0xc9c3b7);addMerged(lineV,lineI,0xf0e5c4);
 }
 function createStreetLamp(x,z){
   const g=new THREE.Group();const poleMat=new THREE.MeshLambertMaterial({color:0x555b5c}),armMat=new THREE.MeshLambertMaterial({color:0x44494a});
@@ -2001,7 +2034,7 @@ function buildOSMBuildings(ways,nodes) {
     return sector;
   }
   ways.forEach(w=>{
-    if(count>=(mobilePerformanceMode?1700:2600) || w.nodes.length<4)return;
+    if(count>=(mobilePerformanceMode?2300:6000) || w.nodes.length<4)return;
     const pts=w.nodes.map(id=>nodes.get(id)).filter(Boolean);
     if(pts.length<4)return;
     const area=Math.abs(pts.reduce((v,p,i)=>{const q=pts[(i+1)%pts.length];return v+p.x*q.z-q.x*p.z;},0))/2;
@@ -2048,16 +2081,16 @@ function buildOSMBuildings(ways,nodes) {
       }
     }
     const shape=new THREE.Shape();
-    shape.moveTo(pts[0].x,pts[0].z);
-    for(let i=1;i<pts.length;i++)shape.lineTo(pts[i].x,pts[i].z);
+    shape.moveTo(pts[0].x-cx,-(pts[0].z-cz));
+    for(let i=1;i<pts.length;i++)shape.lineTo(pts[i].x-cx,-(pts[i].z-cz));
     shape.closePath();
     const geo=new THREE.ExtrudeGeometry(shape,{depth:h,bevelEnabled:false});
-    geo.rotateX(-Math.PI/2);geo.translate(0,.04,0);geo.computeVertexNormals();
+    geo.rotateX(-Math.PI/2);geo.computeVertexNormals();
     const pa=geo.getAttribute('position'),na=geo.getAttribute('normal'),base=sector.positions.length/3;
     const col=new THREE.Color(palette[Math.floor(Math.random()*palette.length)]);
     for(let i=0;i<pa.count;i++){
-      const vx=pa.getX(i),vy=pa.getY(i),vz=pa.getZ(i);
-      sector.positions.push(vx,vy+terrainHeight(vx,vz),vz);
+      const vx=cx+pa.getX(i),vy=pa.getY(i),vz=cz+pa.getZ(i);
+      sector.positions.push(vx,vy+terrainHeight(vx,vz)+.04,vz);
       sector.normals.push(na.getX(i),na.getY(i),na.getZ(i));
       sector.colors.push(col.r,col.g,col.b);
     }
@@ -2126,6 +2159,32 @@ function buildResidentialInfill(){
  if(!scene||!doors.length)return;let made=0;const homeDoors=doors.filter(d=>String(d.id).startsWith('home'));const palette=[0xc9b99c,0xd6c4a5,0xb7aa91,0xd4b08a,0xc8c2b4];
  function roadNear(x,z){let best=Infinity;for(const r of osmRoadSegments){if(!['primary','secondary','tertiary','residential','living_street','service'].includes(r.type))continue;const dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,l2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-r.a.x)*dx+(z-r.a.z)*dz)/l2)),d=Math.hypot(x-(r.a.x+t*dx),z-(r.a.z+t*dz));if(d<best)best=d;}return best;}
  homeDoors.forEach((door,index)=>{if(made>=48)return;const n=door.normal||new THREE.Vector3(0,0,1),side=new THREE.Vector3(-n.z,0,n.x),offsets=[{x:side.x*10-n.x*8,z:side.z*10-n.z*8},{x:-side.x*10-n.x*9,z:-side.z*10-n.z*9}];offsets.forEach((off,j)=>{if(made>=48)return;const x=door.x+off.x,z=door.z+off.z,w=6.5+(index%3)*1.4,d=6.2+(index%2)*1.5,h=4.4+(index%4)*.8;if(roadNear(x,z)<w/2+3||overlapsExisting(x,z,w+1,d+1,h)||isOnRoad(x,z,4))return;const g=new THREE.Group(),wall=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:palette[(index+j)%palette.length]}));wall.position.y=h/2;wall.castShadow=true;wall.receiveShadow=true;g.add(wall);const roof=new THREE.Mesh(new THREE.BoxGeometry(w+.35,.35,d+.35),new THREE.MeshLambertMaterial({color:index%2?0x754b37:0x6c6260}));roof.position.y=h+.15;roof.castShadow=true;g.add(roof);const wm=new THREE.MeshLambertMaterial({color:0x416b79,emissive:0x101c20});for(const sx of [-1,1]){const win=new THREE.Mesh(new THREE.BoxGeometry(1.05,1.05,.08),wm);win.position.set(sx*w*.27,h*.64,d/2+.045);g.add(win);}g.position.set(x,terrainHeight(x,z),z);scene.add(g);registerDistanceManagedBuilding(g);addObstacle(x,z,w,d,h+.4);allBuildings.push({x,z,w,d,h:h+.4,type:'residential-infill'});made++;});});console.info('Bâtiments résidentiels de remplissage :',made);
+}
+
+function buildMappedRoadsideInfill(){
+ if(!scene||!trafficRoadSegments.length)return;
+ const mobile=mobilePerformanceMode,max=mobile?110:320,palette=[0xd9c5a4,0xc7b394,0xe2d6c1,0xc4c9bd,0xd1ad88,0xb8c1b7],roofs=[0x765144,0x8b4939,0x626a68,0x9b7650];
+ let seed=492731;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+ const roads=trafficRoadSegments.filter(r=>['secondary','tertiary','residential','living_street','unclassified','service'].includes(r.type)&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>24);
+ for(let i=roads.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[roads[i],roads[j]]=[roads[j],roads[i]];}
+ function roadClear(x,z){let best=Infinity,bestWidth=0;for(const r of osmRoadSegments){if(Math.abs((r.a.x+r.b.x)*.5-x)>36||Math.abs((r.a.z+r.b.z)*.5-z)>36)continue;const dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,l2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-r.a.x)*dx+(z-r.a.z)*dz)/l2)),d=Math.hypot(x-(r.a.x+t*dx),z-(r.a.z+t*dz));if(d<best){best=d;bestWidth=r.width||5;}}return best>bestWidth/2+3.4;}
+ let made=0;
+ for(const r of roads){if(made>=max)break;const dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,len=Math.hypot(dx,dz)||1,nx=-dz/len,nz=dx/len,samples=Math.max(1,Math.min(2,Math.floor(len/48)));
+  for(let k=0;k<samples&&made<max;k++){const t=(k+.5)/samples,side=rnd()<.5?1:-1,offset=(r.width||5)/2+8+rnd()*7,x=r.a.x+dx*t+nx*offset*side,z=r.a.z+dz*t+nz*offset*side,w=8+rnd()*5,d=7+rnd()*4,h=4.2+rnd()*3.2;if(!roadClear(x,z)||overlapsExisting(x,z,w+2,d+2,3))continue;
+   const group=new THREE.Group(),wall=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:palette[Math.floor(rnd()*palette.length)]}));wall.position.y=h/2;wall.castShadow=true;wall.receiveShadow=true;group.add(wall);
+   const roof=new THREE.Mesh(new THREE.BoxGeometry(w+.55,.42,d+.55),new THREE.MeshLambertMaterial({color:roofs[Math.floor(rnd()*roofs.length)]}));roof.position.y=h+.18;roof.castShadow=true;group.add(roof);
+   const glassMat=new THREE.MeshLambertMaterial({color:0x477b88,emissive:0x101b20});for(const sx of [-1,1]){const win=new THREE.Mesh(new THREE.BoxGeometry(1.15,1.05,.08),glassMat);win.position.set(sx*w*.25,Math.min(h-1.2,2.6),d/2+.045);group.add(win);}
+   const door=new THREE.Mesh(new THREE.BoxGeometry(1.15,2.25,.09),new THREE.MeshLambertMaterial({color:0x3c514a}));door.position.set(0,1.12,d/2+.055);group.add(door);
+   group.position.set(x,terrainHeight(x,z),z);group.rotation.y=Math.atan2(-nx*side,-nz*side);scene.add(group);registerDistanceManagedBuilding(group);addObstacle(x,z,w,d,h+.5);allBuildings.push({x,z,w,d,h:h+.5,type:'mapped-infill',name:''});made++;
+  }
+ }
+ console.info('Habitat de complément aligné sur les rues OSM :',made,'bâtiments');
+}
+function buildMappedStreetTrees(){
+ if(!scene||!trafficRoadSegments.length)return;const max=mobilePerformanceMode?70:190,roads=trafficRoadSegments.filter(r=>['primary','secondary','tertiary','residential','living_street'].includes(r.type)&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>40);
+ let seed=91377;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};for(let i=roads.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[roads[i],roads[j]]=[roads[j],roads[i]];}
+ let planted=0;for(const r of roads){if(planted>=max)break;const dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,len=Math.hypot(dx,dz)||1,nx=-dz/len,nz=dx/len,t=.25+rnd()*.5,side=rnd()<.5?1:-1,offset=(r.width||5)/2+4.1,x=r.a.x+dx*t+nx*offset*side,z=r.a.z+dz*t+nz*offset*side;if(overlapsExisting(x,z,2.8,2.8,3))continue;createTree(x,z);planted++;}
+ console.info('Arbres de rue alignés sur le réseau OSM :',planted);
 }
 
 function createOSMStoreEntrance(pts,tags,height,color){
@@ -2241,7 +2300,7 @@ function trafficNodeKey(p){return Math.round(p.x*2)/2+':'+Math.round(p.z*2)/2;}
 function buildTrafficGraph(){
   trafficGraph=new Map();
   // Les véhicules utilisent les mêmes segments OSM que la carte du jeu.
-  const source=osmRoadSegments;
+  const source=trafficRoadSegments.length?trafficRoadSegments:osmRoadSegments;
   source.forEach(seg=>{
     if(!['motorway','motorway_link','trunk','trunk_link','primary','primary_link','secondary','secondary_link','tertiary','tertiary_link','residential','unclassified','living_street','service','busway'].includes(seg.type))return;
     if(Math.hypot(seg.b.x-seg.a.x,seg.b.z-seg.a.z)<.35)return;
@@ -2271,10 +2330,18 @@ function buildTrafficRoute(firstSeg,firstForward,maxSegments){
 function createAbidjanTraffic(count){
   if(!osmRoadSegments.length)return;
   if(!trafficGraph.size)buildTrafficGraph();
-  const candidates=osmRoadSegments.filter(r=>trafficGraph.get(trafficNodeKey(r.a))&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>12&&r.width>=5);
+  const source=trafficRoadSegments.length?trafficRoadSegments:osmRoadSegments;
+  const px=player?player.position.x:0,pz=player?player.position.z:0;
+  const eligible=source.filter(r=>trafficGraph.get(trafficNodeKey(r.a))&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>12&&r.width>=5);
+  const within=radius=>eligible.filter(r=>{const x=(r.a.x+r.b.x)*.5-px,z=(r.a.z+r.b.z)*.5-pz;return x*x+z*z<=radius*radius;});
+  let candidates=within(2800);if(candidates.length<24)candidates=within(6000);
+  const weight=r=>['primary','trunk','motorway'].includes(r.type)?3.2:r.type==='secondary'?2.4:r.type==='tertiary'?1.8:['residential','living_street'].includes(r.type)?1.25:.75;
+  const totalWeight=candidates.reduce((n,r)=>n+weight(r),0);
   for(let i=0;i<count;i++){
     if(!candidates.length)break;
-    const r=candidates[Math.floor(Math.random()*candidates.length)],forward=Math.random()<.5,t=Math.random();
+    let pick=Math.random()*totalWeight,r=candidates[candidates.length-1];
+    for(const candidate of candidates){pick-=weight(candidate);if(pick<=0){r=candidate;break;}}
+    const forward=Math.random()<.5,t=Math.random();
     const route=buildTrafficRoute(r,forward,36);if(!route.length)continue;
     const first=route[0],len=Math.hypot(first.b.x-first.a.x,first.b.z-first.a.z)||1;
     const progress=(forward?t:1-t)*len;
@@ -4243,7 +4310,7 @@ function makeCourseGoTaxi(){
 function renderCourseGoApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
  if(activeCourseGoRide){const r=activeCourseGoRide;const eta=Math.max(0,Math.ceil(r.etaSeconds||0));const etaLabel=r.phase==='approach'?('Arrivée estimée : <b>'+eta+' s</b>'):(r.phase==='pickup'?'Le véhicule est là':('Trajet : '+Math.round((r.progress||0)*100)+' %'));content.innerHTML='<button id="phoneBack">← Applications</button><h3>🚖 CourseGo</h3><div style="padding:12px;border-radius:12px;background:#ffffff12"><b>'+(r.phase==='approach'?'Chauffeur en approche':r.phase==='pickup'?'Chauffeur arrivé · F pour monter':r.phase==='riding'?'Trajet en cours':'Course terminée')+'</b><p style="font-size:12px;color:#d7e3ea">'+escapeHTML(r.destination.nom)+'</p><p style="font-size:18px;color:#ffe0a0;margin:8px 0">'+etaLabel+'</p><p>Prix estimé : '+r.fare.toLocaleString('fr-FR')+' FCFA</p><p id="yangoRideStatus">'+(r.phase==='approach'?'Le chauffeur rejoint le point de prise en charge. Suis le compte à rebours.':r.phase==='pickup'?'Le taxi est arrêté. Approche-toi et appuie sur F pour monter.':'Tu es à bord : la caméra suit le véhicule. '+(r.routeMapped?'Itinéraire routier cartographié.':'Trajet de secours.'))+'</p></div><button id="yangoCancel">Annuler la course</button>';document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};document.getElementById('yangoCancel').onclick=cancelCourseGoRide;return;}
- const pickup=currentInterior&&lastExteriorPosition?lastExteriorPosition:(player?player.position:{x:0,z:0});const px=pickup.x,pz=pickup.z;
+ const pickup=currentInterior&&lastExteriorPosition?lastExteriorPosition:(player?getPlayerMapPosition():{x:0,z:0});const px=pickup.x,pz=pickup.z;
  const candidates=poi.filter(p=>p.nom&&p.nom.length>2&&Math.hypot(p.x-px,p.z-pz)>25&&Math.hypot(p.x-px,p.z-pz)<Math.min(CITY_SIZE*.72,12000)).sort((a,b)=>Math.hypot(a.x-px,a.z-pz)-Math.hypot(b.x-px,b.z-pz)).slice(0,30);
  const options=candidates.map((p,i)=>{const d=Math.hypot(p.x-px,p.z-pz),fare=Math.max(700,Math.round((d/1000*650+500)/100)*100);return '<option value="'+i+'">'+escapeHTML(p.nom)+' · '+Math.round(d)+' m · '+fare.toLocaleString('fr-FR')+' F</option>';}).join('');
  content.innerHTML='<button id="phoneBack">← Applications</button><h3>🚖 CourseGo</h3><p style="font-size:12px;color:#c6d8e5">Choisis une destination cartographiée autour de toi. Le tarif est une estimation de la simulation, pas un tarif réel CourseGo.</p><label for="yangoDestination">Où vas-tu ?</label><select id="yangoDestination" style="width:100%;padding:10px;margin:8px 0;background:#183447;color:white;border-radius:8px">'+(options||'<option value="">Aucun lieu proche</option>')+'</select><div id="yangoQuote" style="padding:10px;background:#ffffff10;border-radius:9px;font-size:12px">Le prix et la distance estimés s’afficheront ici.</div><button id="yangoRequest" '+(!candidates.length?'disabled':'')+'>Commander un chauffeur</button><p id="yangoStatus" style="font-size:12px;color:#ffe0a0"></p>';
@@ -4968,22 +5035,17 @@ function updateTrafficLights(delta){
   });
 }
 function buildUrbanTrafficSignals(){
-  if(scene.userData.urbanSignalsBuilt)return;scene.userData.urbanSignalsBuilt=true;
-  const origin=geoToWorld(5.323,-4.02),metal=new THREE.MeshLambertMaterial({color:0x30383c}),black=new THREE.MeshLambertMaterial({color:0x171b1d});
-  for(const [ox,oz] of [[-255,-245],[0,-245],[255,-245],[-255,0],[0,0],[255,0],[-255,245],[0,245],[255,245]]){
-    for(const side of [-1,1]){
-      const x=origin.x+ox+side*11,z=origin.z+oz+side*10,y=terrainHeight(x,z),group=ox+','+oz,axis=side>0?'x':'z';
-      const pole=new THREE.Mesh(new THREE.CylinderGeometry(.09,.13,4.8,7),metal);pole.position.set(x,y+2.4,z);scene.add(pole);
-      const head=new THREE.Mesh(new THREE.BoxGeometry(.48,1.22,.38),black);head.position.set(x,y+4.75,z);scene.add(head);
-      const bulbs=[];for(let i=0;i<3;i++){const bulb=new THREE.Mesh(new THREE.SphereGeometry(.13,8,7),new THREE.MeshBasicMaterial({color:0x282828}));bulb.position.set(x,y+5.16-i*.39,z+.205);scene.add(bulb);bulbs.push(bulb);}trafficLights.push({bulbs,timer:0,phase:axis==='x'?0:2,x,z,group,axis,intersectionX:origin.x+ox,intersectionZ:origin.z+oz});
-    }
-    // Passage piéton : bandes blanches au bord du carrefour.
-    for(let i=-4;i<=4;i++){
-      const stripe=new THREE.Mesh(new THREE.BoxGeometry(.72,.035,5.8),new THREE.MeshBasicMaterial({color:0xece9df}));
-      stripe.position.set(origin.x+ox+i*1.35,terrainHeight(origin.x+ox+i*1.35,origin.z+oz-14)+.12,origin.z+oz-14);scene.add(stripe);
-    }
-  }
+ if(scene.userData.urbanSignalsBuilt||!trafficGraph.size)return;scene.userData.urbanSignalsBuilt=true;const junctions=[];
+ for(const [key,edges] of trafficGraph.entries()){if(!edges||edges.length<3)continue;const [x,z]=key.split(':').map(Number),major=edges.filter(e=>['primary','secondary','tertiary','trunk'].includes(e.seg.type));if(major.length)junctions.push({x,z,score:edges.reduce((n,e)=>n+(e.seg.width||4),0),major});}
+ junctions.sort((a,b)=>{const ap=player?Math.hypot(a.x-player.position.x,a.z-player.position.z):0,bp=player?Math.hypot(b.x-player.position.x,b.z-player.position.z):0;return (b.score-Math.min(12,bp/1200))-(a.score-Math.min(12,ap/1200));});
+ const max=mobilePerformanceMode?10:30,metal=new THREE.MeshLambertMaterial({color:0x30383c}),black=new THREE.MeshLambertMaterial({color:0x171b1d});let built=0;
+ for(const j of junctions){if(built>=max)break;const main=j.major.slice().sort((a,b)=>(b.seg.width||0)-(a.seg.width||0))[0].seg,dx=main.b.x-main.a.x,dz=main.b.z-main.a.z,len=Math.hypot(dx,dz)||1,axis=Math.abs(dx)>=Math.abs(dz)?'x':'z',ux=dx/len,uz=dz/len,group='osm-junction-'+Math.round(j.x)+'-'+Math.round(j.z);
+  for(const side of [-1,1]){const x=j.x-ux*side*8,z=j.z-uz*side*8,y=terrainHeight(x,z),pole=new THREE.Mesh(new THREE.CylinderGeometry(.075,.11,4.8,7),metal);pole.position.set(x,y+2.4,z);scene.add(pole);const head=new THREE.Mesh(new THREE.BoxGeometry(.48,1.22,.38),black);head.position.set(x,y+4.65,z);scene.add(head);const bulbs=[];for(let i=0;i<3;i++){const bulb=new THREE.Mesh(new THREE.SphereGeometry(.13,8,7),new THREE.MeshBasicMaterial({color:0x282828}));bulb.position.set(x,y+5.05-i*.38,z+.205);scene.add(bulb);bulbs.push(bulb);}trafficLights.push({bulbs,timer:0,phase:0,x,z,group,axis,intersectionX:j.x,intersectionZ:j.z});}
+  for(let i=-3;i<=3;i++){const stripe=new THREE.Mesh(new THREE.BoxGeometry(axis==='x'?.62:4.8,.035,axis==='x'?4.8:.62),new THREE.MeshBasicMaterial({color:0xf1eee4}));stripe.position.set(j.x+(axis==='x'?i*.92:0),terrainHeight(j.x,j.z)+.13,j.z+(axis==='z'?i*.92:0));scene.add(stripe);}built++;
+ }
+ console.info('Carrefours OSM équipés de feux et passages piétons :',built);
 }
+
 
 // ============================================================
 // CARTES
@@ -5020,7 +5082,7 @@ function refreshGameMapRoads(){if(!leafletRoadLayer||typeof L==='undefined'||!os
 let mapView={zoom:1,centerX:0,centerZ:0,dragging:false,lastX:0,lastY:0,follow:true,initialized:false};
 
 function openBigMap(){
-  if(mapOpen||currentInterior)return;
+  if(mapOpen)return;
   mapOpen=true;mapView.follow=true;
   document.exitPointerLock&&document.exitPointerLock();
   document.getElementById('bigMap').style.display='block';
@@ -6098,6 +6160,7 @@ v15SettingsPatch();
 
 /* ================= V1.16 : réseau routier, position embarquée et densité urbaine ================= */
 function getPlayerMapPosition(){
+  if(currentInterior&&lastExteriorPosition)return {x:lastExteriorPosition.x,z:lastExteriorPosition.z};
   if(!player)return {x:0,z:0};
   // Quand le joueur est enfant du véhicule, player.position est locale (0,0,0).
   // La carte doit utiliser sa position monde, comme le GPS d'un vrai téléphone.
@@ -6790,6 +6853,19 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   c.insertAdjacentHTML('beforeend','<section class="v19card" id="abjDegreeCard"><h3>🎓 Cycle universitaire · Licence</h3><p>Obtiens une licence universitaire après avoir validé cinq formations différentes, puis rends-toi près d’un campus pour retirer ton diplôme.</p><div class="v19stat">Formations validées : <b>'+Math.min(5,count)+'/5</b> · Frais de délivrance : <b>50 000 FCFA</b></div>'+(has?'<p style="color:#8ce0a4;font-weight:800">✓ Licence universitaire obtenue et enregistrée dans tes diplômes.</p>':'<button id="abjClaimDegree" '+(count<5||!nearby||lifeState.money<50000?'disabled':'')+'>Obtenir ma licence · 50 000 FCFA</button><small style="display:block;color:#c6d8e5;margin-top:7px">'+(count<5?'Valide encore '+(5-count)+' formation(s).':!nearby?'Rends-toi à moins de 300 m d’un établissement universitaire.':lifeState.money<50000?'Solde insuffisant.':'Toutes les conditions sont remplies.')+'</small>')+'</section>');
   const claim=$('abjClaimDegree');if(claim)claim.onclick=()=>{const x=lifeState.education;if(!x||new Set(x.certificates.filter(v=>v!=='licence-universitaire')).size<5||!nearby||lifeState.money<50000)return;lifeState.money-=50000;x.certificates.push('licence-universitaire');x.degree={name:'Licence universitaire',issuedAt:String(lifeState.hour).padStart(2,'0')+':'+String(Math.floor(lifeState.minute)),day:lifeState.housing&&lifeState.housing.gameDay||1};lifeState.bankTransactions=lifeState.bankTransactions||[];lifeState.bankTransactions.push({type:'debit',label:'Délivrance licence universitaire',amount:50000,date:x.degree.issuedAt});lifeState.bankTransactions=lifeState.bankTransactions.slice(-80);saveLifeProgress(false);window.renderEducationApp();if(typeof showMessage==='function')showMessage('🎓 Félicitations ! Ta licence universitaire est enregistrée.');};
  };
+})();
+</script>
+<script>
+(function(){
+ const oldTick=V11tick;let trafficRefresh=0;
+ V11tick=function(dt){oldTick(dt);if(!worldReady||!osmLoaded||!player)return;trafficRefresh+=Math.max(0,Number(dt)||0);if(trafficRefresh<5)return;trafficRefresh=0;
+  const target=mobilePerformanceMode?52:105,near=vehicles.filter(v=>v&&v.userData&&v.userData.type==='osmTraffic'&&Math.hypot(v.position.x-player.position.x,v.position.z-player.position.z)<2200);
+  for(const v of vehicles){if(!v||!v.userData||v.userData.type!=='osmTraffic')continue;v.visible=Math.hypot(v.position.x-player.position.x,v.position.z-player.position.z)<5200;}
+  if(near.length<target-12)createAbidjanTraffic(Math.min(32,target-near.length));
+  const traffic=vehicles.filter(v=>v&&v.userData&&v.userData.type==='osmTraffic');if(traffic.length>420){traffic.sort((a,b)=>Math.hypot(b.position.x-player.position.x,b.position.z-player.position.z)-Math.hypot(a.position.x-player.position.x,a.position.z-player.position.z));for(const v of traffic.slice(0,traffic.length-360)){if(scene)scene.remove(v);const i=vehicles.indexOf(v);if(i>=0)vehicles.splice(i,1);}}
+ };
+ const back=document.getElementById('creatorChoicesBack');if(back)back.addEventListener('click',()=>requestAnimationFrame(()=>updateCreatorPreview()));
+ const cancel=document.getElementById('creatorCancel');if(cancel)cancel.addEventListener('click',stopIdentityPreview);
 })();
 </script>
 </body>
