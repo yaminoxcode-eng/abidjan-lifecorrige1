@@ -5656,7 +5656,7 @@ function v11SelectPlace(pl){
 function v11MakeRoute(pl){
   if(!player)return;
   const __mp=getPlayerMapPosition();let pts=null;try{pts=buildCourseGoRoadPath(__mp.x,__mp.z,pl.x,pl.z);}catch(e){}
-  const road=!!pts;if(!pts)pts=[{x:__mp.x,z:__mp.z},{x:pl.x,z:pl.z}];
+  if(!pts){showMessage('Aucune route praticable ne relie ces deux points pour le moment.');return;}const road=true;
   let len=0;for(let i=1;i<pts.length;i++)len+=Math.hypot(pts[i].x-pts[i-1].x,pts[i].z-pts[i-1].z);
   mapView.route={pts,len,road,dest:pl};
   const card=document.getElementById('mapCard');pl.extra=Math.round(len)+' m · ≈ '+Math.max(1,Math.round(len/83))+' min à pied · '+Math.max(1,Math.round(len/500))+' min en voiture'+(road?'':' (à vol d’oiseau)');
