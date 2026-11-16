@@ -1467,12 +1467,10 @@ function generateCity() {
     startPlayerAtHome();
   }).catch(err => {
     console.warn('Données OSM indisponibles, chargement du quartier de secours', err);
-    document.getElementById('mapStatus').textContent = 'Mode hors ligne : quartier fictif de démonstration';
-    generateFallbackDistrict();
-    buildPlayableUrbanCore();
-    buildPlateauLandmarks();
-    worldReady = true;
-    startPlayerAtHome();
+    document.getElementById('mapStatus').textContent = 'Carte OSM indisponible : circulation désactivée jusqu’au chargement des vraies routes.';
+    // Ne pas créer de rues fictives : aucun véhicule ne roule hors du réseau OSM.
+    osmRoadSegments.length=0;trafficRoadSegments.length=0;trafficGraph.clear();
+    worldReady = true;startPlayerAtHome();
     if(mapOpen) drawBigMap();
   });
 }
@@ -1816,6 +1814,12 @@ function buildOSMRoads(ways, nodes) {
     for(let i=1;i<pts.length;i++){
       const a=pts[i-1],b=pts[i],len=Math.hypot(b.x-a.x,b.z-a.z);if(len<.5)continue;
       addQuad(a,b,width,.13);
+      if(['primary','secondary','tertiary','residential','living_street','unclassified'].includes(tag)){
+        const nx=-(b.z-a.z)/len,nz=(b.x-a.x)/len,side=width/2+1.35;
+        const l1={x:a.x+nx*side,z:a.z+nz*side},l2={x:b.x+nx*side,z:b.z+nz*side};
+        const r1={x:a.x-nx*side,z:a.z-nz*side},r2={x:b.x-nx*side,z:b.z-nz*side};
+        addWalkQuad(l1,l2,1.8,.19);addWalkQuad(r1,r2,1.8,.19);pedestrianNodes.push(l1,l2,r1,r2);
+      }
       osmRoadSegments.push({a,b,width,type:tag,name:w.tags.name||''});
       if(['primary','secondary','tertiary','residential','living_street'].includes(tag)&&(i%3===0||i===pts.length-1)){
         const dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz)||1,nx=-dz/l*(width/2+2.8),nz=dx/l*(width/2+2.8);
@@ -2186,7 +2190,8 @@ function makeStreetLabel(x,z,label){const c=document.createElement('canvas');c.w
 function trafficNodeKey(p){return Math.round(p.x*2)/2+':'+Math.round(p.z*2)/2;}
 function buildTrafficGraph(){
   trafficGraph=new Map();
-  const source=trafficRoadSegments.length?trafficRoadSegments:osmRoadSegments;
+  // Les véhicules utilisent les mêmes segments OSM que la carte du jeu.
+  const source=osmRoadSegments;
   source.forEach(seg=>{
     if(!['motorway','motorway_link','trunk','trunk_link','primary','primary_link','secondary','secondary_link','tertiary','tertiary_link','residential','unclassified','living_street','service','busway'].includes(seg.type))return;
     if(Math.hypot(seg.b.x-seg.a.x,seg.b.z-seg.a.z)<.35)return;
@@ -2216,7 +2221,7 @@ function buildTrafficRoute(firstSeg,firstForward,maxSegments){
 function createAbidjanTraffic(count){
   if(!osmRoadSegments.length)return;
   if(!trafficGraph.size)buildTrafficGraph();
-  const candidates=(trafficRoadSegments.length?trafficRoadSegments:osmRoadSegments).filter(r=>trafficGraph.get(trafficNodeKey(r.a))&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>12&&r.width>=5);
+  const candidates=osmRoadSegments.filter(r=>trafficGraph.get(trafficNodeKey(r.a))&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>12&&r.width>=5);
   for(let i=0;i<count;i++){
     if(!candidates.length)break;
     const r=candidates[Math.floor(Math.random()*candidates.length)],forward=Math.random()<.5,t=Math.random();
@@ -5144,10 +5149,7 @@ function drawBigMap(){
       else if(t==='commerce'||t==='shop')col='#e67e22';
       ctx.fillStyle=col;
       ctx.beginPath();ctx.arc(toX(p.x),toY(p.z),Math.max(2.2,2.8*Math.min(2,win.z*0.45)),0,Math.PI*2);ctx.fill();
-      if(win.z>3.2&&p.nom){
-        ctx.fillStyle='#1a2a22';ctx.font='10px Arial';ctx.textAlign='left';
-        ctx.fillText(String(p.nom).slice(0,22),toX(p.x)+5,toY(p.z)+3);
-      }
+      /* Noms des POI masqués sur le plan : affichés dans la fiche après clic. */
     });
   }
 
@@ -5684,10 +5686,11 @@ function v11MapUI(){
     const real=document.getElementById('leafletMap'),canvas=document.getElementById('bigMapCanvas');
     if(!real||!canvas)return;
     if(!mapView.realTiles){
+      real.style.display='block';real.style.position='absolute';real.style.zIndex='8';real.style.background='#e5e1d7';
       const ok=initLeafletMap();
-      if(!ok){showMessage('La carte réelle est indisponible. Vérifie la connexion Internet puis réessaie.');return;}
-      mapView.realTiles=true;real.style.display='block';canvas.style.display='none';realBtn.classList.add('on');
-      if(leafletMap){setTimeout(()=>leafletMap.invalidateSize(),100);abjRefreshLeafletDynamicLayers(true);}
+      if(!ok){real.style.display='none';showMessage('La carte réelle est indisponible. Vérifie la connexion Internet puis réessaie.');return;}
+      mapView.realTiles=true;canvas.style.display='none';realBtn.classList.add('on');
+      if(leafletMap){setTimeout(()=>{leafletMap.invalidateSize({pan:false});leafletMap.setView(leafletMap.getCenter(),leafletMap.getZoom(),{animate:false});abjRefreshLeafletDynamicLayers(true);},350);}
     }else{mapView.realTiles=false;real.style.display='none';canvas.style.display='block';realBtn.classList.remove('on');drawBigMap();}
   };
   document.getElementById('mmPlan').onclick=()=>{setMode('plan');if(mapView.realTiles){mapView.realTiles=false;document.getElementById('leafletMap').style.display='none';document.getElementById('bigMapCanvas').style.display='block';realBtn&&realBtn.classList.remove('on');}};
@@ -6398,7 +6401,8 @@ function v16ValidateTrafficRoutes(){
  function addInstalledIcon(app){const host=document.getElementById('phoneApps');if(!host||host.querySelector('[data-app="'+app.id+'"]'))return;let grid=host.querySelector('.phoneAppsPage:last-child');if(!grid||grid.querySelectorAll('.phoneApp').length>=9){grid=document.createElement('div');grid.className='phoneAppsPage';host.appendChild(grid);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=app.id;b.innerHTML='<span>'+app.emoji+'</span>'+app.name;b.onclick=()=>openPhoneApp(app.id);grid.appendChild(b);}
  function renderAppStore(){const c=$('phoneAppContent');if(!c)return;c.innerHTML='<button id="phoneBack">← Applications</button><h3>🎮 App Jeux — Boutique</h3><p style="font-size:12px;color:#cbd9e4">Télécharge les applications disponibles et ajoute-les à ton téléphone.</p>'+appCatalog.map(a=>'<article class="v19card"><b>'+a.emoji+' '+a.name+'</b><div>'+a.desc+'</div><button data-install="'+a.id+'">'+(state().installedApps.includes(a.id)?'Installée':'Télécharger')+'</button></article>').join('');c.querySelector('#phoneBack').onclick=()=>{c.style.display='none';showPhoneHome();};c.querySelectorAll('[data-install]').forEach(b=>b.onclick=()=>{const a=appCatalog.find(x=>x.id===b.dataset.install);if(!a)return;const s=state();if(!s.installedApps.includes(a.id))s.installedApps.push(a.id);addInstalledIcon(a);saveLifeProgress(false);b.textContent='Installée';showMessage(a.name+' a été téléchargée sur ton téléphone.');});}
  const oldGames=renderPhoneGamesApp;renderPhoneGamesApp=function(){renderAppStore();};
- const oldOpen=window.openPhoneApp;window.openPhoneApp=function(app){if(app==='projets'){openPhone();const c=$('phoneAppContent'),h=$('phoneHomeShell');if(h)h.style.display='none';if(c)c.style.display='block';renderProjectsV19('home');return;}if(app==='appstore'||app==='jeux'){openPhone();const h=$('phoneHomeShell');if(h)h.style.display='none';const c=$('phoneAppContent');if(c)c.style.display='block';renderAppStore();return;}if(app==='monsuccess'||app==='immoabj'||app==='proemploi'){if(!state().installedApps.includes(app)){showMessage('Télécharge cette application dans App Jeux.');return;}const h=$('phoneHomeShell'),c=$('phoneAppContent');if(h)h.style.display='none';if(c){c.style.display='block';}if(app==='monsuccess')renderSuccessApp();else if(app==='immoabj')renderProjectsV19('home');else renderEmploymentV19();return;}return oldOpen.call(this,app);};
+ function renderUnifiedPhoneApp(app){const c=$('phoneAppContent');if(!c)return;const groups={mobilite:[['🚕','CourseGo / Yango','yango'],['🚌','Transports publics','transport']],achats:[['🏪','Boutiques locales','boutique'],['🛒','Jumia','jumia'],['🛵','Livraisons Glovo','glovo']],finances:[['🏦','Banque','banque'],['💸','Wave','wave']],communication:[['👥','Contacts','contacts'],['✉️','Messages','messages'],['🗣️','Forum','forum']],medias:[['📷','Appareil photo','camera'],['🖼️','Galerie','gallery'],['▶️','YouTube','youtube'],['🎵','TikTok','tiktok']],viepratique:[['🏛️','Mairie','mairie'],['🏥','Santé','sante'],['🎓','Études','etudes'],['🏠','Logement','logement']]};const names={mobilite:'Mobilité',achats:'Achats & livraisons',finances:'Finances',communication:'Communication',medias:'Médias',viepratique:'Vie pratique'};c.innerHTML='<button id="phoneBack">← Applications</button><h3>'+names[app]+'</h3><p>Les services de même fonction sont regroupés ici.</p>'+groups[app].map(x=>'<button data-open-service="'+x[2]+'" style="display:block;width:100%;text-align:left;padding:12px;margin:7px 0">'+x[0]+' '+x[1]+'</button>').join('');c.querySelector('#phoneBack').onclick=()=>{c.style.display='none';showPhoneHome();};c.querySelectorAll('[data-open-service]').forEach(b=>b.onclick=()=>window.__ABJ_ORIGINAL_OPEN_PHONE_APP(b.dataset.openService));}
+const oldOpen=window.openPhoneApp;window.openPhoneApp=function(app){if(['mobilite','achats','finances','communication','medias','viepratique'].includes(app)){const h=$('phoneHomeShell'),c=$('phoneAppContent');if(h)h.style.display='none';if(c)c.style.display='block';renderUnifiedPhoneApp(app);return;}if(app==='projets'){openPhone();const c=$('phoneAppContent'),h=$('phoneHomeShell');if(h)h.style.display='none';if(c)c.style.display='block';renderProjectsV19('home');return;}if(app==='appstore'||app==='jeux'){openPhone();const h=$('phoneHomeShell');if(h)h.style.display='none';const c=$('phoneAppContent');if(c)c.style.display='block';renderAppStore();return;}if(app==='monsuccess'||app==='immoabj'||app==='proemploi'){if(!state().installedApps.includes(app)){showMessage('Télécharge cette application dans App Jeux.');return;}const h=$('phoneHomeShell'),c=$('phoneAppContent');if(h)h.style.display='none';if(c){c.style.display='block';}if(app==='monsuccess')renderSuccessApp();else if(app==='immoabj')renderProjectsV19('home');else renderEmploymentV19();return;}return oldOpen.call(this,app);};
  function renderSuccessApp(){const c=$('phoneAppContent');if(!c)return;const s=state();const list=s.companies.slice().sort((a,b)=>(b.influence||0)-(a.influence||0));const npc=[{name:'Aminata Koné',company:'AK Distribution',influence:94},{name:'Yao Kouassi',company:'Kouassi Transport',influence:89},{name:'Mariam Traoré',company:'MT Services',influence:82},{name:'Ibrahim Diallo',company:'ID Digital',influence:78}];const rows=[...npc,...list.map(x=>({name:x.owner,company:x.name,influence:x.influence||10}))].sort((a,b)=>b.influence-a.influence).map((x,i)=>'<article class="v19card"><b>#'+(i+1)+' '+escapeHTML(x.name)+'</b><div>'+escapeHTML(x.company)+'</div><small>Influence : '+x.influence+'/100</small></article>').join('');c.innerHTML='<button id="phoneBack">← Applications</button><h3>🏆 Mon Success — Réseau des entrepreneurs</h3><p>Classement fictif des entrepreneurs, dirigeants et personnalités influentes du monde d’Abidjan Life. Ton entreprise rejoint cette communauté après son immatriculation.</p>'+rows;c.querySelector('#phoneBack').onclick=()=>{c.style.display='none';showPhoneHome();};}
  // Emploi : horaires, rappels, lieux de travail, tâches progressives et certificats.
  const jobExtras=[
@@ -6552,7 +6556,7 @@ function v16ValidateTrafficRoutes(){
  // Le menu F est également proposé dans les instructions PC.
  const info=$('info');if(info&&!info.textContent.includes('F parler'))info.textContent+=' · F parler / arrêter un PNJ · E interagir';
  // Patrouilles de police visibles la nuit et repérables sur la carte.
- let policeBuilt=false;function buildNightPolice(){if(policeBuilt||!trafficGraph||!trafficGraph.size)return;policeBuilt=true;const candidates=[...trafficRoadSegments].filter(r=>r.width>=6&&r.type!=='service'&&r.type!=='track');const picks=[0.12,0.38,0.66,0.88];picks.forEach((pct,i)=>{const r=candidates[Math.floor(candidates.length*pct)];if(!r)return;const route=buildTrafficRoute(r,true,36);if(!route.length)return;const car=createVehicleMesh('voiture');car.traverse(o=>{if(o.isMesh&&o.material&&o.material.color){o.material=o.material.clone();o.material.color.set(i%2?0xf0f2f5:0x173d74);}});const bar=new THREE.Mesh(new THREE.BoxGeometry(1.1,.18,.32),new THREE.MeshBasicMaterial({color:0x168cff}));bar.position.set(0,1.05,0);car.add(bar);car.userData={type:'osmTraffic',vType:'police',route,routeIndex:0,progress:Math.random()*10,laneOffset:1.1,speed:8,wreck:false,transit:false,policePatrol:true};updateTrafficVehiclePose(car);car.visible=lifeState.hour>=19||lifeState.hour<6;scene.add(car);vehicles.push(car);addPOI(r.a.x,r.a.z,'police','Patrouille de police',{nightOnly:true,patrol:i});});}
+ let policeBuilt=false;function buildNightPolice(){if(policeBuilt||!trafficGraph||!trafficGraph.size)return;policeBuilt=true;const candidates=[...osmRoadSegments].filter(r=>r.width>=6&&r.type!=='service'&&r.type!=='track');const picks=[0.12,0.38,0.66,0.88];picks.forEach((pct,i)=>{const r=candidates[Math.floor(candidates.length*pct)];if(!r)return;const route=buildTrafficRoute(r,true,36);if(!route.length)return;const car=createVehicleMesh('voiture');car.traverse(o=>{if(o.isMesh&&o.material&&o.material.color){o.material=o.material.clone();o.material.color.set(i%2?0xf0f2f5:0x173d74);}});const bar=new THREE.Mesh(new THREE.BoxGeometry(1.1,.18,.32),new THREE.MeshBasicMaterial({color:0x168cff}));bar.position.set(0,1.05,0);car.add(bar);car.userData={type:'osmTraffic',vType:'police',route,routeIndex:0,progress:Math.random()*10,laneOffset:1.1,speed:8,wreck:false,transit:false,policePatrol:true};updateTrafficVehiclePose(car);car.visible=lifeState.hour>=19||lifeState.hour<6;scene.add(car);vehicles.push(car);addPOI(r.a.x,r.a.z,'police','Patrouille de police',{nightOnly:true,patrol:i});});}
  const oldLighting=updateLifeLighting;updateLifeLighting=function(){oldLighting();if(mapOpen)drawBigMap();for(const car of vehicles){if(car.userData&&car.userData.policePatrol)car.visible=lifeState.hour>=19||lifeState.hour<6;}};
  const oldPoliceHome=startPlayerAtHome;startPlayerAtHome=function(){oldPoliceHome();try{buildNightPolice();}catch(e){console.warn('Patrouilles police',e);}};
  // Démarrage de sécurité : anciens personnages sauvegardés ne sont pas forcés de refaire la création.
@@ -6691,5 +6695,5 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
 })();
 </script>
 
-</body>
+<script>(function(){const s=document.createElement('style');s.textContent='#leafletMap{z-index:8!important}#bigMapCanvas{z-index:2}';document.head.appendChild(s);})();</script></body>
 </html>
