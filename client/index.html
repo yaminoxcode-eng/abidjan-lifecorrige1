@@ -361,8 +361,13 @@
   <div id="phoneTop"><span>📱 ABJ CONNECT</span><span id="phoneClock">08:00</span><button id="phoneClose" aria-label="Fermer">×</button></div>
   <div id="phoneScreen"><div id="phoneHomeShell"><h3>Mes applications</h3><div id="phoneAppsViewport"><div id="phoneApps">
     <div class="phoneAppsPage">
-      <button class="phoneApp" data-app="localisation"><span>🗺️</span>Plans</button>
-      <button class="phoneApp" data-app="camera"><span>📷</span>Caméra</button>
+      <button class="phoneApp" data-app="localisation"><span>🗺️</span>Carte</button>
+      <button class="phoneApp" data-app="yango"><span>🚖</span>Yango</button>
+      <button class="phoneApp" data-app="jeux"><span>🎮</span>Apps Jeux</button>
+    </div>
+    <div class="phoneAppsPage" style="display:none"></div>
+    <div class="phoneAppsPage" style="display:none"></div>
+    <template id="phoneAppsOriginalTemplate">
       <button class="phoneApp" data-app="gallery"><span>🖼️</span>Galerie</button>
       <button class="phoneApp" data-app="messages"><span>💬</span>Messages</button>
       <button class="phoneApp" data-app="contacts"><span>👥</span>Contacts</button>
@@ -4752,14 +4757,51 @@ function renderEmploymentApp(){
 
 function renderPhoneGamesApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
- const games=[{name:'Course de gbaka',emoji:'🚐',desc:'Petit défi de réflexes dans les rues d’Abidjan.',status:'Bientôt disponible'},{name:'Awalé',emoji:'🟤',desc:'Jeu de plateau traditionnel.',status:'Bientôt disponible'},{name:'Penalty',emoji:'⚽',desc:'Mini séance de tirs au but.',status:'Bientôt disponible'},{name:'Puzzle Abidjan',emoji:'🧩',desc:'Reconstitue des lieux de la ville.',status:'Bientôt disponible'}];
- let index=0;
- content.innerHTML='<button id="phoneBack">← Applications</button><h3>🎮 Mini-jeux</h3><p style="font-size:12px;color:#c6d8e5">Une petite collection de jeux à installer dans ton téléphone. Fais glisser ou utilise les flèches pour parcourir le catalogue.</p><div id="gameShelf" style="overflow:hidden;border-radius:15px;background:#ffffff10;padding:16px;text-align:center;touch-action:pan-y"><div id="gameEmoji" style="font-size:58px">🚐</div><b id="gameName"></b><p id="gameDesc" style="font-size:12px;min-height:34px"></p><small id="gameStatus" style="color:#ffe0a0"></small></div><div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0"><button id="gamePrev">◀</button><span id="gameCount" style="font-size:11px"></span><button id="gameNext">▶</button></div><button id="gameInstall" style="width:100%">Ajouter à mon téléphone</button><div id="gameInstallStatus" style="font-size:11px;color:#9ee6b4;margin-top:8px"></div>';
- const draw=()=>{const g=games[index];document.getElementById('gameEmoji').textContent=g.emoji;document.getElementById('gameName').textContent=g.name;document.getElementById('gameDesc').textContent=g.desc;document.getElementById('gameStatus').textContent=g.status;document.getElementById('gameCount').textContent=(index+1)+' / '+games.length;document.getElementById('gameInstallStatus').textContent='';};
+ const catalog=[
+  ['camera','📷','Caméra','Prendre des photos et enregistrer des vidéos.'],
+  ['gallery','🖼️','Galerie','Retrouver les photos prises dans le jeu.'],
+  ['messages','💬','Messages','Échanger avec les autres habitants.'],
+  ['contacts','👥','Contacts','Consulter les contacts du téléphone.'],
+  ['wave','💚','WaveABJ','Gérer les paiements et transferts du jeu.'],
+  ['transport','🚌','Mobili','Consulter les transports de la ville.'],
+  ['boutique','🛍️','Boutique','Acheter des produits et services.'],
+  ['jumia','🛋️','CasaMart','Découvrir les articles pour le logement.'],
+  ['glovo','🛵','LivraGo','Commander des repas et livraisons.'],
+  ['banque','🏦','Banque','Consulter ton compte bancaire.'],
+  ['logement','🏠','Logement','Gérer ton logement.'],
+  ['travail','💼','Emploi','Trouver un travail et suivre tes activités.'],
+  ['etudes','🎓','Études','Suivre des formations.'],
+  ['sante','🏥','Santé','Accéder aux services de santé.'],
+  ['mairie','🏛️','Mairie','Services administratifs.'],
+  ['inventaire','🎒','Mon sac','Consulter tes objets.'],
+  ['agenda','📅','Agenda','Suivre tes rendez-vous.'],
+  ['google','🔎','ChercheABJ','Rechercher dans la ville.'],
+  ['youtube','▶️','Diffuz','Regarder les contenus du jeu.'],
+  ['tiktok','🎵','Clipz','Découvrir les vidéos.'],
+  ['cheats','⌨️','Codes','Saisir les codes disponibles.'],
+  ['parametres','⚙️','Réglages','Gérer ton compte et tes préférences.'],
+  ['offrescreateur','✨','Offres Creator','Consulter les offres créateur.'],
+  ['projets','🏢','Projets','Consulter tes projets.']
+ ];
+ let installed={};try{installed=JSON.parse(safeGet('abj-installed-apps:'+normalizeIvorianMobile(activeGameAccount))||'{}')||{};}catch(e){}
+ content.style.display='block';content.innerHTML='<button id="phoneBack">← Accueil du téléphone</button><h3>🎮 Apps Jeux</h3><p style="font-size:12px;color:#c6d8e5">Télécharge ici les applications du téléphone. Les applications installées restent dans cette bibliothèque et ne chargent pas l’écran d’accueil.</p><div id="abjInstalledApps" style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"></div><div id="abjAppCatalog" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"></div>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
- document.getElementById('gamePrev').onclick=()=>{index=(index+games.length-1)%games.length;draw();};document.getElementById('gameNext').onclick=()=>{index=(index+1)%games.length;draw();};
- document.getElementById('gameInstall').onclick=()=>{document.getElementById('gameInstallStatus').textContent='Ajouté à ta bibliothèque (aperçu). Le mini-jeu sera activé dans une prochaine mise à jour.';};
- let touchX=0;const shelf=document.getElementById('gameShelf');shelf.addEventListener('touchstart',e=>{touchX=e.touches[0].clientX;},{passive:true});shelf.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-touchX;if(Math.abs(dx)>35){index=(index+(dx<0?1:games.length-1))%games.length;draw();}},{passive:true});draw();
+ const installedBox=document.getElementById('abjInstalledApps'),grid=document.getElementById('abjAppCatalog');
+ const save=()=>safeSet('abj-installed-apps:'+normalizeIvorianMobile(activeGameAccount),JSON.stringify(installed));
+ const draw=()=>{
+  installedBox.innerHTML='<b style="width:100%;font-size:12px">Mes applications installées ('+catalog.filter(a=>installed[a[0]]).length+')</b>';
+  catalog.filter(a=>installed[a[0]]).forEach(a=>{const b=document.createElement('button');b.textContent=a[1]+' '+a[2]+' · Ouvrir';b.onclick=()=>{content.style.display='none';openInstalledPhoneApp(a[0]);};installedBox.appendChild(b);});
+  grid.innerHTML='';
+  catalog.forEach(a=>{const card=document.createElement('div');card.style.cssText='padding:10px;border:1px solid #ffffff22;border-radius:12px;background:#ffffff0c;min-width:0';
+   card.innerHTML='<div style="font-size:25px">'+a[1]+'</div><b style="font-size:12px">'+a[2]+'</b><p style="font-size:10px;min-height:30px;color:#c6d8e5">'+a[3]+'</p>';
+   const b=document.createElement('button');b.style.width='100%';b.textContent=installed[a[0]]?'Désinstaller':'Télécharger';b.onclick=()=>{if(installed[a[0]])delete installed[a[0]];else installed[a[0]]=true;save();draw();};card.appendChild(b);grid.appendChild(card);
+  });
+ };
+ draw();
+}
+function openInstalledPhoneApp(app){
+ const original=window.__ABJ_ORIGINAL_OPEN_PHONE_APP;
+ if(original)original(app);
 }
 function renderAccountSettingsApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
@@ -5811,7 +5853,7 @@ function v12RollWeather(){
 function v12Climate(dt){
   if(!worldReady||!player)return;
   v12InitUI();V12.weatherTimer-=dt;
-  if(V12.weatherTimer<=0){v12RollWeather();V12.weatherTimer=170+Math.random()*210;}
+  if(V12.weatherTimer<=0){if(!window.ABJ_GAME_SOCKET?.connected||window.ABJ_WORLD_HOST){v12RollWeather();V12.weatherTimer=170+Math.random()*210;}else V12.weatherTimer=3;}
   const outside=!currentInterior,day=lifeState.hour>=9&&lifeState.hour<17,hot=outside&&day&&(V12.weather==='chaud'||V12.weather==='tres-chaud');
   if(hot)V12.exposure+=dt*(V12.weather==='tres-chaud'?1.35:.65);else V12.exposure=Math.max(0,V12.exposure-dt*.8);
   if(outside&&V12.weather==='pluie')V12.rainExposure+=dt;else V12.rainExposure=Math.max(0,V12.rainExposure-dt*1.2);
@@ -6507,22 +6549,30 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
  const token=()=>activeGameAccount?safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount)):null;
  let socket=null,lastSend=0,remote=new Map();
  function makeRemoteAvatar(data){
-  if(typeof scene==='undefined'||!scene||!window.THREE)return null;
-  const group=new THREE.Group(),p=data.profile||{};
-  const skin=new THREE.MeshLambertMaterial({color:Number(p.skin)||0x7a4a24});
-  const shirt=new THREE.MeshLambertMaterial({color:Number(p.shirt)||0xe74c3c});
-  const body=new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,1.05,8),shirt);body.position.y=.85;group.add(body);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(.27,10,8),skin);head.position.y=1.55;group.add(head);
-  group.userData.onlinePlayerId=data.id;group.userData.isOnlinePlayer=true;
+  if(typeof scene==='undefined'||!scene||!window.THREE||typeof createCharacter!=='function')return null;
+  const p=data.profile||{};
+  const group=createCharacter({gender:p.gender==='femme'?'femme':'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50});
+  group.userData.onlinePlayerId=data.id;group.userData.isOnlinePlayer=true;group.userData.displayName=p.name||'Citoyen';
   scene.add(group);return group;
  }
  function updateRemote(data){
   if(!data||!data.id||!data.position)return;
   let obj=remote.get(data.id);if(!obj){obj=makeRemoteAvatar(data);if(!obj)return;remote.set(data.id,obj);}
-  obj.position.set(Number(data.position.x)||0,0,Number(data.position.z)||0);
+  const x=Number(data.position.x)||0,z=Number(data.position.z)||0;
+  obj.position.set(x,typeof terrainHeight==='function'?terrainHeight(x,z)+.03:0,z);
   if(Number.isFinite(data.position.yaw))obj.rotation.y=data.position.yaw;
+  if(typeof animateCharacter==='function')animateCharacter(obj,.12,!!data.moving);
+  if(data.vehicle&&data.vehicle.kind==='yango'){
+   let car=obj.userData.remoteVehicle;
+   if(!car&&typeof makeCourseGoTaxi==='function'){car=makeCourseGoTaxi();car.userData.remoteVehicle=true;scene.add(car);obj.userData.remoteVehicle=car;}
+   if(car){car.position.set(data.vehicle.x,typeof terrainHeight==='function'?terrainHeight(data.vehicle.x,data.vehicle.z)+.14:0,data.vehicle.z);car.rotation.y=Number(data.vehicle.yaw)||0;car.visible=true;}
+   obj.visible=!data.vehicle.boarded;
+  }else{
+   obj.visible=true;
+   if(obj.userData.remoteVehicle){scene.remove(obj.userData.remoteVehicle);obj.userData.remoteVehicle=null;}
+  }
  }
- function removeRemote(id){const obj=remote.get(id);if(obj&&typeof scene!=='undefined'&&scene)scene.remove(obj);remote.delete(id);}
+ function removeRemote(id){const obj=remote.get(id);if(obj&&typeof scene!=='undefined'&&scene){if(obj.userData.remoteVehicle)scene.remove(obj.userData.remoteVehicle);scene.remove(obj);}remote.delete(id);}
  function connectOnline(){
   const t=token();if(!t||!window.io||socket?.connected)return;
   try{
@@ -6543,6 +6593,9 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
    socket.on('world:players',list=>(list||[]).forEach(updateRemote));
    socket.on('player:joined',updateRemote);socket.on('player:moved',updateRemote);
    socket.on('player:left',removeRemote);
+   socket.on('players:count',v=>updateOnlineCount(v?.count));
+   socket.on('world:host',v=>{window.ABJ_WORLD_HOST=!!v&&v.id===socket.id;});
+   socket.on('world:state',w=>{if(!w||!lifeState)return;lifeState.hour=Number(w.hour)||0;lifeState.minute=Number(w.minute)||0;if(typeof V12!=='undefined'){V12.weather=w.weather||'ensoleille';V12.temperature=Number(w.temperature)||31;V12.weatherTimer=4;const rain=document.getElementById('v12Rain');if(rain)rain.style.display=V12.weather==='pluie'?'block':'none';}if(typeof updateLifeLighting==='function')updateLifeLighting();});
    socket.on('session:replaced',()=>{socket.disconnect();showAccountStatus('Ton compte vient d’être connecté sur un autre appareil.',true);});
    socket.on('update:available',checkUpdate);
    window.ABJ_GAME_SOCKET=socket;
@@ -6568,13 +6621,44 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   const now=Date.now();if(now-lastSend<120)return;lastSend=now;
   const pos=new THREE.Vector3();player.getWorldPosition(pos);
   const p=lifeState.playerProfile||{};
-  socket.emit('player:update',{version:window.ABJ_BUILD_VERSION,position:{x:pos.x,z:pos.z,yaw:player.rotation?.y||0},profile:{name:p.name||'Citoyen',gender:p.gender||'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50},needs:{hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,health:lifeState.health,money:lifeState.money}});
+  const ride=typeof activeCourseGoRide!=='undefined'&&activeCourseGoRide?.taxi?{x:activeCourseGoRide.taxi.position.x,z:activeCourseGoRide.taxi.position.z,yaw:activeCourseGoRide.taxi.rotation.y,phase:activeCourseGoRide.phase,boarded:!!activeCourseGoRide.boarded}:null;
+  const ws=typeof V12!=='undefined'?{hour:lifeState.hour,minute:lifeState.minute,weather:V12.weather,temperature:V12.temperature}:null;
+  socket.emit('player:update',{version:window.ABJ_BUILD_VERSION,position:{x:pos.x,z:pos.z,yaw:player.rotation?.y||0},vehicle:ride,worldState:ws,profile:{name:p.name||'Citoyen',gender:p.gender||'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50},needs:{hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,health:lifeState.health,money:lifeState.money}});
  },120);
  const oldActivate=activateGameAccount;
  activateGameAccount=function(phone){oldActivate(phone);setTimeout(connectOnline,700);};
  window.ABJ_CONNECT_ONLINE=connectOnline;
  window.ABJ_CHECK_UPDATE=checkUpdate;
  checkUpdate();setInterval(checkUpdate,60000);window.addEventListener('focus',checkUpdate);
+})();
+</script>
+
+
+<script>
+(function(){
+ const phoneApps=document.getElementById('phoneApps');
+ if(phoneApps){
+  phoneApps.innerHTML='<div class="phoneAppsPage"><button class="phoneApp" data-app="localisation"><span>🗺️</span>Carte</button><button class="phoneApp" data-app="yango"><span>🚖</span>Yango</button><button class="phoneApp" data-app="jeux"><span>🎮</span>Apps Jeux</button></div>';
+  phoneApps.querySelectorAll('.phoneApp').forEach(b=>b.addEventListener('click',()=>openPhoneApp(b.dataset.app)));
+ }
+ window.__ABJ_ORIGINAL_OPEN_PHONE_APP=openPhoneApp;
+ const coreApps=new Set(['localisation','yango','jeux']);
+ openPhoneApp=function(app){
+  if(!coreApps.has(app)){
+   let installed={};try{installed=JSON.parse(safeGet('abj-installed-apps:'+normalizeIvorianMobile(activeGameAccount))||'{}')||{};}catch(e){}
+   if(!installed[app]){showMessage('Télécharge d’abord cette application dans Apps Jeux.');return;}
+  }
+  return window.__ABJ_ORIGINAL_OPEN_PHONE_APP(app);
+ };
+ const countBtn=document.createElement('button');countBtn.id='abjOnlineCount';countBtn.type='button';countBtn.innerHTML='👥 <b id="abjOnlineNumber">0</b>';
+ countBtn.style.cssText='position:fixed;top:14px;left:190px;z-index:60;padding:9px 13px;border:1px solid #f0d18d;border-radius:22px;background:#081827eF;color:#fff;font:700 13px system-ui;cursor:pointer;box-shadow:0 3px 12px #0008';
+ const panel=document.createElement('div');panel.id='abjOnlinePanel';panel.style.cssText='display:none;position:fixed;top:58px;left:190px;z-index:61;min-width:190px;padding:13px;border:1px solid #f0d18d;border-radius:12px;background:#081827f2;color:white;font:13px system-ui;box-shadow:0 8px 28px #0009';
+ panel.innerHTML='<b>Joueurs connectés</b><div id="abjOnlineDetails" style="margin-top:8px">Chargement…</div><button id="abjOnlineClose" style="margin-top:8px;padding:5px 10px">Fermer</button>';
+ document.body.append(countBtn,panel);
+ window.updateOnlineCount=function(n){const el=document.getElementById('abjOnlineNumber');if(el)el.textContent=String(Math.max(0,Number(n)||0));};
+ countBtn.onclick=async()=>{panel.style.display=panel.style.display==='block'?'none':'block';if(panel.style.display!=='block')return;const box=document.getElementById('abjOnlineDetails');box.textContent='Chargement…';try{const r=await fetch((window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'')+'/api/players',{cache:'no-store'});const d=await r.json();updateOnlineCount(d.count);box.innerHTML='<b>'+d.count+'</b> joueur(s) en ligne'+(d.players?.length?'<ul style="padding-left:18px">'+d.players.map(p=>'<li>'+String(p.name||'Citoyen').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]))+'</li>').join('')+'</ul>':'');}catch(e){box.textContent='Impossible de charger le nombre de joueurs.';}};
+ document.getElementById('abjOnlineClose').onclick=()=>panel.style.display='none';
+ fetch((window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'')+'/api/players',{cache:'no-store'}).then(r=>r.json()).then(d=>updateOnlineCount(d.count)).catch(()=>{});
 })();
 </script>
 
