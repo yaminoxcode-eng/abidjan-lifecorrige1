@@ -6622,7 +6622,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
  function restoreDownloadedPhoneApps(){
   const page=document.querySelector('#phoneApps .phoneAppsPage');if(!page)return;
   const ids=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];
-  ids.forEach(id=>{const a=downloadedAppMeta[id];if(!a||page.querySelector('[data-app="'+id+'"]').length)return;const b=document.createElement('button');b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+a.emoji+'</span>'+a.name;b.addEventListener('click',()=>openPhoneApp(id));page.appendChild(b);});
+  ids.forEach(id=>{const a=downloadedAppMeta[id];if(!a||page.querySelector('[data-app="'+id+'']))return;const b=document.createElement('button');b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+a.emoji+'</span>'+a.name;b.addEventListener('click',()=>openPhoneApp(id));page.appendChild(b);});
  }
  const activateBeforePhoneRestore=activateGameAccount;
  activateGameAccount=function(phone){activateBeforePhoneRestore(phone);setTimeout(restoreDownloadedPhoneApps,250);};
