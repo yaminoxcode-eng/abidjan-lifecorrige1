@@ -3957,7 +3957,7 @@ function updateLifeSimulation(delta){
   const avg=(lifeState.hunger+lifeState.energy+lifeState.social)/3;
   const mood=document.getElementById('lifeMood');
   if(mood)mood.textContent=avg>82?'😄':avg>62?'🙂':avg>42?'😐':avg>22?'😟':'😫';
-  const money=document.getElementById('moneyLabel');if(money)money.textContent=''+(lifeState.money/650).toLocaleString('fr-FR',{maximumFractionDigits:2})+' Eko';
+  const money=document.getElementById('moneyLabel');if(money)money.textContent=Math.round(Number(lifeState.money)||0).toLocaleString('fr-FR')+' FCFA';
   const clockEl=document.getElementById('lifeClock');if(clockEl)clockEl.textContent=String(lifeState.hour).padStart(2,'0')+':'+String(Math.floor(lifeState.minute)).padStart(2,'0');
   updateLifeLighting();
   lifeState.lastSave+=delta;
@@ -6617,10 +6617,10 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   return window.__ABJ_ORIGINAL_OPEN_PHONE_APP(app);
  };
  const countBtn=document.createElement('button');countBtn.id='abjOnlineCount';countBtn.type='button';countBtn.innerHTML='👥 <b id="abjOnlineNumber">0</b>';
- countBtn.style.cssText='position:fixed;top:14px;left:190px;z-index:60;padding:9px 13px;border:1px solid #f0d18d;border-radius:22px;background:#081827eF;color:#fff;font:700 13px system-ui;cursor:pointer;box-shadow:0 3px 12px #0008';
- const panel=document.createElement('div');panel.id='abjOnlinePanel';panel.style.cssText='display:none;position:fixed;top:58px;left:190px;z-index:61;min-width:190px;padding:13px;border:1px solid #f0d18d;border-radius:12px;background:#081827f2;color:white;font:13px system-ui;box-shadow:0 8px 28px #0009';
+ countBtn.style.cssText='display:none;position:relative;z-index:2;margin-left:auto;padding:6px 9px;border:1px solid #f0d18d;border-radius:18px;background:#081827;color:#fff;font:700 12px system-ui;cursor:pointer;box-shadow:0 2px 8px #0008';
+ const panel=document.createElement('div');panel.id='abjOnlinePanel';panel.style.cssText='display:none;position:absolute;top:42px;right:8px;z-index:90;min-width:190px;padding:13px;border:1px solid #f0d18d;border-radius:12px;background:#081827f2;color:white;font:13px system-ui;box-shadow:0 8px 28px #0009';
  panel.innerHTML='<b>Joueurs connectés</b><div id="abjOnlineDetails" style="margin-top:8px">Chargement…</div><button id="abjOnlineClose" style="margin-top:8px;padding:5px 10px">Fermer</button>';
- document.body.append(countBtn,panel);
+ const phoneTop=document.getElementById('phoneTop'),phone=document.getElementById('phone');if(phoneTop)phoneTop.appendChild(countBtn);if(phone)phone.appendChild(panel);if(phone){const syncCountVisibility=()=>{countBtn.style.display=phone.classList.contains('open')?'inline-flex':'none';if(!phone.classList.contains('open'))panel.style.display='none';};new MutationObserver(syncCountVisibility).observe(phone,{attributes:true,attributeFilter:['class']});syncCountVisibility();}
  window.updateOnlineCount=function(n){const el=document.getElementById('abjOnlineNumber');if(el)el.textContent=String(Math.max(0,Number(n)||0));};
  countBtn.onclick=async()=>{panel.style.display=panel.style.display==='block'?'none':'block';if(panel.style.display!=='block')return;const box=document.getElementById('abjOnlineDetails');box.textContent='Chargement…';try{const r=await fetch((window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'')+'/api/players',{cache:'no-store'});const d=await r.json();updateOnlineCount(d.count);box.innerHTML='<b>'+d.count+'</b> joueur(s) en ligne'+(d.players?.length?'<ul style="padding-left:18px">'+d.players.map(p=>'<li>'+String(p.name||'Citoyen').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]))+'</li>').join('')+'</ul>':'');}catch(e){box.textContent='Impossible de charger le nombre de joueurs.';}};
  document.getElementById('abjOnlineClose').onclick=()=>panel.style.display='none';
