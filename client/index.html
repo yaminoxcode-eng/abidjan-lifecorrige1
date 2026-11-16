@@ -359,7 +359,7 @@
   <div class="legend"><div class="leg"><div class="dot" style="background:#e7473f"></div>Toi</div><div class="leg"><div class="dot" style="background:#2ecc71"></div>Maison</div><div class="leg"><div class="dot" style="background:#e74c3c"></div>Santé</div><div class="leg"><div class="dot" style="background:#3498db"></div>Lieux</div><div class="leg"><div class="dot" style="background:#95a5a6"></div>Bâtiments</div><div class="leg">Molette : zoom · Glisser : déplacer · OSM : © contributeurs</div></div></div>
 <div id="phone" aria-label="Téléphone du personnage">
   <div id="phoneTop"><span>📱 ABJ CONNECT</span><span id="phoneClock">08:00</span><button id="phoneClose" aria-label="Fermer">×</button></div>
-  <div id="phoneScreen"><div id="phoneHomeShell"><h3>Mes applications</h3><div id="phoneAppsViewport"><div id="phoneApps"><div class="phoneAppsPage">
+  <div id="phoneScreen"><div id="phoneHomeShell"><h3>Mes applications</h3><div id="phoneAppsViewport"><div id="phoneApps"><div class="phoneAppsPage" style="grid-template-rows:1fr;align-content:center">
       <button class="phoneApp" data-app="localisation"><span>🗺️</span>Carte</button>
       <button class="phoneApp" data-app="yango"><span>🚖</span>Yango</button>
       <button class="phoneApp" data-app="jeux"><span>🎮</span>Apps Jeux</button>
@@ -6605,6 +6605,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
  if(phoneApps){
   phoneApps.innerHTML='<div class="phoneAppsPage"><button class="phoneApp" data-app="localisation"><span>🗺️</span>Carte</button><button class="phoneApp" data-app="yango"><span>🚖</span>Yango</button><button class="phoneApp" data-app="jeux"><span>🎮</span>Apps Jeux</button></div>';
   phoneApps.querySelectorAll('.phoneApp').forEach(b=>b.addEventListener('click',()=>openPhoneApp(b.dataset.app)));
+  const phoneNav=document.getElementById('phonePageDots')?.parentElement;if(phoneNav)phoneNav.style.display='none';
  }
  window.__ABJ_ORIGINAL_OPEN_PHONE_APP=openPhoneApp;
  const coreApps=new Set(['localisation','yango','jeux']);
