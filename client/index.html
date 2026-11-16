@@ -348,7 +348,7 @@
   <span id="respectLabel" title="Respect du personnage">⭐ 0</span>
   <span id="moneyLabel">5 000 Eko</span>
 </div><div id="lifeClock">08:00</div>
-<div id="miniMapWrap"><canvas id="miniMapCanvas" width="320" height="320"></canvas><div id="miniMapLabel">POSITION · ABIDJAN</div></div><div id="playerSpeech"></div><div id="needPanel"><h3>🙂 Besoins du personnage</h3><div id="needPanelRows"></div><button id="needPanelClose" style="width:100%;margin-top:8px">Fermer</button></div><div id="faintOverlay">Tu as perdu connaissance…<br>Les secours arrivent.</div>
+<div id="miniMapWrap"><canvas id="miniMapCanvas" width="320" height="320"></canvas><div id="miniMapLabel">POSITION · ABIDJAN</div></div><div id="playerSpeech"></div><div id="needPanel"><h3>🙂 Besoins du personnage</h3><div id="needPanelRows"></div><div id="dreamProgressBox" style="margin:12px 0;padding:10px;border-radius:10px;background:#ffffff12"><b>🎯 Mon rêve</b><div id="dreamProgressText" style="font-size:12px;margin-top:6px">Aucun rêve sélectionné</div><div class="lifeTrack" style="margin-top:7px"><div id="dreamProgressFill" class="lifeFill" style="background:#e9c16f;width:0%"></div></div></div><button id="needPanelClose" style="width:100%;margin-top:8px">Fermer</button></div><div id="faintOverlay">Tu as perdu connaissance…<br>Les secours arrivent.</div>
 <div id="exploreHud"><strong>ABIDJAN LIFE</strong><span id="quartier">Quartier : Abidjan · Commune : Abidjan</span><span id="mapStatus">Préparation de la ville…</span></div>
 <div id="info">ZQSD · Shift courir · Espace sauter · Souris caméra · Molette zoom · Clic droit glisser · E maison / parler / commerces · K sauvegarder · M téléphone · Localisation dans le téléphone</div>
 <div id="interiorHint"></div><div id="etage"></div><div id="floorHint"></div><div id="message" role="status"></div>
@@ -6335,6 +6335,20 @@ function v16ValidateTrafficRoutes(){
  }catch(e){}
  const v19StoreKey=()=>typeof LIFE_SAVE_KEY==='string'?LIFE_SAVE_KEY:'abidjan-life-life-v1';
  function state(){lifeState.v19=lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{};const s=lifeState.v19;s.properties=Array.isArray(s.properties)?s.properties:[];s.companies=Array.isArray(s.companies)?s.companies:[];s.adminDocs=s.adminDocs&&typeof s.adminDocs==='object'?s.adminDocs:{};s.inbox=Array.isArray(s.inbox)?s.inbox:[];s.installedApps=Array.isArray(s.installedApps)?s.installedApps:(typeof isCreatorAccount==='function'&&isCreatorAccount(activeGameAccount)?['monsuccess','immoabj','proemploi']:[]);s.work= s.work&&typeof s.work==='object'?s.work:{};return s;}
+ function updateLifeDreamProgress(){
+  const dream=lifeState.playerProfile&&lifeState.playerProfile.dream;
+  const s=state();let label='Aucun rêve sélectionné',ratio=0,done=false,blocked=false;
+  if(dream==='grand-patron'){const n=s.companies.length;ratio=Math.min(1,n/3);done=n>=3;label='Grand patron · '+n+'/3 entreprises';}
+  else if(dream==='proprietaire'){const built=s.properties.some(p=>p&&p.building&&p.building.status==='complete')||(lifeState.projects||[]).some(p=>p&&p.type==='house'&&p.status==='complete');ratio=built?1:0;done=built;label='Propriétaire · '+(built?'Maison construite':'Construis ta maison');}
+  else if(dream==='maire'){blocked=true;label='Maire de ta commune · Élections municipales non encore disponibles';}
+  else if(dream==='intellectuel'){const certs=lifeState.education&&lifeState.education.certificates||[];done=certs.some(x=>/licence/i.test(String(x)));ratio=done?1:0;blocked=!done;label='Intellectuel · '+(done?'Licence obtenue':'Licence universitaire non encore disponible (les formations actuelles délivrent des attestations)');}
+  else if(dream==='star-rue-princesse'){const n=Math.max(0,Number(lifeState.respect)||0);ratio=Math.min(1,n/4000);done=n>=4000;label='Star de la rue Princesse · '+Math.floor(n).toLocaleString('fr-FR')+'/4 000 respect';}
+  const t=document.getElementById('dreamProgressText'),f=document.getElementById('dreamProgressFill');
+  if(t)t.textContent=label;if(f)f.style.width=Math.round(ratio*100)+'%';
+  if(done&&!s.dreamCompleted){s.dreamCompleted=true;showMessage('🏆 Rêve accompli : '+label);saveLifeProgress(false);}
+  if(!done&&s.dreamCompleted)s.dreamCompleted=false;
+ }
+
  const v19=state();
  const oldSave=saveLifeProgress;
  saveLifeProgress=function(show){try{oldSave(show);const raw=safeGet(v19StoreKey());const data=raw?JSON.parse(raw):{};data.v19=state();safeSet(v19StoreKey(),JSON.stringify(data));}catch(e){console.warn('V1.19 save',e);}};
@@ -6343,7 +6357,7 @@ function v16ValidateTrafficRoutes(){
  // Une journée complète de 24 h dure désormais 8 minutes réelles.
  const oldTick=updateLifeSimulation;
  let v19LastClockDay=-1,v19LastReminder='';
- updateLifeSimulation=function(dt){oldTick(dt);if(!worldReady)return;const s=state();lifeState.minute+=Math.max(0,Math.min(.1,Number(dt)||0))*1.5;while(lifeState.minute>=60){lifeState.minute-=60;const h=lifeState.hour;lifeState.hour=(lifeState.hour+1)%24;if(h===23){lifeState.housing=lifeState.housing||{gameDay:1};lifeState.housing.gameDay=(lifeState.housing.gameDay||1)+1;try{processHousingBilling();}catch(e){}}}
+ updateLifeSimulation=function(dt){oldTick(dt);if(!worldReady)return;const s=state();updateLifeDreamProgress();lifeState.minute+=Math.max(0,Math.min(.1,Number(dt)||0))*1.5;while(lifeState.minute>=60){lifeState.minute-=60;const h=lifeState.hour;lifeState.hour=(lifeState.hour+1)%24;if(h===23){lifeState.housing=lifeState.housing||{gameDay:1};lifeState.housing.gameDay=(lifeState.housing.gameDay||1)+1;try{processHousingBilling();}catch(e){}}}
    const day=Number(lifeState.housing&&lifeState.housing.gameDay)||1;
    if(day!==v19LastClockDay){v19LastClockDay=day;}
    // Rappels une heure avant le début du service (une heure de jeu = 20 s réelles).
