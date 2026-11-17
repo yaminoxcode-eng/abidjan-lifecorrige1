@@ -6818,7 +6818,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   const p=lifeState.playerProfile||{};
   const ride=typeof activeCourseGoRide!=='undefined'&&activeCourseGoRide?.taxi?{x:activeCourseGoRide.taxi.position.x,z:activeCourseGoRide.taxi.position.z,yaw:activeCourseGoRide.taxi.rotation.y,phase:activeCourseGoRide.phase,boarded:!!activeCourseGoRide.boarded}:null;
   const ws=typeof V12!=='undefined'?{hour:lifeState.hour,minute:lifeState.minute,weather:V12.weather,temperature:V12.temperature}:null;
-  socket.emit('player:update',{version:window.ABJ_BUILD_VERSION,position:{x:pos.x,z:pos.z,yaw:player.rotation?.y||0},vehicle:ride,worldState:ws,profile:{name:p.name||'Citoyen',gender:p.gender||'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50},needs:{hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,health:lifeState.health,money:lifeState.money}});
+  socket.emit('player:update',{version:window.ABJ_BUILD_VERSION,position:{x:pos.x,z:pos.z,yaw:player.rotation?.y||0},vehicle:ride,worldState:ws,profile:{name:p.name||'Citoyen',gender:p.gender||'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50,bodyType:p.bodyType||'standard',hairstyle:p.hairstyle||'court',outfit:p.outfit||'urbain'},needs:{hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,health:lifeState.health,money:lifeState.money}});
  },120);
  const oldActivate=activateGameAccount;
  activateGameAccount=function(phone){oldActivate(phone);setTimeout(connectOnline,700);};
