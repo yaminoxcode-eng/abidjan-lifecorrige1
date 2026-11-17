@@ -1195,7 +1195,8 @@ function openCharacterCreator(){
   set('creatorShirt',hex(saved.shirt||0xe74c3c));
   set('creatorPants',hex(saved.pants||0x2c3e50));
   set('creatorBodyType',saved.bodyType||'standard');set('creatorHairstyle',saved.hairstyle||(saved.gender==='femme'?'long':'court'));set('creatorOutfit',saved.outfit||'urbain');
-  const creatorNameField=document.getElementById('creatorName');if(creatorNameField)creatorNameField.disabled=!!(creatorEditMode&&isCreatorAccount(activeGameAccount));\n  overlay.classList.add('open');
+  const creatorNameField=document.getElementById('creatorName');if(creatorNameField)creatorNameField.disabled=!!(creatorEditMode&&isCreatorAccount(activeGameAccount));\n  const creatorNameField=document.getElementById('creatorName');if(creatorNameField)creatorNameField.disabled=!!(creatorEditMode&&isCreatorAccount(activeGameAccount));
+  overlay.classList.add('open');
   updateCreatorPreview();
   renderCreatorDetail('gender');
   }catch(err){
@@ -1234,7 +1235,15 @@ function updateCreatorPreview(){renderIdentityPreview();syncCreatorOptionLabels(
 
 function launchGameFromCreator(){
   const value=id=>document.getElementById(id).value;
-  lifeState.playerProfile={name:value('creatorName').trim().slice(0,24)||'Mon personnage',gender:value('creatorGender'),skin:parseInt(value('creatorSkin')),hair:parseInt(value('creatorHair')),shirt:parseInt(value('creatorShirt')),pants:parseInt(value('creatorPants')),bodyType:value('creatorBodyType'),hairstyle:value('creatorHairstyle'),outfit:value('creatorOutfit')};
+  lifeState.playerProfile={name:isCreatorAccount(activeGameAccount)?'Créateur':value('creatorName').trim().slice(0,24)||'Mon personnage',gender:value('creatorGender'),skin:parseInt(value('creatorSkin')),hair:parseInt(value('creatorHair')),shirt:parseInt(value('creatorShirt')),pants:parseInt(value('creatorPants')),bodyType:value('creatorBodyType'),hairstyle:value('creatorHairstyle'),outfit:value('creatorOutfit')};
+  if(creatorEditMode&&player&&scene){
+    const pos=player.position.clone(),rot=player.rotation.y,old=player;
+    player=createCharacter(lifeState.playerProfile);player.position.copy(pos);player.rotation.y=rot;player.userData.displayName='Créateur';scene.add(player);scene.remove(old);
+    creatorEditMode=false;const nm=document.getElementById('creatorName');if(nm)nm.disabled=false;
+    const sb=document.getElementById('creatorStart');if(sb)sb.textContent='COMMENCER';
+    document.getElementById('creatorOverlay').classList.remove('open');saveLifeProgress(false);
+    showMessage('Apparence du créateur enregistrée. La partie continue.');return;
+  }
   if(isCreatorAccount(activeGameAccount))applyCreatorPrivileges();
   document.getElementById('creatorOverlay').classList.remove('open');
   document.getElementById('startScreen').style.display='none';
@@ -1323,6 +1332,7 @@ function onKeyDown(e) {
   if(k==='enter' && dialogOpen){const first=document.querySelector('#dialog .choices button');if(first){first.click();e.preventDefault();return;}}
   if (e.repeat) return;
   if (k === 'escape') {
+    creatorEditMode=false;
     if(elevatorMenuOpen)closeElevatorMenu();
     if (phoneOpen) closePhone();
     if (mapOpen) closeBigMap();
@@ -3946,7 +3956,8 @@ function dropHeldFurniture(){
 function openElevatorMenu(){
   if(!currentInterior||currentInterior.numFloors<2||elevatorTravel)return;
   const wrap=document.getElementById('elevatorMenu'),list=document.getElementById('elevatorFloors');list.innerHTML='';
-  const allowedFloors=currentInterior.creatorHQ?[0,2,3]:Array.from({length:currentInterior.numFloors},(_,i)=>i);\n  for(const floor of allowedFloors){const b=document.createElement('button');b.type='button';b.className=floor===currentFloor?'current':'';b.textContent=floor===0?'RDC':'Étage '+floor;b.disabled=floor===currentFloor;b.addEventListener('click',()=>startElevatorTravel(floor));list.appendChild(b);}
+  const allowedFloors=currentInterior.creatorHQ?[0,2,3]:Array.from({length:currentInterior.numFloors},(_,i)=>i);
+  for(const floor of allowedFloors){const b=document.createElement('button');b.type='button';b.className=floor===currentFloor?'current':'';b.textContent=floor===0?'RDC':'Étage '+floor;b.disabled=floor===currentFloor;b.addEventListener('click',()=>startElevatorTravel(floor));list.appendChild(b);}
   elevatorMenuOpen=true;wrap.style.display='flex';if(document.exitPointerLock)document.exitPointerLock();
 }
 function closeElevatorMenu(){elevatorMenuOpen=false;const el=document.getElementById('elevatorMenu');if(el)el.style.display='none';}
