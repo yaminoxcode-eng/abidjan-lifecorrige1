@@ -5086,6 +5086,8 @@ function renderPhoneGamesApp(){
   ['messages','💬','Messages','Échanger avec les autres habitants.'],
   ['contacts','👥','Contacts','Consulter les contacts du téléphone.'],
   ['wave','💚','WaveABJ','Gérer les paiements et transferts du jeu.'],
+  ['myv','🚘','My V','Acheter des véhicules, consulter leurs documents et leurs clés.'],
+  ['autoecole','🪪','Auto-école','Suivre les cours de conduite et préparer le permis.'],
   ['transport','🚌','Mobili','Consulter les transports de la ville.'],
   ['boutique','🛍️','Boutique','Acheter des produits et services.'],
   ['jumia','🛋️','CasaMart','Découvrir les articles pour le logement.'],
@@ -5246,6 +5248,8 @@ function openPhoneApp(app){
   if(app==='travail'){apps.style.display='none';content.style.display='block';renderEmploymentApp();return;}
   if(app==='banque'){apps.style.display='none';content.style.display='block';renderBankApp();return;}
   if(app==='wave'){apps.style.display='none';content.style.display='block';renderWaveApp();return;}
+  if(app==='myv'){apps.style.display='none';content.style.display='block';renderMyVApp();return;}
+  if(app==='autoecole'){apps.style.display='none';content.style.display='block';renderDrivingSchoolApp();return;}
   if(app==='logement'){apps.style.display='none';content.style.display='block';renderHousingApp();return;}
   if(app==='contacts'){apps.style.display='none';content.style.display='block';renderContactsApp();return;}
   if(app==='messages'){apps.style.display='none';content.style.display='block';renderMessagesApp();return;}
@@ -7167,6 +7171,87 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   window.addEventListener('unhandledrejection',e=>{if(activeGameAccount)reportGameIssue('promise-error',String(e.reason?.message||e.reason||'Promesse rejetée'));});
  }
  const style=document.createElement('style');style.textContent='#creatorName:disabled{opacity:.8;color:#f3d18d}';document.head.appendChild(style);
+})();
+</script>
+
+<script>
+/* My V : parc automobile personnel, clés liées et parcours auto-école/permis. */
+let drivingVehicle=null;
+const ownedVehicleMeshes=[];
+function abjV19(){lifeState.v19=lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{};lifeState.v19.ownedVehicles=Array.isArray(lifeState.v19.ownedVehicles)?lifeState.v19.ownedVehicles:[];lifeState.v19.drivingCourse=lifeState.v19.drivingCourse||null;return lifeState.v19;}
+const ABJ_MYV_CATALOG=[
+ {id:'myv-sedan',brand:'Ivoire Motors',model:'Lagune S',year:2024,type:'voiture',price:2800000,description:'Berline urbaine confortable',docs:['Carte grise','Assurance simulée','Facture d’achat']},
+ {id:'myv-suv',brand:'Lagune Auto',model:'Explorer X',year:2025,type:'voiture',price:6500000,description:'SUV familial',docs:['Carte grise','Assurance simulée','Facture d’achat']},
+ {id:'myv-pickup',brand:'Savanes',model:'Pickup 4x2',year:2023,type:'voiture',price:4200000,description:'Utilitaire pour les déplacements',docs:['Carte grise','Assurance simulée','Facture d’achat']},
+ {id:'myv-moto',brand:'Lagune Moto',model:'City 125',year:2025,type:'moto',price:450000,description:'Moto légère pour la ville',docs:['Carte grise','Assurance simulée','Facture d’achat']}
+];
+function abjWaveInstalled(){try{return !!JSON.parse(safeGet('abj-installed-apps:'+normalizeIvorianMobile(activeGameAccount))||'{}').wave;}catch(e){return false;}}
+function abjCashMethodLabel(){return abjWaveInstalled()?'Payer avec WaveABJ (solde du jeu)':'Payer en espèces (FCFA)';}
+function renderMyVApp(){
+ const c=document.getElementById('phoneAppContent');if(!c)return;
+ const owned=abjV19().ownedVehicles;
+ c.innerHTML='<button id="phoneBack">← Applications</button><h3>🚘 My V · Concession automobile</h3><p style="font-size:11px;color:#c6d8e5">Véhicules fictifs vendus en FCFA dans le jeu. Chaque achat reçoit une clé numérique unique liée à un seul véhicule.</p><h4>Mon garage ('+owned.length+')</h4>'+
+ (owned.length?owned.map(v=>'<article style="padding:11px;margin:8px 0;border:1px solid #ffffff28;border-radius:11px;background:#ffffff0d"><b>'+escapeHTML(v.brand+' '+v.model)+'</b><div style="font-size:11px;color:#c6d8e5">'+v.year+' · '+escapeHTML(v.type)+'</div><div style="font-size:11px;color:#f0d18d">Clé : '+escapeHTML(v.key)+'</div><div style="font-size:10px;color:#a9c4d1">Documents : '+(v.documents||[]).map(escapeHTML).join(' · ')+'</div><button data-spawn="'+escapeHTML(v.id)+'">Sortir ce véhicule</button></article>').join(''):'<p>Aucun véhicule acheté.</p>')+
+ '<h4>Concession</h4>'+ABJ_MYV_CATALOG.map(v=>'<article style="padding:11px;margin:8px 0;border:1px solid #ffffff28;border-radius:11px;background:#ffffff0d"><b>'+escapeHTML(v.brand+' '+v.model)+'</b><div style="font-size:11px;color:#c6d8e5">'+v.year+' · '+escapeHTML(v.description)+'</div><div style="font-size:17px;color:#f0d18d;font-weight:800">'+v.price.toLocaleString('fr-FR')+' FCFA</div><button data-buycar="'+v.id+'">'+abjCashMethodLabel()+'</button></article>').join('')+'<p id="myvStatus" style="font-size:11px;color:#ffe0a0"></p>';
+ c.querySelector('#phoneBack').onclick=()=>{c.style.display='none';showPhoneHome();};
+ c.querySelectorAll('[data-buycar]').forEach(b=>b.onclick=()=>{const v=ABJ_MYV_CATALOG.find(x=>x.id===b.dataset.buycar);if(!v)return;const status=document.getElementById('myvStatus');if(lifeState.money<v.price){status.textContent='Solde en espèces insuffisant. Gagne de l’argent ou économise avant cet achat.';return;}if(!confirm('Acheter '+v.brand+' '+v.model+' pour '+v.price.toLocaleString('fr-FR')+' FCFA ?'))return;lifeState.money-=v.price;const key='MYV-'+Math.random().toString(36).slice(2,8).toUpperCase();abjV19().ownedVehicles.push({id:v.id+'-'+Date.now(),catalogId:v.id,brand:v.brand,model:v.model,year:v.year,type:v.type,price:v.price,key,documents:v.docs.slice(),purchasedAt:new Date().toISOString()});saveLifeProgress(false);renderMyVApp();const x=document.getElementById('myvStatus');if(x)x.textContent='Achat confirmé. Ta clé numérique unique est enregistrée dans ton garage.';});
+ c.querySelectorAll('[data-spawn]').forEach(b=>b.onclick=()=>spawnOwnedVehicle(b.dataset.spawn));
+}
+function spawnOwnedVehicle(id){
+ const v=abjV19().ownedVehicles.find(x=>x.id===id);if(!v||!player||!scene)return;
+ const old=ownedVehicleMeshes.find(x=>x.userData.ownedId===id);
+ if(old){showMessage('Ton véhicule est déjà sorti. Approche-toi pour utiliser sa clé.');return;}
+ const mesh=createVehicleMesh(v.type==='moto'?'moto':'voiture');mesh.userData={...(mesh.userData||{}),ownedId:v.id,vehicleKey:v.key,vehicleOwner:activeGameAccount,ownedVehicle:true};
+ const forward=new THREE.Vector3(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));
+ mesh.position.set(player.position.x+forward.x*4,terrainHeight(player.position.x+forward.x*4,player.position.z+forward.z*4)+.04,player.position.z+forward.z*4);mesh.rotation.y=player.rotation.y;scene.add(mesh);ownedVehicleMeshes.push(mesh);abjV19().activeVehicleKey=v.key;showMessage('Véhicule sorti. Clé '+v.key+' · E pour monter.');saveLifeProgress(false);
+}
+function enterOwnedVehicle(mesh){
+ if(!lifeState.documents?.permis_conduire){showMessage('Permis obligatoire : termine les cours à l’auto-école puis fais la démarche à la mairie.');return;}
+ const rec=abjV19().ownedVehicles.find(v=>v.id===mesh.userData.ownedId);
+ if(!rec||rec.key!==mesh.userData.vehicleKey||abjV19().activeVehicleKey!==rec.key){showMessage('Cette clé ne correspond pas à ce véhicule.');return;}
+ drivingVehicle=mesh;player.visible=false;showMessage('Tu conduis '+rec.brand+' '+rec.model+' · ZQSD pour conduire · E pour descendre.');
+}
+function exitOwnedVehicle(){
+ if(!drivingVehicle)return;
+ const v=drivingVehicle;player.position.set(v.position.x+Math.sin(v.rotation.y+Math.PI/2)*2,terrainHeight(v.position.x,v.position.z)+.02,v.position.z+Math.cos(v.rotation.y+Math.PI/2)*2);player.visible=true;drivingVehicle=null;showMessage('Tu es descendu du véhicule.');
+}
+const __abjOldUpdatePlayer=updatePlayer;
+updatePlayer=function(delta){
+ if(drivingVehicle){const was=keys['shift'];keys['shift']=true;__abjOldUpdatePlayer(delta);keys['shift']=was;drivingVehicle.position.set(player.position.x,terrainHeight(player.position.x,player.position.z)+.04,player.position.z);drivingVehicle.rotation.y=player.rotation.y;drivingVehicle.userData.wheels?.forEach(w=>{w.rotation.x+=delta*8;});}
+ else __abjOldUpdatePlayer(delta);
+};
+window.addEventListener('keydown',function(e){
+ if(String(e.key).toLowerCase()!=='e'||!worldReady||!player||dialogOpen||panelOpen||mapOpen||phoneOpen)return;
+ if(drivingVehicle){e.preventDefault();e.stopImmediatePropagation();exitOwnedVehicle();return;}
+ const mesh=ownedVehicleMeshes.find(v=>v.visible&&Math.hypot(v.position.x-player.position.x,v.position.z-player.position.z)<3.8);
+ if(mesh){e.preventDefault();e.stopImmediatePropagation();enterOwnedVehicle(mesh);}
+},{capture:true});
+function renderDrivingSchoolApp(){
+ const c=document.getElementById('phoneAppContent');if(!c)return;const v=abjV19(),course=v.drivingCourse;
+ const schools=(typeof QUARTIERS!=='undefined'?QUARTIERS:[]).map(q=>q.nom||q.name||'Auto-école de quartier');
+ c.innerHTML='<button id="phoneBack">← Applications</button><h3>🪪 Auto-école d’Abidjan</h3><p style="font-size:12px;color:#c6d8e5">Cours de conduite et préparation au permis. Les écoles sont réparties dans les quartiers du monde.</p><div style="padding:10px;background:#ffffff10;border-radius:10px"><b>Écoles disponibles</b><p style="font-size:11px">'+(schools.length?schools.map(escapeHTML).join(' · '):'Plateau · Cocody · Yopougon · Treichville · Marcory · Abobo')+'</p></div><h4>Formation pratique</h4><p style="font-size:11px;color:#c6d8e5">Le cours couvre démarrage, direction, freinage, respect des feux et circulation en ville. Durée simulée : 90 secondes.</p><p id="drivingCourseStatus">'+(course&&course.remaining>0?'Formation en cours : '+Math.ceil(course.remaining)+' s restantes.':'Aucune formation en cours.')+'</p><button id="drivingEnroll" '+(course&&course.remaining>0||lifeState.documents?.certificat_auto_ecole?'disabled':'')+'>'+(lifeState.documents?.certificat_auto_ecole?'Certificat déjà obtenu':'S’inscrire · 5 000 FCFA')+'</button><p style="font-size:11px;color:#c6d8e5">Après le cours, présente ton certificat à la mairie de ta commune pour demander le permis.</p>';
+ c.querySelector('#phoneBack').onclick=()=>{c.style.display='none';showPhoneHome();};
+ const btn=c.querySelector('#drivingEnroll');if(btn)btn.onclick=()=>{if(lifeState.money<5000){document.getElementById('drivingCourseStatus').textContent='Solde insuffisant : 5 000 FCFA nécessaires.';return;}lifeState.money-=5000;abjV19().drivingCourse={remaining:90,startedAt:Date.now()};saveLifeProgress(false);renderDrivingSchoolApp();};
+}
+const __abjOldLifeTick=updateLifeSimulation;
+updateLifeSimulation=function(delta){
+ __abjOldLifeTick(delta);
+ const c=abjV19().drivingCourse;
+ if(c&&c.remaining>0){c.remaining=Math.max(0,c.remaining-delta);if(c.remaining===0){lifeState.documents=lifeState.documents||{};lifeState.documents.certificat_auto_ecole={issuedAt:new Date().toLocaleDateString('fr-FR'),label:'Certificat de formation pratique à la conduite'};abjV19().drivingCourse=null;saveLifeProgress(false);showMessage('🏁 Formation terminée ! Ton certificat est disponible. Va à la mairie pour demander le permis.');}}
+};
+const __abjOldMairie=renderMairieApp;
+renderMairieApp=function(){
+ __abjOldMairie();
+ const c=document.getElementById('phoneAppContent');if(!c)return;
+ const pos=player?player.position:{x:0,z:0},office=doors.filter(d=>d.isMunicipality).some(d=>Math.hypot(d.x-pos.x,d.z-pos.z)<95);
+ const has=!!lifeState.documents?.certificat_auto_ecole,done=!!lifeState.documents?.permis_conduire;
+ const card=document.createElement('article');card.style.cssText='padding:12px;margin:10px 0;border:1px solid #d8b15d66;border-radius:10px;background:#ffffff10';
+ card.innerHTML='<b>🪪 Permis de conduire</b><p style="font-size:11px;color:#c6d8e5">Frais administratifs : 10 000 FCFA. Présente le certificat de l’auto-école au guichet de ta mairie.</p><p style="font-size:11px;color:#f0d18d">'+(done?'Permis délivré':!office?'Rends-toi dans une mairie':!has?'Certificat d’auto-école manquant':'Dossier complet')+'</p><button id="issueDrivingPermit" '+(done||!office||!has||lifeState.money<10000?'disabled':'')+'>Demander le permis</button>';
+ c.appendChild(card);const btn=card.querySelector('#issueDrivingPermit');btn.onclick=()=>{if(lifeState.money<10000)return;lifeState.money-=10000;lifeState.documents.permis_conduire={issuedAt:new Date().toLocaleDateString('fr-FR'),commune:getDistrictNames().commune,number:'CI-ABJ-'+Math.random().toString(36).slice(2,8).toUpperCase()};saveLifeProgress(false);renderMairieApp();showMessage('Permis de conduire délivré. Tu peux utiliser les clés de tes véhicules My V.');};
+};
+(function(){
+ const cancel=document.getElementById('creatorCancel');
+ if(cancel)cancel.addEventListener('click',()=>{creatorEditMode=false;});
 })();
 </script>
 </body>
