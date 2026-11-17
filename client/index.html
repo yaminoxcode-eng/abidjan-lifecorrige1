@@ -7673,5 +7673,40 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
 })();
 </script>
 
+
+<script>
+/* ABJ V1.28 — finition commune des intérieurs et aide à chaque connexion. */
+(function(){
+ const oldInterior=generateInterior;
+ generateInterior=function(id,bw,bd,floors,color,style){
+  const it=oldInterior(id,bw,bd,floors,color,style);
+  if(!it||!Array.isArray(it.floors)||it.userData&&it.userData.abjProFinish)return it;
+  it.userData=it.userData||{};it.userData.abjProFinish=true;
+  const W=Number(it.roomW)||Math.max(12,Math.min((Number(bw)||16)+1,26)),D=Number(it.roomD)||Math.max(12,Math.min((Number(bd)||16)+1,26));
+  const trim=new THREE.MeshStandardMaterial({color:style==='luxe'?0xb78b45:0x6b7776,roughness:.65,metalness:.18});
+  const ceiling=new THREE.MeshStandardMaterial({color:style==='luxe'?0xf3ead7:0xe6e8e4,roughness:.9});
+  const glow=new THREE.MeshStandardMaterial({color:0xffe5a4,emissive:0xffd57c,emissiveIntensity:.55,roughness:.4});
+  const green=new THREE.MeshStandardMaterial({color:0x397b4d,roughness:.85});
+  it.floors.forEach((floor,index)=>{
+   if(!floor||floor.userData.abjProFinish)return;floor.userData.abjProFinish=true;
+   const add=(geo,mat,x,y,z)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;floor.add(m);return m;};
+   add(new THREE.BoxGeometry(W-.4,.08,.16),trim,0,.16,-D/2+.18);
+   add(new THREE.BoxGeometry(W-.4,.08,.16),trim,0,.16,D/2-.18);
+   add(new THREE.BoxGeometry(.16,.08,D-.4),trim,-W/2+.18,.16,0);
+   add(new THREE.BoxGeometry(.16,.08,D-.4),trim,W/2-.18,.16,0);
+   add(new THREE.BoxGeometry(W-.5,.1,D-.5),ceiling,0,3.22,0);
+   add(new THREE.BoxGeometry(2.5,.07,1.1),glow,0,3.14,0);
+   const light=new THREE.PointLight(0xffe1ad,.32,15);light.position.set(0,2.75,0);floor.add(light);
+   const rug=new THREE.Mesh(new THREE.BoxGeometry(Math.min(4,W*.32),.035,Math.min(2.8,D*.24)),new THREE.MeshStandardMaterial({color:style==='luxe'?0x6f4037:0x3e6260,roughness:1}));rug.position.set(0,.14,0);floor.add(rug);
+   const pot=add(new THREE.CylinderGeometry(.23,.28,.42,10),new THREE.MeshStandardMaterial({color:0x9b6747,roughness:.9}),W/2-1,.36,-D/2+1);
+   const leaves=add(new THREE.SphereGeometry(.48,10,8),green,W/2-1,.92,-D/2+1);leaves.scale.set(.8,1.25,.8);
+   const plaque=add(new THREE.BoxGeometry(2.2,1.05,.08),trim,0,2.15,D/2-.24);
+   plaque.userData.decoration=true;
+  });
+  return it;
+ };
+})();
+</script>
+
 </body>
 </html>
