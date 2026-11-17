@@ -387,6 +387,9 @@
         <button type="button" class="creatorOptionBtn" data-opt="hair">Cheveux<small id="optLabelHair">Noir</small></button>
         <button type="button" class="creatorOptionBtn" data-opt="shirt">Haut<small id="optLabelShirt">Rouge</small></button>
         <button type="button" class="creatorOptionBtn" data-opt="pants">Pantalon<small id="optLabelPants">Bleu marine</small></button>
+        <button type="button" class="creatorOptionBtn" data-opt="bodyType">Morphologie<small id="optLabelBodyType">Standard</small></button>
+        <button type="button" class="creatorOptionBtn" data-opt="hairstyle">Coiffure<small id="optLabelHairstyle">Court</small></button>
+        <button type="button" class="creatorOptionBtn" data-opt="outfit">Tenue<small id="optLabelOutfit">Urbain</small></button>
       </div>
       <div class="creatorCenter"><small class="creatorColumnLabel">APERÇU EN DIRECT</small>
         <div id="creatorPreview" aria-live="polite" aria-label="Aperçu 3D du personnage"></div>
@@ -1108,6 +1111,9 @@ const CREATOR_OPTION_META = {
       {value:'0x49356f', label:'Violet', color:'#49356f'}
     ]
   },
+  bodyType:{title:'Morphologie',hint:'Choisis la silhouette de ton personnage.',choices:[{value:'standard',label:'Standard',color:'#526a70'},{value:'fin',label:'Fine',color:'#8aa9a0'},{value:'athletique',label:'Athlétique',color:'#426d87'},{value:'fort',label:'Forte',color:'#7c5a43'}]},
+  hairstyle:{title:'Coiffure',hint:'Choisis une coupe et un style de cheveux.',choices:[{value:'court',label:'Court',color:'#33251d'},{value:'degrade',label:'Dégradé',color:'#57402c'},{value:'afro',label:'Afro',color:'#211812'},{value:'tresses',label:'Tresses',color:'#76543c'},{value:'long',label:'Long',color:'#3b2418'}]},
+  outfit:{title:'Style vestimentaire',hint:'Choisis la tenue générale.',choices:[{value:'urbain',label:'Urbain',color:'#2878b8'},{value:'chic',label:'Chic',color:'#b99b62'},{value:'sport',label:'Sport',color:'#2e9b62'}]},
   pants: {
     title: 'Pantalon',
     hint: 'Couleur du pantalon.',
@@ -1123,10 +1129,10 @@ const CREATOR_OPTION_META = {
 let activeCreatorOption = 'gender';
 
 function creatorFieldId(opt){
-  return {gender:'creatorGender',skin:'creatorSkin',hair:'creatorHair',shirt:'creatorShirt',pants:'creatorPants'}[opt];
+  return {gender:'creatorGender',skin:'creatorSkin',hair:'creatorHair',shirt:'creatorShirt',pants:'creatorPants',bodyType:'creatorBodyType',hairstyle:'creatorHairstyle',outfit:'creatorOutfit'}[opt];
 }
 function creatorLabelId(opt){
-  return {gender:'optLabelGender',skin:'optLabelSkin',hair:'optLabelHair',shirt:'optLabelShirt',pants:'optLabelPants'}[opt];
+  return {gender:'optLabelGender',skin:'optLabelSkin',hair:'optLabelHair',shirt:'optLabelShirt',pants:'optLabelPants',bodyType:'optLabelBodyType',hairstyle:'optLabelHairstyle',outfit:'optLabelOutfit'}[opt];
 }
 function getCreatorChoiceLabel(opt, value){
   const meta = CREATOR_OPTION_META[opt];
