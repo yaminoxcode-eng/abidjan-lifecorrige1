@@ -2122,7 +2122,7 @@ function buildOSMBuildings(ways,nodes) {
     else{for(let i=0;i<pa.count;i++)sector.indices.push(base+i);}
     addObstacle(cx,cz,ww,dd,h);
     allBuildings.push({x:cx,z:cz,w:ww,d:dd,h,type:'osm-building',name:tag.name||tag['name:fr']||''});
-    if(tag.shop||['retail','commercial','supermarket','kiosk'].includes(tag.building)||['restaurant','cafe','bank','fast_food'].includes(tag.amenity)){
+    if(tag.shop||['retail','commercial','supermarket','kiosk','office','public'].includes(tag.building)||['restaurant','cafe','bank','fast_food','school','university','college','hospital','clinic','doctors','pharmacy','police','fire_station','townhall','community_centre','library','post_office'].includes(tag.amenity)){
       addPOI(cx,cz,'commerce',tag.name||tag.shop||tag.amenity||'Commerce',tag);
       addOSMStorefront(pts,tag);
       createOSMStoreEntrance(pts,tag,h,col);
@@ -2215,11 +2215,16 @@ function createOSMStoreEntrance(pts,tags,height,color){
   if(!pts||pts.length<4||doors.length>=58)return;
   const shop=String(tags.shop||tags.amenity||tags.building||'').toLowerCase();
   let kind='supermarket';
+  const amenity=String(tags.amenity||'').toLowerCase(),building=String(tags.building||'').toLowerCase(),office=String(tags.office||'').toLowerCase();
   if(['furniture','interior_decoration'].includes(shop))kind='furniture';
   else if(['clothes','shoes','fashion'].includes(shop))kind='clothes';
   else if(['electronics','computer','mobile_phone'].includes(shop))kind='electronics';
+  else if(['school','university','college','library'].includes(amenity)||['school','university','college'].includes(building))kind='education';
+  else if(['hospital','clinic','doctors','pharmacy'].includes(amenity)||building==='hospital')kind='health';
+  else if(['police','fire_station'].includes(amenity))kind='emergency';
+  else if(['bank','post_office','townhall','community_centre'].includes(amenity)||office)kind='public-service';
   else if(['supermarket','convenience','greengrocer','butcher','bakery'].includes(shop))kind='supermarket';
-  else if(['restaurant','cafe','fast_food','bar'].includes(shop))kind='supermarket';
+  else if(['restaurant','cafe','fast_food','bar'].includes(shop)||['restaurant','cafe','fast_food'].includes(amenity))kind='supermarket';
   const xs=pts.map(p=>p.x),zs=pts.map(p=>p.z),cx=(Math.min(...xs)+Math.max(...xs))/2,cz=(Math.min(...zs)+Math.max(...zs))/2;
   let edge=null,best=-Infinity;
   for(let i=0;i<pts.length;i++){
@@ -2238,7 +2243,8 @@ function createOSMStoreEntrance(pts,tags,height,color){
   const idFloor=Math.max(1,Math.min(3,Math.floor(height/4)));
   const style='store_'+kind;
   interiors[id]=generateInterior(id,Math.max(12,Math.min(26,Math.max(...xs)-Math.min(...xs)+2)),Math.max(12,Math.min(26,Math.max(...zs)-Math.min(...zs)+2)),1,color,style);
-  doors.push({x:doorX,z:doorZ,id,rot:group.rotation.y,normal:new THREE.Vector3(nx,0,nz),group,home:true,buildingName:tags.name||shop||'Magasin',buildingType:style});
+  const displayName=tags.name||shop||amenity||office||building||'Bâtiment public';
+  doors.push({x:doorX,z:doorZ,id,rot:group.rotation.y,normal:new THREE.Vector3(nx,0,nz),group,home:true,buildingName:displayName,buildingType:style});
 }
 
 function addOSMStorefront(pts,tags){
@@ -2298,8 +2304,8 @@ function createOSMResidentialEntrance(pts, tags, height, color) {
 
 function findNearbyResidentialDoor() {
   if(!player || currentInterior) return null;
-  let best=null,dist=4.8;
-  for(const d of doors){if(!d.home)continue;const n=Math.hypot(player.position.x-d.x,player.position.z-d.z);if(n<dist){dist=n;best=d;}}
+  let best=null,dist=5.8;
+  for(const d of doors){if(!d.home||!interiors[d.id])continue;const n=Math.hypot(player.position.x-d.x,player.position.z-d.z);if(n<dist){dist=n;best=d;}}
   return best;
 }
 
@@ -3702,7 +3708,7 @@ function enterBuilding(door) {
   scene.background=new THREE.Color(0x25313a);scene.fog=null;
   if(interiorAmbientLight)interiorAmbientLight.intensity=.72;
   document.getElementById('interiorHint').style.display='block';
-  document.getElementById('interiorHint').textContent=(interior.style==='resident'?'🏢 Immeuble · E à l’ascenseur pour choisir un étage · E à une porte pour entrer dans un appartement':door.isMunicipality?'🏛️ Mairie de '+door.commune+' · Services administratifs au guichet · E près de la porte : sortir':door.buildingType?'🏬 '+door.buildingName+' · F : utiliser / interagir · E près de la porte : sortir':door.buildingName&&door.buildingName!=='Maison d’Abidjan'?'🏢 '+door.buildingName+' · E : ascenseur / choisir étage · F : meubles · E près de la porte : sortir':"🏠 Maison · F : utiliser / déplacer un meuble · Lit : dormir · Douche : se laver · E près de la porte : sortir");
+  document.getElementById('interiorHint').textContent=(interior.style==='resident'?'🏢 Immeuble · E à l’ascenseur pour choisir un étage · E à une porte pour entrer dans un appartement':door.isMunicipality?'🏛️ Mairie de '+door.commune+' · Services administratifs au guichet · E près de la porte : sortir':door.buildingType&&door.buildingType.startsWith('store_')?'🏬 '+door.buildingName+' · F : utiliser / interagir · E près de la porte : sortir':door.buildingName&&door.buildingName!=='Maison d’Abidjan'?'🏢 '+door.buildingName+' · F : interagir · E près de la porte : sortir':"🏠 Maison · F : utiliser / déplacer un meuble · Lit : dormir · Douche : se laver · E près de la porte : sortir");
   document.getElementById('etage').textContent=interior.numFloors>1?'Immeuble · Hall / Rez-de-chaussée':(door.buildingType?'Magasin · Rez-de-chaussée':'Maison · Rez-de-chaussée');
   showMessage('Bienvenue chez toi. Salon, cuisine, chambre et salle de bain.');
 }
