@@ -7523,5 +7523,102 @@ renderAccountSettingsApp=function(){
   };
 })();
 
+
+<script>
+/* ABJ V1.27 — gares, aide des joueurs, commissariat et ambiance sonore. */
+(function(){
+ 'use strict';
+ const base=()=>geoToWorld(5.323,-4.02);
+ function numberStops(){
+  const counts={};
+  transportStops.sort((a,b)=>String(a.commune||'').localeCompare(String(b.commune||''),'fr')||a.x-b.x||a.z-b.z);
+  transportStops.forEach(s=>{if(s.code)return;const c=String(s.commune||'ABJ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,3)||'ABJ',m=String(s.mode||'').toLowerCase(),p=/taxi/.test(m)?'TX':/gbaka/.test(m)?'GB':/bus|sotra|gare/.test(m)?'BUS':/bateau/.test(m)?'BAT':'TR',k=c+'-'+p;counts[k]=(counts[k]||0)+1;s.code=k+'-'+String(counts[k]).padStart(2,'0');s.baseName=s.name||'Arrêt';s.name=s.baseName+' · '+s.code;});
+ }
+ function signTexture(label,color){
+  const c=document.createElement('canvas');c.width=800;c.height=150;const ctx=c.getContext('2d');
+  ctx.fillStyle='#142a35';ctx.fillRect(0,0,800,150);ctx.strokeStyle=color;ctx.lineWidth=8;ctx.strokeRect(8,8,784,134);ctx.fillStyle='#fff0c8';ctx.font='bold 42px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label.toUpperCase(),400,75);return new THREE.CanvasTexture(c);
+ }
+ function station(s){
+  const g=new THREE.Group(),W=s.w,D=s.d,H=s.h,roofMat=new THREE.MeshStandardMaterial({color:s.roof,metalness:.35,roughness:.6}),wallMat=new THREE.MeshStandardMaterial({color:s.wall,roughness:.8}),pillarMat=new THREE.MeshStandardMaterial({color:0x829197,metalness:.35});
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(W,.8,D),roofMat);roof.position.y=H;g.add(roof);
+  for(let i=0;i<s.cols;i++){const x=-W/2+W*(i+.5)/s.cols;for(const z of [-D/2+.5,D/2-.5]){const p=new THREE.Mesh(new THREE.BoxGeometry(.55,H,.55),pillarMat);p.position.set(x,H/2,z);g.add(p);}}
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(W,.12,D),new THREE.MeshStandardMaterial({color:0x59615e}));floor.position.y=.04;g.add(floor);
+  if(s.type==='taxi'||s.type==='bus'){const back=new THREE.Mesh(new THREE.BoxGeometry(W,2,.5),wallMat);back.position.set(0,1,-D/2);g.add(back);}
+  if(s.type==='gbaka'){const counter=new THREE.Mesh(new THREE.BoxGeometry(8,1,2),wallMat);counter.position.set(-W/2+5,.5,-D/2+2);g.add(counter);}
+  const board=new THREE.Mesh(new THREE.PlaneGeometry(W*.65,2.8),new THREE.MeshBasicMaterial({map:signTexture(s.name,s.trim),side:THREE.DoubleSide}));board.position.set(0,H-1.2,D/2+.3);g.add(board);
+  g.position.set(s.x,terrainHeight(s.x,s.z),s.z);scene.add(g);
+  for(let i=0;i<s.count;i++){const col=i%s.cols,row=Math.floor(i/s.cols),x=s.x-(s.cols-1)*s.sx/2+col*s.sx,z=s.z+D*.2-row*s.sz,v=createVehicleMesh(s.type);v.userData={...(v.userData||{}),type:'osmTraffic',vType:s.type,scripted:true,parked:true,wreck:false,stationId:s.id};v.position.set(x,terrainHeight(x,z)+.07,z);v.rotation.y=Math.PI;scene.add(v);vehicles.push(v);}
+  poi.push({x:s.x,z:s.z,type:'garage',nom:s.name,data:{description:s.description+' · '+s.count+' véhicules stationnés'}});
+  transportStops.push({id:'depot-'+s.id,x:s.x,z:s.z,name:s.name,mode:s.mode,commune:s.commune});
+ }
+ function policeHQ(){
+  if(window.__ABJ_POLICE_HQ||!scene)return;window.__ABJ_POLICE_HQ=true;
+  const b=base(),x=b.x-690,z=b.z+430,g=new THREE.Group(),stone=new THREE.MeshStandardMaterial({color:0x9aaab0}),navy=new THREE.MeshStandardMaterial({color:0x193d59}),glass=new THREE.MeshStandardMaterial({color:0x79b6ca,transparent:true,opacity:.78}),gold=new THREE.MeshStandardMaterial({color:0xd5b45f,metalness:.35});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(28,9,20),stone);body.position.y=4.5;g.add(body);
+  const wing=new THREE.Mesh(new THREE.BoxGeometry(10,6,12),navy);wing.position.set(-18,3,1);g.add(wing);
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(30,.8,22),navy);roof.position.y=9.1;g.add(roof);
+  for(let f=0;f<2;f++)for(let i=0;i<4;i++){const w=new THREE.Mesh(new THREE.BoxGeometry(3.4,1.8,.12),glass);w.position.set(-9+i*6,2.6+f*3.1,10.08);g.add(w);}
+  const frame=new THREE.Mesh(new THREE.BoxGeometry(3.5,3.5,.3),gold);frame.position.set(0,1.7,10.18);g.add(frame);
+  const door=new THREE.Mesh(new THREE.BoxGeometry(2.3,2.9,.18),navy);door.position.set(0,1.55,10.38);g.add(door);
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(14,2.8),new THREE.MeshBasicMaterial({map:signTexture('Commissariat de police','#e1bd68'),side:THREE.DoubleSide}));sign.position.set(0,7.3,10.2);g.add(sign);
+  g.position.set(x,terrainHeight(x,z),z);scene.add(g);
+  const id='abj-police-hq';interiors[id]=generateInterior(id,27,19,2,0x27445a,'plateau');
+  const inside=interiors[id];if(inside){const mat=new THREE.MeshStandardMaterial({color:0x573d2d});for(let i=0;i<3;i++){const desk=new THREE.Mesh(new THREE.BoxGeometry(3.2,.22,1.5),mat);desk.position.set(-7+i*7,.95,-3);inside.add(desk);}inside.interactables.push({x:0,z:1.2,type:'regarder',label:'Accueil du commissariat',floor:0});}
+  doors.push({x,z:z+10.4,id,rot:0,normal:new THREE.Vector3(0,0,1),home:true,buildingType:'police',buildingName:'Commissariat central'});
+  poi.push({x,z,type:'police',nom:'Commissariat central d’Abidjan',data:{description:'Accueil, déclarations et services de police'}});
+ }
+ createTransitDepots=function(){
+  if(!scene||window.__ABJ_DEPOTS_V127)return;window.__ABJ_DEPOTS_V127=true;const b=base();
+  [
+   {id:'gbaka',name:'GARE DES GBAKA · ADJAMÉ',type:'gbaka',mode:'Gbaka',commune:'Adjamé',x:b.x-420,z:b.z+280,w:44,d:25,h:6.2,cols:3,count:6,sx:8,sz:6,roof:0x9a713d,wall:0x6b5034,trim:'#f0b83f',description:'Hangar ouvert et quai gbaka'},
+   {id:'sotra',name:'DÉPÔT SOTRA · PLATEAU',type:'bus',mode:'Bus SOTRA',commune:'Plateau',x:b.x+430,z:b.z-330,w:52,d:28,h:8,cols:2,count:4,sx:11,sz:8,roof:0x23678d,wall:0x1e435b,trim:'#51c4d0',description:'Dépôt couvert des autobus'},
+   {id:'taxi',name:'GARE DES TAXIS · COCODY',type:'taxi',mode:'Taxi',commune:'Cocody',x:b.x+480,z:b.z+380,w:48,d:26,h:6.8,cols:4,count:8,sx:8,sz:6,roof:0xb28a2d,wall:0x4a4a40,trim:'#ffd45d',description:'Station de taxis et prise en charge'},
+   {id:'moto',name:'HANGAR MOTOS · TREICHVILLE',type:'moto',mode:'Moto',commune:'Treichville',x:b.x-500,z:b.z-420,w:34,d:20,h:5.4,cols:3,count:9,sx:6,sz:4.2,roof:0x286d54,wall:0x24493b,trim:'#78d6a1',description:'Garage motos et livreurs'}
+  ].forEach(station);numberStops();policeHQ();
+ };
+ const oldHQ=createAFGamerHQ;
+ createAFGamerHQ=function(){oldHQ();if(creatorHQDoor){creatorHQDoor.creatorOnly=false;creatorHQDoor.home=true;creatorHQDoor.buildingName='AF GAMER CI · Accueil public';}if(interiors.afgamer900)interiors.afgamer900.publicLobby=true;};
+ const oldHome=startPlayerAtHome;
+ startPlayerAtHome=function(){oldHome();const d=doors.find(x=>x&&x.id==='af-gamer-ci-office');if(d){d.home=true;d.creatorOnly=false;d.buildingName='AF GAMER CI · Bureaux';}};
+ const oldNPCs=createNPCs;
+ createNPCs=function(n){return oldNPCs(Math.min(innerWidth<700?125:270,Math.round((Number(n)||0)*1.32)));};
+ const oldTraffic=createAbidjanTraffic;
+ createAbidjanTraffic=function(n){const before=vehicles.length;oldTraffic(Math.min(innerWidth<700?125:270,Math.round((Number(n)||0)*1.3)));for(let i=before;i<vehicles.length;i++){const v=vehicles[i],t=v&&v.userData&&v.userData.vType;if(!v||!['moto','moto_livreur'].includes(t)||v.userData.riderAdded)continue;v.userData.riderAdded=true;const delivery=t==='moto_livreur',r=createCharacter({gender:'homme',shirt:delivery?0x188c55:[0x244b72,0x9c4335,0xd2a33a][i%3],pants:0x202b32,skin:0x80553c});r.scale.set(.53,.53,.53);r.position.set(0,.72,-.12);v.add(r);const helmet=new THREE.Mesh(new THREE.SphereGeometry(.255,12,10),new THREE.MeshStandardMaterial({color:delivery?0xf1b72c:0x243c58}));helmet.position.set(0,2.28,.015);r.add(helmet);if(delivery){const bag=new THREE.Mesh(new THREE.BoxGeometry(.62,.62,.42),new THREE.MeshStandardMaterial({color:0xf1b72c}));bag.position.set(0,1.55,-.33);r.add(bag);}if(t==='moto'&&Math.random()<.22){const passenger=createCharacter({gender:'femme',shirt:0x9b5b83,pants:0x2d3540,skin:0x80553c});passenger.scale.set(.43,.43,.43);passenger.position.set(0,.72,-.82);v.add(passenger);}}};
+ const oldVehicle=createVehicleMesh;
+ createVehicleMesh=function(type){const g=oldVehicle(type),glass=new THREE.MeshStandardMaterial({color:0x8fc6d8,transparent:true,opacity:.68,metalness:.18,roughness:.2}),chrome=new THREE.MeshStandardMaterial({color:0x9da9ae,metalness:.78,roughness:.28}),white=new THREE.MeshBasicMaterial({color:0xfff1c5}),red=new THREE.MeshBasicMaterial({color:0xe7473e});if(['taxi','yango','woro','voiture','luxe'].includes(type)){const a=new THREE.Mesh(new THREE.BoxGeometry(1.48,.48,.08),glass);a.position.set(0,1.34,1.48);g.add(a);const b=new THREE.Mesh(new THREE.BoxGeometry(1.42,.42,.08),glass);b.position.set(0,1.34,-1.48);g.add(b);for(const side of [-1,1]){const pane=new THREE.Mesh(new THREE.BoxGeometry(.07,.43,.9),glass);pane.position.set(side*.93,1.35,.25);g.add(pane);const mirror=new THREE.Mesh(new THREE.BoxGeometry(.22,.12,.25),chrome);mirror.position.set(side*1.02,1.38,1.02);g.add(mirror);const hl=new THREE.Mesh(new THREE.BoxGeometry(.28,.16,.08),white);hl.position.set(side*.61,.94,2.12);g.add(hl);const tl=new THREE.Mesh(new THREE.BoxGeometry(.25,.18,.08),red);tl.position.set(side*.61,.94,-2.12);g.add(tl);}const bumper=new THREE.Mesh(new THREE.BoxGeometry(1.35,.16,.16),chrome);bumper.position.set(0,.53,2.14);g.add(bumper);}else if(type==='moto'||type==='moto_livreur'){for(const side of [-1,1]){const m=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),chrome);m.position.set(side*.38,1.15,.65);g.add(m);}const lamp=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),white);lamp.position.set(0,.94,.85);g.add(lamp);}return g;};
+ // Son : bouton visible pour déclencher la musique, puis klaxons synthétiques près du joueur.
+ const audioBtn=document.createElement('button');audioBtn.id='abjAudioButton';audioBtn.textContent='🔊 ACTIVER LE SON';audioBtn.style.cssText='position:fixed;left:14px;top:14px;z-index:12000;padding:10px 14px;border:1px solid #f2d18c;border-radius:24px;background:#102b39ef;color:#fff0c8;font-weight:900;box-shadow:0 5px 18px #0008;cursor:pointer';audioBtn.onclick=()=>{V13.audioOn=true;v15StartAudio();if(V13.audioNodes){V13.audioNodes.ac.resume();v15SetAudioVolume(.78);}audioBtn.textContent='🔊 SON ACTIVÉ';};document.body.appendChild(audioBtn);
+ let horn=8;const oldAudioTick=v15AudioTick;v15AudioTick=function(dt){oldAudioTick(dt);if(!gameStarted||!V13.audioOn||!V13.audioNodes||V13.audioNodes.ac.state!=='running'||!player)return;horn-=Number(dt)||.016;if(horn>0)return;horn=9+Math.random()*12;if(!vehicles.some(v=>v&&v.visible&&!v.userData.parked&&Math.hypot(v.position.x-player.position.x,v.position.z-player.position.z)<42))return;const ac=V13.audioNodes.ac,master=V13.audioNodes.master;[510,390].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=f;g.gain.setValueAtTime(.0001,ac.currentTime+i*.18);g.gain.exponentialRampToValueAtTime(.025,ac.currentTime+i*.18+.025);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+i*.18+.13);o.connect(g);g.connect(master);o.start(ac.currentTime+i*.18);o.stop(ac.currentTime+i*.18+.15);});};
+ // Aide intégrée : tutoriel de première connexion et explication au premier clic sur une app.
+ const help={
+  transport:['🚏 Transports','Consulte les arrêts proches et leurs codes uniques. Les lignes affichées sont des trajets simulés.'],yango:['🚖 CourseGo','Choisis une destination, commande un chauffeur, attends son arrivée puis appuie sur F pour monter.'],
+  banque:['🏦 Banque ABJ','Consulte ton solde et tes opérations. Les transferts sont fictifs.'],wave:['💸 WaveABJ','Portefeuille simulé du jeu : aucun paiement réel n’est effectué.'],
+  mairie:['🏛️ Mairie','Effectue les démarches administratives et consulte tes documents.'],sante:['🏥 Santé','Consulte les centres médicaux et les soins de ton personnage.'],
+  etudes:['🎓 Études','Choisis une formation et obtiens des certificats.'],travail:['💼 Emploi','Trouve un métier, effectue des services et gagne de l’argent.'],
+  logement:['🏠 Logement','Cherche un logement, loue ou achète un bien et aménage ton intérieur.'],myv:['🚘 My V','Achète et gère tes véhicules ; le permis est nécessaire pour conduire.'],
+  afgamer:['🎮 AF GAMER CI','Envoie tes demandes au studio et consulte ses réponses.'],entreprises:['🏢 Entreprises','Crée une société et gère son activité.'],
+  factu:['🧾 Factu','Consulte et règle les factures simulées.'],forum:['🌐 Forum mondial','Publie des messages et échange avec les habitants.'],
+  documents:['📄 Retrait documents','Consulte les documents disponibles dans ta partie.'],parametres:['⚙️ Paramètres','Règle les graphismes, commandes, sons et options du compte.'],
+  camera:['📷 Caméra','Prends des photos et vidéos de la ville.'],gallery:['🖼️ Galerie','Retrouve les images et vidéos prises dans le jeu.'],
+  contacts:['👥 Contacts','Retrouve les habitants rencontrés.'],messages:['💬 Messages','Échange avec les habitants et les autres joueurs.'],
+  boutique:['🏪 Boutiques','Consulte les commerces et achats de la ville.'],glovo:['🛵 LivraGo','Commande une livraison dans le jeu.'],
+  jumia:['🛒 CasaMart','Parcours les produits et commandes simulées.'],localisation:['🗺️ Plans','Ouvre la carte et prépare un itinéraire.'],
+  google:['🔎 ChercheABJ','Recherche un lieu, un service ou une aide.'],inventaire:['🎒 Inventaire','Consulte tes objets et équipements.'],
+  proemploi:['🧰 Pro Emploi','Gère les offres, contrats, certificats et missions.'],offrescreateur:['⭐ Offres Creator','Consulte les options du compte créateur.']
+ };
+ const style=document.createElement('style');style.textContent='@keyframes abjPulse{0%,100%{filter:brightness(1);box-shadow:0 0 0 0 #f3c56a00}50%{filter:brightness(1.3);box-shadow:0 0 0 5px #f3c56a66}}.abj-guide-pulse{animation:abjPulse 1.25s ease-in-out infinite!important}#abjHelpBubble{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:min(440px,calc(100vw - 28px));z-index:13000;padding:15px;border:1px solid #e9c77b;border-radius:16px;background:linear-gradient(145deg,#173a4b,#0b1b28);box-shadow:0 18px 55px #000c;color:white;display:none}#abjHelpBubble strong{display:block;color:#ffe0a0;margin-bottom:6px}#abjHelpBubble p{font-size:13px;line-height:1.5;margin:0 0 12px;color:#dce8ef}#abjHelpBubble button{border:1px solid #e9c77b;border-radius:9px;padding:8px 12px;background:#254b5e;color:white;font-weight:800}#phoneApps .phoneApp span{border:1px solid #ffffff35;background:linear-gradient(145deg,#ffffff35,#ffffff0a);box-shadow:0 4px 12px #0004}';document.head.appendChild(style);
+ const bubble=document.createElement('div');bubble.id='abjHelpBubble';bubble.innerHTML='<strong id="abjHelpTitle"></strong><p id="abjHelpText"></p><div style="display:flex;justify-content:flex-end;gap:8px"><button id="abjHelpClose">Fermer</button><button id="abjHelpNext">Suivant</button></div>';document.body.appendChild(bubble);
+ let action=null,step=0;const steps=[['Bienvenue dans Abidjan Life','Déplace-toi avec ZQSD ou WASD. La souris oriente la caméra, Maj permet de courir et Espace de sauter.'],['Interagir avec la ville','Approche une porte, un commerce ou un habitant puis appuie sur E. Utilise F pour les meubles et objets.'],['Ton téléphone','Appuie sur M pour ouvrir ton téléphone. Chaque application explique son rôle lors de sa première ouverture.'],['Transport et carte','Plans sert à te repérer. Transports affiche les arrêts numérotés et CourseGo commande un taxi.'],['Ta vie dans la ville','Travail, études, santé, logement, mairie, banque et entreprises font évoluer ton personnage.']];
+ function show(title,body,fn,label){action=fn||null;document.getElementById('abjHelpTitle').textContent=title;document.getElementById('abjHelpText').textContent=body;document.getElementById('abjHelpNext').textContent=label||'Suivant';bubble.style.display='block';}
+ function hide(){bubble.style.display='none';action=null;}
+ document.getElementById('abjHelpClose').onclick=hide;document.getElementById('abjHelpNext').onclick=()=>{if(action){const fn=action;hide();fn();return;}step++;if(step<steps.length)show(steps[step][0],steps[step][1]);else hide();};
+ document.addEventListener('click',e=>{const app=e.target.closest&&e.target.closest('#phoneApps .phoneApp');if(!app)return;const id=app.dataset.app,key='abj-help-app-seen:'+id;let seen=false;try{seen=localStorage.getItem(key)==='1';}catch(err){seen=true;}if(!seen){e.preventDefault();e.stopImmediatePropagation();try{localStorage.setItem(key,'1');}catch(err){}const d=help[id]||['Application du jeu','Ouvre cette application pour consulter ses services et options.'];show(d[0],d[1],()=>openPhoneApp(id),'Ouvrir l’application');}},true);
+ function pulse(){document.querySelectorAll('#startBtn,#creatorStart,#phoneClose,#closeMapBtn,#mapRecenter,#phoneApps .phoneApp').forEach(el=>{if(!el.dataset.abjPulse){el.classList.add('abj-guide-pulse');el.dataset.abjPulse='1';}});}
+ const observer=new MutationObserver(pulse);observer.observe(document.body,{childList:true,subtree:true});
+ let waited=0;const timer=setInterval(()=>{waited++;if(typeof gameStarted!=='undefined'&&gameStarted&&typeof worldReady!=='undefined'&&worldReady&&player){clearInterval(timer);let seen=false;try{seen=localStorage.getItem('abj-onboarding-v127')==='1';}catch(e){}if(!seen){try{localStorage.setItem('abj-onboarding-v127','1');}catch(e){}pulse();show(steps[0][0],steps[0][1]);setTimeout(()=>document.querySelectorAll('.abj-guide-pulse').forEach(el=>el.classList.remove('abj-guide-pulse')),45000);}}if(waited>900)clearInterval(timer);},1000);
+ const info=document.getElementById('info');if(info){info.style.pointerEvents='auto';info.style.cursor='help';info.addEventListener('click',()=>show('Commandes du jeu','ZQSD/WASD : marcher · Maj : courir · Espace : sauter · Souris : caméra · E : interagir · F : meubles · M : téléphone · Échap : libérer la souris.'));}
+})();
+</script>
+
 </body>
 </html>
