@@ -2290,8 +2290,9 @@ function startAFGamerGPS(mode){
 function showAFGamerMapCard(){
  if(!creatorHQPosition)return;
  const el=document.createElement('div');el.style.cssText='position:fixed;z-index:95;left:50%;top:50%;transform:translate(-50%,-50%);width:min(360px,90vw);padding:18px;background:#102a37;border:2px solid #a77bd4;border-radius:16px;color:white;box-shadow:0 18px 60px #000b';
- el.innerHTML='<button id="hqCardClose" style="float:right">✕</button><h3 style="color:#d4b3f2">AF_GAMER</h3><p>Siège social · Plateau, Abidjan</p><p style="font-size:12px;color:#c5d5df">Bâtiment du studio avec accueil et étage privé du créateur.</p><b>Comment veux-tu y aller ?</b><div style="display:grid;gap:7px;margin-top:10px"><button data-mode="walk">🚶 Marcher ou courir</button><button data-mode="yango">🚕 Prendre un Yango</button><button data-mode="car">🚘 Ma voiture</button></div>';
- document.body.appendChild(el);el.querySelector('#hqCardClose').onclick=()=>el.remove();el.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{const mode=b.dataset.mode;el.remove();if(mode==='car'&&(!lifeState.v19?.ownedVehicles?.length||!lifeState.documents?.permis_conduire)){showMessage('Tu ne possèdes pas encore de voiture.');return;}startAFGamerGPS(mode);});
+ el.innerHTML='<button id="hqCardClose" style="float:right">✕</button><h3 style="color:#d4b3f2">AF_GAMER</h3><p>Siège social · Plateau, Abidjan</p><p style="font-size:12px;color:#c5d5df">Bâtiment du studio avec accueil et étage privé réservé au créateur.</p><button id="hqGoBtn" style="width:100%;padding:11px;background:#70449a">Y aller</button><div id="hqTravelChoices" style="display:none;gap:7px;margin-top:10px"><b>Comment veux-tu t’y rendre ?</b><button data-mode="walk">🚶 Marcher ou courir</button><button data-mode="yango">🚕 Prendre un Yango</button><button data-mode="car">🚘 Ma voiture</button></div>';
+ document.body.appendChild(el);el.querySelector('#hqCardClose').onclick=()=>el.remove();el.querySelector('#hqGoBtn').onclick=()=>{el.querySelector('#hqTravelChoices').style.display='grid';};
+ el.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{const mode=b.dataset.mode;el.remove();if(mode==='car'&&(!lifeState.v19?.ownedVehicles?.length||!lifeState.documents?.permis_conduire)){showMessage('Pour conduire, achète une voiture dans My V et obtiens ton permis à la mairie.');return;}startAFGamerGPS(mode);});
 }
 
 function createAFGamerHQ(){
@@ -2318,7 +2319,7 @@ function createAFGamerHQ(){
  makePanel(2,'APPARENCE',0x247b79);
  const doorGroup=new THREE.Group(),frame=new THREE.Mesh(new THREE.BoxGeometry(2.2,3,.3),gold),door=new THREE.Mesh(new THREE.BoxGeometry(1.55,2.55,.12),stone);
  door.position.y=1.28;doorGroup.add(frame,door);doorGroup.position.set(x,terrainHeight(x,z),z+11.7);scene.add(doorGroup);
- creatorHQDoor={x,z:z+11.7,id,rot:0,normal:new THREE.Vector3(0,0,1),group:doorGroup,home:true,creatorOnly:true,buildingName:'AF_GAMER · Siège social'};
+ creatorHQDoor={x,z:z+11.7,id,rot:0,normal:new THREE.Vector3(0,0,1),group:doorGroup,home:true,creatorOnly:true,buildingType:'company',buildingName:'AF_GAMER · Siège social'};
  doors.push(creatorHQDoor);
  poi.push({x,z,type:'company',nom:'AF_GAMER',data:{description:'Siège social AF_GAMER · Accès public au rez-de-chaussée, étage privé réservé au créateur'}});
 }
