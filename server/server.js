@@ -133,7 +133,9 @@ async function loadPersistentAccounts() {
   }
   const rows = await supabaseRequest('game_accounts?select=phone,email,password_hash,security,profile,position,needs,save,created_at');
   for (const row of rows || []) accounts.set(row.phone, rowToAccount(row));
-  console.log(`Supabase connecté : ${accounts.size} compte(s) chargé(s).`);
+  const reports = await supabaseRequest('creator_reports?select=id,created_at,player_name,player_phone,kind,message,version,district,status&order=created_at.desc&limit=500');
+  creatorReports.splice(0, creatorReports.length, ...(reports || []).map(r => ({id:r.id,createdAt:r.created_at,player:r.player_name,phone:r.player_phone,kind:r.kind,message:r.message,version:r.version,district:r.district,status:r.status})));
+  console.log(`Supabase connecté : ${accounts.size} compte(s) et ${creatorReports.length} signalement(s) chargés.`);
 }
 
 const clean = (v, max = 80) => String(v ?? '').trim().slice(0, max);
@@ -713,9 +715,9 @@ app.delete('/api/account/me', auth, async (req, res) => {
     return res.status(503).json({ error: 'Suppression sécurisée indisponible : stockage permanent non configuré.' });
   }
   try {
-    await supabaseRequest('game_accounts?phone=eq.' + encodeURIComponent(phone), {
-      method: 'DELETE',
-      headers: { Prefer: 'return=minimal' }
+    await supabaseRequest('rpc/delete_game_account_data', {
+      method: 'POST',
+      body: JSON.stringify({ p_phone: phone })
     });
   } catch (error) {
     console.error('Échec suppression compte Supabase:', error.message);
@@ -754,13 +756,17 @@ app.get('/api/creator/world', auth, requireCreator, (_req,res) => {
 app.get('/api/creator/reports', auth, requireCreator, (_req,res) => {
   res.set('Cache-Control','no-store').json({items:creatorReports.slice(-150).reverse()});
 });
-app.post('/api/game/report', auth, (req,res) => {
+app.post('/api/game/report', auth, async (req,res) => {
   if (!rateLimit(req.phone+':game-report',12,60000)) return res.status(429).json({error:'Trop de signalements. Réessaie plus tard.'});
   const message=clean(req.body.message,500),kind=clean(req.body.kind,40)||'client-error';
   if(!message)return res.status(400).json({error:'Signalement vide.'});
-  creatorReports.push({id:crypto.randomUUID(),kind,message,player:clean(accounts.get(req.phone)?.profile?.name,24)||'Citoyen',phone:req.phone,version:clean(req.body.version,32),district:clean(req.body.district,80),createdAt:new Date().toISOString(),status:'nouveau'});
-  if(creatorReports.length>500)creatorReports.shift();
-  io.emit('creator:report:new',{id:creatorReports[creatorReports.length-1].id});
+  const report={id:crypto.randomUUID(),kind,message,player:clean(accounts.get(req.phone)?.profile?.name,24)||'Citoyen',phone:req.phone,version:clean(req.body.version,32),district:clean(req.body.district,80),createdAt:new Date().toISOString(),status:'nouveau'};
+  if(persistentStorageEnabled){
+    try{await supabaseRequest('creator_reports',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{id:report.id,player_name:report.player,player_phone:report.phone,kind:report.kind,message:report.message,version:report.version,district:report.district,status:report.status,created_at:report.createdAt}])});}
+    catch(error){console.error('Échec sauvegarde signalement:',error.message);return res.status(503).json({error:'Le signalement n’a pas pu être enregistré durablement.'});}
+  }
+  creatorReports.push(report);if(creatorReports.length>500)creatorReports.shift();
+  io.emit('creator:report:new',{id:report.id});
   res.status(201).json({ok:true});
 });
 app.post('/api/game/assistant', auth, async (req,res) => {
