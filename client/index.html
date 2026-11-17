@@ -575,9 +575,10 @@ const lifeState = { hunger:100, energy:100, social:100, hygiene:100, health:100,
 let LIFE_SAVE_KEY = 'abidjan-life-life-v1';
 const ACCOUNT_INDEX_KEY='abidjan-life-accounts-v1';
 const CREATOR_ACCOUNT_PHONE='+2250799259362';
+let creatorVerifiedPhone=null;
 const MONEY_CAPS={none:999999999999,S:10000000000000,Z:100000000000000,SZ:1e21};
 const CHEAT_MONEY_AMOUNT=100000;
-function isCreatorAccount(phone){return normalizeIvorianMobile(phone)===CREATOR_ACCOUNT_PHONE;}
+function isCreatorAccount(phone){return !!creatorVerifiedPhone&&creatorVerifiedPhone===normalizeIvorianMobile(phone)&&creatorVerifiedPhone===CREATOR_ACCOUNT_PHONE;}
 function getCreatorTier(){
   // Aucun privilège Creator n'est accordé côté navigateur : un rôle doit être
   // confirmé par un serveur et des règles d'accès non modifiables par le joueur.
@@ -982,9 +983,14 @@ async function accountContinue(){
     }
   }
 }
-function activateGameAccount(phone){
+async function activateGameAccount(phone){
   const canonical=normalizeIvorianMobile(phone);
   if(!canonical){showAccountStatus('Numéro mobile ivoirien invalide.', true);return;}
+  creatorVerifiedPhone=null;
+  if(canonical===CREATOR_ACCOUNT_PHONE){
+    try{const token=safeGet('abj-online-token:'+canonical);const base=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');const check=await fetch(base+'/api/creator/status',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));if(check.ok&&result.creator===true)creatorVerifiedPhone=canonical;else console.warn('Compte créateur non confirmé par le serveur :',result.error||check.status);}
+    catch(error){console.warn('Vérification du compte créateur impossible :',error);}
+  }
   const oldKeys=Object.keys(readGameAccounts()).filter(k=>normalizeIvorianMobile(k)===canonical);
   const saveKey='abidjan-life-life-v1:'+canonical;
   if(!safeGet(saveKey)){
