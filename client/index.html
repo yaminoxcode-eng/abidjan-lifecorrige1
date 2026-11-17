@@ -6943,7 +6943,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   const phoneNav=document.getElementById('phonePageDots')?.parentElement;if(phoneNav)phoneNav.style.display='none';
  }
  window.__ABJ_ORIGINAL_OPEN_PHONE_APP=openPhoneApp;
- const coreApps=new Set(['localisation','mobilite','jeux','appstore']);
+ const coreApps=new Set(['localisation','mobilite','jeux','appstore','parametres']);
  const isDownloadedApp=(id)=>{
   const saved=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];
   let legacy={};try{legacy=JSON.parse(safeGet('abj-installed-apps:'+normalizeIvorianMobile(activeGameAccount))||'{}')||{};}catch(e){}
