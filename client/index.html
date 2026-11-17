@@ -1195,7 +1195,8 @@ function openCharacterCreator(){
   set('creatorShirt',hex(saved.shirt||0xe74c3c));
   set('creatorPants',hex(saved.pants||0x2c3e50));
   set('creatorBodyType',saved.bodyType||'standard');set('creatorHairstyle',saved.hairstyle||(saved.gender==='femme'?'long':'court'));set('creatorOutfit',saved.outfit||'urbain');
-  const creatorNameField=document.getElementById('creatorName');if(creatorNameField)creatorNameField.disabled=!!(creatorEditMode&&isCreatorAccount(activeGameAccount));\n  const creatorNameField=document.getElementById('creatorName');if(creatorNameField)creatorNameField.disabled=!!(creatorEditMode&&isCreatorAccount(activeGameAccount));
+  const creatorNameField=document.getElementById('creatorName');if(creatorNameField)creatorNameField.disabled=!!(creatorEditMode&&isCreatorAccount(activeGameAccount));
+  const creatorNameField=document.getElementById('creatorName');if(creatorNameField)creatorNameField.disabled=!!(creatorEditMode&&isCreatorAccount(activeGameAccount));
   overlay.classList.add('open');
   updateCreatorPreview();
   renderCreatorDetail('gender');
@@ -4283,7 +4284,8 @@ function hasPlayerTrait(id){const p=lifeState.playerProfile||{};return Array.isA
 function addPlayerRespect(amount){lifeState.respect=Math.max(0,Math.min(10000000,(Number(lifeState.respect)||0)+Math.max(0,Number(amount)||0)));}
 function updateLifeSimulation(delta){
   if(!worldReady)return;
-  lifeState.hunger=100;lifeState.energy=100;lifeState.social=100;lifeState.hygiene=100;lifeState.health=100;\n  const night=(lifeState.hour>=22||lifeState.hour<6);
+  lifeState.hunger=100;lifeState.energy=100;lifeState.social=100;lifeState.hygiene=100;lifeState.health=100;
+  const night=(lifeState.hour>=22||lifeState.hour<6);
   const decay=night?.62:1;
   lifeState.hunger=Math.max(0,lifeState.hunger-delta*.22*decay);
   lifeState.social=Math.max(0,lifeState.social-delta*.085*decay);
@@ -5522,7 +5524,8 @@ function drawBigMap(){
       if(t==='sante'||/hopital|clinique|pharmacie/i.test(p.nom||''))col='#e74c3c';
       else if(t==='banque'||t==='bank')col='#1abc9c';
       else if(t==='education'||/ecole|universit/i.test(p.nom||''))col='#9b59b6';
-      else if(t==='company')col='#8e44ad';\n      else if(t==='commerce'||t==='shop')col='#e67e22';
+      else if(t==='company')col='#8e44ad';
+      else if(t==='commerce'||t==='shop')col='#e67e22';
       ctx.fillStyle=col;
       ctx.beginPath();ctx.arc(toX(p.x),toY(p.z),Math.max(2.2,2.8*Math.min(2,win.z*0.45)),0,Math.PI*2);ctx.fill();
       /* Noms des POI masqués sur le plan : affichés dans la fiche après clic. */
@@ -5571,7 +5574,8 @@ function animate() {
   const rawDelta=clock.getDelta();
   const delta=Math.min(Number.isFinite(rawDelta)?rawDelta:0,0.05);
   try {
-    updateLifeSimulation(delta);\n    updateCreatorOrb(delta);
+    updateLifeSimulation(delta);
+    updateCreatorOrb(delta);
     updateCourseGoRide(delta);
     updateCourseGoCamera(delta);
     updateElevatorTravel(delta);
