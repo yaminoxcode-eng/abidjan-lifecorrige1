@@ -12,7 +12,6 @@ const PORT = Number(process.env.PORT || 10000);
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('hex');
 const CLIENT_ORIGINS = (process.env.CLIENT_ORIGINS || '*').split(',').map(s => s.trim()).filter(Boolean);
 const UPDATE_ADMIN_TOKEN = process.env.UPDATE_ADMIN_TOKEN || '';
-const CREATOR_ACCOUNT_PHONE = phoneOf(process.env.CREATOR_ACCOUNT_PHONE || '');
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
 const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.26.0';
@@ -144,6 +143,8 @@ function phoneOf(v) {
   if (d.startsWith('225') && d.length === 13) d = d.slice(3);
   return /^0[157]\d{8}$/.test(d) ? '+225' + d : null;
 }
+
+const CREATOR_ACCOUNT_PHONE = phoneOf(process.env.CREATOR_ACCOUNT_PHONE || '');
 
 function answer(v) {
   return clean(v, 100).toLowerCase()
