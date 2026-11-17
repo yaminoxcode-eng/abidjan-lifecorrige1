@@ -5016,6 +5016,7 @@ function openInstalledPhoneApp(app){
 }
 function renderAccountSettingsApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
+ const apps=document.getElementById('phoneApps');if(apps)apps.style.display='none';content.style.display='block';
  const phone=activeGameAccount||'Aucun compte';
  content.innerHTML='<button id="phoneBack">← Applications</button><h3>⚙️ Paramètres du jeu</h3><p style="font-size:12px;color:#c6d8e5">Réglages liés à ton compte et à ton expérience Abidjan Life.</p><div style="padding:12px;background:#ffffff12;border-radius:12px"><div style="font-size:11px;color:#b9d6e7">Compte connecté</div><b>'+escapeHTML(phone)+'</b><p style="font-size:11px;color:#c6d8e5">Progression, personnage et préférences sont associés à ce compte.</p></div><h4>Compte et sécurité</h4><button id="accountSignOut">Se déconnecter</button><div style="margin-top:12px;padding:12px;border:1px solid #c94b4b88;border-radius:12px;background:#501c2533"><b style="color:#ffaaaa">Zone de suppression définitive</b><p style="font-size:11px;color:#f0cccc">Supprime le compte en ligne, les sauvegardes, le personnage, la progression et les données locales associées. Cette opération est irréversible.</p><button id="accountDelete" style="background:#9b2929;border-color:#ff8c8c">Supprimer mon compte</button></div><p id="accountSettingStatus" style="font-size:11px;color:#ffe0a0;min-height:20px"></p>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
