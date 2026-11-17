@@ -7051,7 +7051,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   const x=Number(data.position.x)||0,z=Number(data.position.z)||0;
   obj.position.set(x,typeof terrainHeight==='function'?terrainHeight(x,z)+.03:0,z);
   if(Number.isFinite(data.position.yaw))obj.rotation.y=data.position.yaw;
-  if(typeof animateCharacter==='function')animateCharacter(obj,.12,!!data.moving);
+  // L'animation des avatars distants est pilotée par la boucle de rendu.
   if(data.vehicle&&data.vehicle.kind==='yango'){
    let car=obj.userData.remoteVehicle;
    if(!car&&typeof makeCourseGoTaxi==='function'){car=makeCourseGoTaxi();car.userData.remoteVehicle=true;scene.add(car);obj.userData.remoteVehicle=car;}
