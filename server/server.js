@@ -963,7 +963,7 @@ io.on('connection', (socket) => {
       vehicle: state.vehicle
     });
 
-    if (persistentStorageEnabled && now - state.lastPersist >= 5000) {
+    if (persistentStorageEnabled && accounts.has(socket.phone) && now - state.lastPersist >= 5000) {
       state.lastPersist = now;
       persistAccount(account).catch(error => console.error('Échec sauvegarde périodique:', error.message));
     }
