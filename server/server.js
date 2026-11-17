@@ -759,9 +759,26 @@ app.get('/api/creator/reports', auth, requireCreator, (_req,res) => {
 app.get('/api/creator/afgamer-inbox', auth, requireCreator, async (_req,res) => {
   if(!persistentStorageEnabled)return res.status(503).json({error:'Boîte AF_GAMER indisponible : stockage permanent non configuré.'});
   try{
-    const rows=await supabaseRequest('afgamer_inbox?select=id,created_at,player_name,category,subject,message,status&order=created_at.desc&limit=200');
-    res.set('Cache-Control','no-store').json({items:(rows||[]).map(x=>({id:x.id,createdAt:x.created_at,player:x.player_name,category:x.category,subject:x.subject,message:x.message,status:x.status}))});
+    const rows=await supabaseRequest('afgamer_inbox?select=id,created_at,player_name,category,subject,message,status,reply_text,replied_at&order=created_at.desc&limit=200');
+    res.set('Cache-Control','no-store').json({items:(rows||[]).map(x=>({id:x.id,createdAt:x.created_at,player:x.player_name,category:x.category,subject:x.subject,message:x.message,status:x.status,reply:x.reply_text,repliedAt:x.replied_at}))});
   }catch(error){console.error('Lecture boîte AF_GAMER:',error.message);res.status(503).json({error:'Impossible de charger la boîte AF_GAMER.'});}
+});
+app.patch('/api/creator/afgamer-inbox/:id', auth, requireCreator, async (req,res) => {
+  if(!persistentStorageEnabled)return res.status(503).json({error:'Stockage permanent non configuré.'});
+  const id=clean(req.params.id,36),status=clean(req.body.status,20),reply=clean(req.body.reply,1200);
+  if(!/^[0-9a-f-]{36}$/i.test(id))return res.status(400).json({error:'Identifiant de message invalide.'});
+  if(!['nouveau','en_cours','traite','archive'].includes(status))return res.status(400).json({error:'Statut invalide.'});
+  try{
+    await supabaseRequest('afgamer_inbox?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status,reply_text:reply,replied_at:reply?new Date().toISOString():null})});
+    res.json({ok:true,message:'Dossier mis à jour.'});
+  }catch(error){console.error('Mise à jour boîte AF_GAMER:',error.message);res.status(503).json({error:'Impossible de mettre à jour ce dossier.'});}
+});
+app.get('/api/game/afgamer-messages', auth, async (req,res) => {
+  if(!persistentStorageEnabled)return res.status(503).json({error:'Historique indisponible : stockage permanent non configuré.'});
+  try{
+    const rows=await supabaseRequest('afgamer_inbox?player_phone=eq.'+encodeURIComponent(req.phone)+'&select=id,created_at,category,subject,message,status,reply_text,replied_at&order=created_at.desc&limit=30');
+    res.set('Cache-Control','no-store').json({items:(rows||[]).map(x=>({id:x.id,createdAt:x.created_at,category:x.category,subject:x.subject,message:x.message,status:x.status,reply:x.reply_text,repliedAt:x.replied_at}))});
+  }catch(error){console.error('Historique joueur AF_GAMER:',error.message);res.status(503).json({error:'Impossible de charger tes messages.'});}
 });
 app.post('/api/game/afgamer-message', auth, async (req,res) => {
   if(!persistentStorageEnabled)return res.status(503).json({error:'Envoi indisponible : stockage permanent non configuré.'});
