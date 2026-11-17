@@ -2281,7 +2281,8 @@ function addOSMStorefront(pts,tags){
 
 function startAFGamerGPS(mode){
  if(!creatorHQPosition||!player)return;
- const route=buildCourseGoRoadPath(player.position.x,player.position.z,creatorHQPosition.x,creatorHQPosition.z);
+ const goalNode=nearestTrafficNode(creatorHQPosition.x,creatorHQPosition.z,650);let goal=creatorHQPosition;if(goalNode){const parts=goalNode.split(':').map(Number);goal={x:parts[0],z:parts[1]};}
+ const route=buildCourseGoRoadPath(player.position.x,player.position.z,goal.x,goal.z);if(route&&goal!==creatorHQPosition)route.push({x:creatorHQPosition.x,z:creatorHQPosition.z});
  if(!route){showMessage('GPS : aucun itinéraire routier disponible depuis cette position.');return;}
  abjGpsPath=route;mapView.follow=false;mapView.centerX=creatorHQPosition.x;mapView.centerZ=creatorHQPosition.z;mapView.zoom=6.5;
  closePhone();openBigMap();drawBigMap();
@@ -7319,7 +7320,7 @@ const __abjOldMairie=renderMairieApp;
 renderMairieApp=function(){
  __abjOldMairie();
  const c=document.getElementById('phoneAppContent');if(!c)return;
- const pos=player?player.position:{x:0,z:0},office=doors.filter(d=>d.isMunicipality).some(d=>Math.hypot(d.x-pos.x,d.z-pos.z)<95);
+ const pos=player?player.position:{x:0,z:0},insideOffice=!!(currentInterior&&lastExteriorPosition&&lastExteriorPosition.door&&lastExteriorPosition.door.isMunicipality),office=insideOffice||doors.filter(d=>d.isMunicipality).some(d=>Math.hypot(d.x-pos.x,d.z-pos.z)<95);
  const has=!!lifeState.documents?.certificat_auto_ecole,done=!!lifeState.documents?.permis_conduire;
  const card=document.createElement('article');card.style.cssText='padding:12px;margin:10px 0;border:1px solid #d8b15d66;border-radius:10px;background:#ffffff10';
  card.innerHTML='<b>🪪 Permis de conduire</b><p style="font-size:11px;color:#c6d8e5">Frais administratifs : 10 000 FCFA. Présente le certificat de l’auto-école au guichet de ta mairie.</p><p style="font-size:11px;color:#f0d18d">'+(done?'Permis délivré':!office?'Rends-toi dans une mairie':!has?'Certificat d’auto-école manquant':'Dossier complet')+'</p><button id="issueDrivingPermit" '+(done||!office||!has||lifeState.money<10000?'disabled':'')+'>Demander le permis</button>';
