@@ -1573,13 +1573,14 @@ function generateCity() {
     buildMappedRoadsideInfill();
     buildMappedStreetTrees();
     createAFGamerHQ();
+    createDrivingSchools();
     document.getElementById('mapStatus').textContent += ' · rues, bâtiments et espaces verts issus du réseau cartographique';
     if (!npcPopulationCreated) {
       // Population volontairement modérée : priorité à la stabilité et au temps de calcul.
-      createNPCs(mobilePerformanceMode?75:155);
+      createNPCs(mobilePerformanceMode?90:190);
       npcPopulationCreated = true;
     }
-    createAbidjanTraffic(mobilePerformanceMode?65:150);
+    createAbidjanTraffic(mobilePerformanceMode?80:180);
     buildUrbanTrafficSignals();
     worldReady = true;
     startPlayerAtHome();
@@ -1589,6 +1590,7 @@ function generateCity() {
     // Ne pas créer de rues fictives : aucun véhicule ne roule hors du réseau OSM.
     osmRoadSegments.length=0;trafficRoadSegments.length=0;trafficGraph.clear();
     createAFGamerHQ();
+    createDrivingSchools();
     worldReady = true;startPlayerAtHome();
     if(mapOpen) drawBigMap();
   });
@@ -7176,6 +7178,25 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
 </script>
 
 <script>
+
+function createDrivingSchools(){
+ if(!scene||window.__ABJ_SCHOOLS_CREATED)return;window.__ABJ_SCHOOLS_CREATED=true;
+ QUARTIERS.forEach((q,i)=>{
+  const x=((q.xMin+q.xMax)/2)*(CITY_SIZE/2),z=((q.zMin+q.zMax)/2)*(CITY_SIZE/2);
+  const g=new THREE.Group(),wall=new THREE.MeshStandardMaterial({color:0xe0d2b5,roughness:.9}),roof=new THREE.MeshStandardMaterial({color:0x9a4d3e,roughness:.8});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(12,5,10),wall);body.position.y=2.5;g.add(body);
+  const top=new THREE.Mesh(new THREE.BoxGeometry(12.8,.8,10.8),roof);top.position.y=5.35;g.add(top);
+  const board=new THREE.Mesh(new THREE.BoxGeometry(7.5,1.4,.14),new THREE.MeshStandardMaterial({color:0x174a4a}));board.position.set(0,3.9,5.08);g.add(board);
+  g.position.set(x,terrainHeight(x,z),z);scene.add(g);
+  poi.push({x,z,type:'auto-ecole',nom:'Auto-école '+q.nom,data:{district:q.nom,description:'Centre de formation à la conduite et préparation au permis'}});
+ });
+}
+const __abjOldCityInteract=interactWithCityLife;
+interactWithCityLife=function(){
+ if(player&&!currentInterior){const school=poi.filter(p=>p.type==='auto-ecole').sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];if(school&&Math.hypot(school.x-player.position.x,school.z-player.position.z)<20){openPhone();openPhoneApp('autoecole');return true;}}
+ return __abjOldCityInteract();
+};
+
 /* My V : parc automobile personnel, clés liées et parcours auto-école/permis. */
 let drivingVehicle=null;
 const ownedVehicleMeshes=[];
