@@ -1575,6 +1575,7 @@ function generateCity() {
     buildMappedStreetTrees();
     createAFGamerHQ();
     createDrivingSchools();
+    createTransitDepots();
     document.getElementById('mapStatus').textContent += ' · rues, bâtiments et espaces verts issus du réseau cartographique';
     if (!npcPopulationCreated) {
       // Population volontairement modérée : priorité à la stabilité et au temps de calcul.
@@ -1592,6 +1593,7 @@ function generateCity() {
     osmRoadSegments.length=0;trafficRoadSegments.length=0;trafficGraph.clear();
     createAFGamerHQ();
     createDrivingSchools();
+    createTransitDepots();
     worldReady = true;startPlayerAtHome();
     if(mapOpen) drawBigMap();
   });
@@ -2288,8 +2290,8 @@ function startAFGamerGPS(mode){
 function showAFGamerMapCard(){
  if(!creatorHQPosition)return;
  const el=document.createElement('div');el.style.cssText='position:fixed;z-index:95;left:50%;top:50%;transform:translate(-50%,-50%);width:min(360px,90vw);padding:18px;background:#102a37;border:2px solid #a77bd4;border-radius:16px;color:white;box-shadow:0 18px 60px #000b';
- el.innerHTML='<button id="hqCardClose" style="float:right">✕</button><h3 style="color:#d4b3f2">AF_GAMER</h3><p>Siège social · Plateau, Abidjan</p><p style="font-size:12px;color:#c5d5df">Bâtiment du studio avec accueil et étage privé du créateur.</p><b>Comment veux-tu y aller ?</b><div style="display:grid;gap:7px;margin-top:10px"><button data-mode="walk">🚶 Marcher</button><button data-mode="yango">🚕 Prendre un Yango</button><button data-mode="car">🚘 Ma voiture</button></div>';
- document.body.appendChild(el);el.querySelector('#hqCardClose').onclick=()=>el.remove();el.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{const mode=b.dataset.mode;el.remove();if(mode==='car'&&!lifeState.v19?.ownedVehicles?.length){showMessage('Tu ne possèdes pas encore de voiture.');return;}startAFGamerGPS(mode);});
+ el.innerHTML='<button id="hqCardClose" style="float:right">✕</button><h3 style="color:#d4b3f2">AF_GAMER</h3><p>Siège social · Plateau, Abidjan</p><p style="font-size:12px;color:#c5d5df">Bâtiment du studio avec accueil et étage privé du créateur.</p><b>Comment veux-tu y aller ?</b><div style="display:grid;gap:7px;margin-top:10px"><button data-mode="walk">🚶 Marcher ou courir</button><button data-mode="yango">🚕 Prendre un Yango</button><button data-mode="car">🚘 Ma voiture</button></div>';
+ document.body.appendChild(el);el.querySelector('#hqCardClose').onclick=()=>el.remove();el.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{const mode=b.dataset.mode;el.remove();if(mode==='car'&&(!lifeState.v19?.ownedVehicles?.length||!lifeState.documents?.permis_conduire)){showMessage('Tu ne possèdes pas encore de voiture.');return;}startAFGamerGPS(mode);});
 }
 
 function createAFGamerHQ(){
@@ -7211,16 +7213,34 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
 
 function createDrivingSchools(){
  if(!scene||window.__ABJ_SCHOOLS_CREATED)return;window.__ABJ_SCHOOLS_CREATED=true;
- QUARTIERS.forEach((q,i)=>{
-  const x=((q.xMin+q.xMax)/2)*(CITY_SIZE/2),z=((q.zMin+q.zMax)/2)*(CITY_SIZE/2);
+ const zones=typeof COMMUNE_ZONES!=='undefined'&&COMMUNE_ZONES.length?COMMUNE_ZONES:QUARTIERS.map(q=>({name:q.nom,x1:q.xMin*CITY_SIZE/2,x2:q.xMax*CITY_SIZE/2,z1:q.zMin*CITY_SIZE/2,z2:q.zMax*CITY_SIZE/2}));
+ zones.forEach((q,i)=>{
+  const x=(q.x1+q.x2)/2,z=(q.z1+q.z2)/2;
   const g=new THREE.Group(),wall=new THREE.MeshStandardMaterial({color:0xe0d2b5,roughness:.9}),roof=new THREE.MeshStandardMaterial({color:0x9a4d3e,roughness:.8});
   const body=new THREE.Mesh(new THREE.BoxGeometry(12,5,10),wall);body.position.y=2.5;g.add(body);
   const top=new THREE.Mesh(new THREE.BoxGeometry(12.8,.8,10.8),roof);top.position.y=5.35;g.add(top);
   const board=new THREE.Mesh(new THREE.BoxGeometry(7.5,1.4,.14),new THREE.MeshStandardMaterial({color:0x174a4a}));board.position.set(0,3.9,5.08);g.add(board);
   g.position.set(x,terrainHeight(x,z),z);scene.add(g);
-  poi.push({x,z,type:'auto-ecole',nom:'Auto-école '+q.nom,data:{district:q.nom,description:'Centre de formation à la conduite et préparation au permis'}});
+  poi.push({x,z,type:'auto-ecole',nom:'Auto-école '+q.name,data:{district:q.name,description:'Centre de formation à la conduite et préparation au permis'}});
  });
 }
+function createTransitDepots(){
+ if(!scene||window.__ABJ_DEPOTS_CREATED)return;window.__ABJ_DEPOTS_CREATED=true;
+ const base=geoToWorld(5.323,-4.02);
+ const specs=[{name:'Gare des Gbaka',type:'gbaka',color:0xe1ad36,x:-420,z:280},{name:'Dépôt SOTRA',type:'bus',color:0x347da4,x:430,z:-330},{name:'Garage des Taxis',type:'taxi',color:0xd9c34b,x:480,z:380}];
+ specs.forEach(spec=>{
+  const x=base.x+spec.x,z=base.z+spec.z,g=new THREE.Group();
+  const roofMat=new THREE.MeshStandardMaterial({color:spec.color,roughness:.8}),pillarMat=new THREE.MeshStandardMaterial({color:0x9aa5a6,roughness:.9});
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(36,1,18),roofMat);roof.position.y=7;g.add(roof);
+  for(const px of [-16,16])for(const pz of [-7,7]){const col=new THREE.Mesh(new THREE.BoxGeometry(.8,7,.8),pillarMat);col.position.set(px,3.5,pz);g.add(col);}
+  const signCanvas=document.createElement('canvas');signCanvas.width=640;signCanvas.height=140;const ctx=signCanvas.getContext('2d');ctx.fillStyle='#172b35';ctx.fillRect(0,0,640,140);ctx.fillStyle='#fff0c8';ctx.font='bold 46px Arial';ctx.textAlign='center';ctx.fillText(spec.name.toUpperCase(),320,86);
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(17,3.7),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signCanvas),side:THREE.DoubleSide}));sign.position.set(0,5.3,9.2);g.add(sign);
+  g.position.set(x,terrainHeight(x,z),z);scene.add(g);
+  for(let n=0;n<4;n++){const v=createVehicleMesh(spec.type);v.userData={...(v.userData||{}),type:'osmTraffic',vType:spec.type,scripted:true,parked:true,wreck:false};v.position.set(x-11+(n%2)*14,terrainHeight(x,z-4-Math.floor(n/2)*6)+.04,z-4-Math.floor(n/2)*6);v.rotation.y=Math.PI;scene.add(v);vehicles.push(v);}
+  poi.push({x,z,type:'garage',nom:spec.name,data:{description:'Hangar et stationnement des véhicules affectés à cette gare'}});
+ });
+}
+
 const __abjOldCityInteract=interactWithCityLife;
 interactWithCityLife=function(){
  if(player&&!currentInterior){const school=poi.filter(p=>p.type==='auto-ecole').sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];if(school&&Math.hypot(school.x-player.position.x,school.z-player.position.z)<20){openPhone();openPhoneApp('autoecole');return true;}}
