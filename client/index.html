@@ -5609,7 +5609,7 @@ function animate() {
     districtCheckTimer+=delta;if(districtCheckTimer>.45){districtCheckTimer=0;updateDistrictHUD();}
     const phoneClock=document.getElementById('phoneClock');if(phoneClock)phoneClock.textContent=String(lifeState.hour).padStart(2,'0')+':'+String(lifeState.minute).padStart(2,'0');
     if(mapOpen){if(mapView.realTiles){leafletDynamicTimer+=delta;abjRefreshLeafletDynamicLayers(false);}else drawBigMap();}
-    updateRemoteAvatars(delta);
+    if(window.ABJ_UPDATE_REMOTE_AVATARS)window.ABJ_UPDATE_REMOTE_AVATARS(delta);
     renderer.render(scene, camera);
   } catch (err) {
     console.error(err);
@@ -7028,6 +7028,7 @@ function updateRemoteAvatars(delta){
   const car=obj.userData&&obj.userData.remoteVehicle,ct=car&&car.userData.netTarget;if(car&&ct){car.position.x+=(ct.x-car.position.x)*alpha;car.position.z+=(ct.z-car.position.z)*alpha;let diff=ct.yaw-car.rotation.y;while(diff>Math.PI)diff-=Math.PI*2;while(diff< -Math.PI)diff+=Math.PI*2;car.rotation.y+=diff*alpha;}
  });
 }
+window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
 
  function removeRemote(id){const obj=remote.get(id);if(obj&&typeof scene!=='undefined'&&scene){if(obj.userData.remoteVehicle)scene.remove(obj.userData.remoteVehicle);scene.remove(obj);}remote.delete(id);}
  function connectOnline(){
