@@ -6253,7 +6253,26 @@ const v12OrigTick=V11tick;
 V11tick=function(delta){v12OrigTick(delta);v12Climate(delta);};
 // Correction de sécurité supplémentaire à la sortie de l'ascenseur : hauteur et gravité sont recalées sur l'étage actif.
 const v12OrigActivateAccount=activateGameAccount;
-activateGameAccount=function(phone){v12OrigActivateAccount(phone);if(gameStarted)v11ShowLoading();};
+activateGameAccount=function(phone){
+  // L'authentification créateur est asynchrone : afficher le chargement avant init.
+  v11ShowLoading();
+  let result;
+  try{result=v12OrigActivateAccount(phone);}
+  catch(error){LS.on=false;const el=document.getElementById('loadingScreen');if(el)el.style.display='none';throw error;}
+  Promise.resolve(result).then(()=>{
+    if(!gameStarted){
+      LS.on=false;
+      const el=document.getElementById('loadingScreen');
+      if(el){el.classList.remove('done');el.style.display='none';}
+    }else if(!LS.on){v11ShowLoading();}
+  }).catch(error=>{
+    LS.on=false;
+    const el=document.getElementById('loadingScreen');
+    if(el){el.classList.remove('done');el.style.display='none';}
+    console.error('Activation du compte impossible :',error);
+  });
+  return result;
+};
 const v12OrigElevatorUpdate=updateElevatorTravel;
 updateElevatorTravel=function(delta){
   v12OrigElevatorUpdate(delta);
