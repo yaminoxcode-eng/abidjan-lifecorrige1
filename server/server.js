@@ -756,6 +756,27 @@ app.get('/api/creator/world', auth, requireCreator, (_req,res) => {
 app.get('/api/creator/reports', auth, requireCreator, (_req,res) => {
   res.set('Cache-Control','no-store').json({items:creatorReports.slice(-150).reverse().map(({phone,...report})=>report)});
 });
+app.get('/api/creator/afgamer-inbox', auth, requireCreator, async (_req,res) => {
+  if(!persistentStorageEnabled)return res.status(503).json({error:'Boîte AF_GAMER indisponible : stockage permanent non configuré.'});
+  try{
+    const rows=await supabaseRequest('afgamer_inbox?select=id,created_at,player_name,category,subject,message,status&order=created_at.desc&limit=200');
+    res.set('Cache-Control','no-store').json({items:(rows||[]).map(x=>({id:x.id,createdAt:x.created_at,player:x.player_name,category:x.category,subject:x.subject,message:x.message,status:x.status}))});
+  }catch(error){console.error('Lecture boîte AF_GAMER:',error.message);res.status(503).json({error:'Impossible de charger la boîte AF_GAMER.'});}
+});
+app.post('/api/game/afgamer-message', auth, async (req,res) => {
+  if(!persistentStorageEnabled)return res.status(503).json({error:'Envoi indisponible : stockage permanent non configuré.'});
+  if(!rateLimit(req.phone+':afgamer-message',5,60000))return res.status(429).json({error:'Tu as envoyé trop de messages. Réessaie dans une minute.'});
+  const category=req.body.category==='suggestion'?'suggestion':'demande';
+  const subject=clean(req.body.subject,90);
+  const message=clean(req.body.message,1200);
+  if(!message)return res.status(400).json({error:'Écris un message avant de l’envoyer.'});
+  if(category==='demande'&&subject.length<3)return res.status(400).json({error:'Précise l’objet de ta demande.'});
+  const player=clean(accounts.get(req.phone)?.profile?.name,24)||'Citoyen';
+  try{
+    await supabaseRequest('afgamer_inbox',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{player_name:player,player_phone:req.phone,category,subject,message,status:'nouveau'}])});
+    res.status(201).json({ok:true,message:'Ton message a bien été transmis à AF GAMER CI.'});
+  }catch(error){console.error('Envoi boîte AF_GAMER:',error.message);res.status(503).json({error:'Le message n’a pas pu être enregistré. Réessaie plus tard.'});}
+});
 app.post('/api/game/report', auth, async (req,res) => {
   if (!rateLimit(req.phone+':game-report',12,60000)) return res.status(429).json({error:'Trop de signalements. Réessaie plus tard.'});
   const message=clean(req.body.message,500),kind=clean(req.body.kind,40)||'client-error';
