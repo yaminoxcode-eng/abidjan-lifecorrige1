@@ -690,6 +690,37 @@ app.post('/api/auth/reset', async (req, res) => {
   res.json({ ok: true });
 });
 
+// Suppression définitive du compte connecté et de toutes ses données de jeu.
+app.delete('/api/account/me', auth, async (req, res) => {
+  const phone = req.phone;
+  const account = accounts.get(phone);
+  if (!account) return res.status(404).json({ error: 'Compte introuvable.' });
+  if (!persistentStorageEnabled) {
+    return res.status(503).json({ error: 'Suppression sécurisée indisponible : stockage permanent non configuré.' });
+  }
+  try {
+    await supabaseRequest('game_accounts?phone=eq.' + encodeURIComponent(phone), {
+      method: 'DELETE',
+      headers: { Prefer: 'return=minimal' }
+    });
+  } catch (error) {
+    console.error('Échec suppression compte Supabase:', error.message);
+    return res.status(503).json({ error: 'Le compte n’a pas pu être supprimé du stockage. Aucune déconnexion destructive n’a été effectuée.' });
+  }
+  // Retirer d'abord la source de vérité pour empêcher la sauvegarde lors du disconnect.
+  accounts.delete(phone);
+  for (const [ticket, item] of recoveryTickets) if (item.phone === phone) recoveryTickets.delete(ticket);
+  for (const [id, player] of activePlayers) {
+    if (player.phone !== phone) continue;
+    io.to(id).emit('account:deleted');
+    activePlayers.delete(id);
+    io.sockets.sockets.get(id)?.disconnect(true);
+    io.emit('player:left', id);
+  }
+  broadcastPlayerCount();
+  res.set('Cache-Control', 'no-store').json({ ok: true, deleted: true });
+});
+
 app.get('/api/me', auth, (req, res) =>
   res.json({ player: publicPlayer(accounts.get(req.phone), req.phone) })
 );
