@@ -7326,6 +7326,9 @@ renderMairieApp=function(){
  const cancel=document.getElementById('creatorCancel');
  if(cancel)cancel.addEventListener('click',()=>{creatorEditMode=false;});
 })();
+
+const __abjAnimateCharacterNatural=animateCharacter;
+animateCharacter=function(char,delta,moving){__abjAnimateCharacterNatural(char,delta,moving);const d=char&&char.userData;if(!d)return;if(d.headGroup){d.headGroup.rotation.x=moving?Math.sin((d.phase||0)*2)*.035:0;d.headGroup.rotation.z=moving?Math.sin(d.phase||0)*.018:0;}if(d.bodyGroup){d.bodyGroup.rotation.x=moving?-.035:0;d.bodyGroup.rotation.z=moving?Math.sin(d.phase||0)*.022:0;}};
 </script>
 </body>
 </html>
