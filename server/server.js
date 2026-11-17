@@ -754,7 +754,7 @@ app.get('/api/creator/world', auth, requireCreator, (_req,res) => {
   });
 });
 app.get('/api/creator/reports', auth, requireCreator, (_req,res) => {
-  res.set('Cache-Control','no-store').json({items:creatorReports.slice(-150).reverse()});
+  res.set('Cache-Control','no-store').json({items:creatorReports.slice(-150).reverse().map(({phone,...report})=>report)});
 });
 app.post('/api/game/report', auth, async (req,res) => {
   if (!rateLimit(req.phone+':game-report',12,60000)) return res.status(429).json({error:'Trop de signalements. Réessaie plus tard.'});
@@ -886,7 +886,7 @@ io.on('connection', (socket) => {
     }
 
     const now = Date.now();
-    if (now - state.lastUpdate < 70) return;
+    if (now - state.lastUpdate < 45) return;
     state.lastUpdate = now;
 
     const pos = payload.position || {};
