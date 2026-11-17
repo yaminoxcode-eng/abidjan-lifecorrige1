@@ -5016,10 +5016,35 @@ function openInstalledPhoneApp(app){
 }
 function renderAccountSettingsApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
- content.innerHTML='<button id="phoneBack">← Applications</button><h3>⚙️ Réglages du compte</h3><div style="padding:12px;background:#ffffff12;border-radius:12px"><div style="font-size:11px;color:#b9d6e7">Compte connecté</div><b>'+escapeHTML(activeGameAccount||'Aucun compte')+'</b><p style="font-size:11px;color:#c6d8e5">La sauvegarde est associée à ce numéro sur cet appareil.</p></div><button id="accountSignOut">Se déconnecter</button><button id="accountDelete" style="background:#843d3d">Supprimer le compte et toutes les sauvegardes</button><p id="accountSettingStatus" style="font-size:11px;color:#ffe0a0"></p>';
+ const phone=activeGameAccount||'Aucun compte';
+ content.innerHTML='<button id="phoneBack">← Applications</button><h3>⚙️ Paramètres du jeu</h3><p style="font-size:12px;color:#c6d8e5">Réglages liés à ton compte et à ton expérience Abidjan Life.</p><div style="padding:12px;background:#ffffff12;border-radius:12px"><div style="font-size:11px;color:#b9d6e7">Compte connecté</div><b>'+escapeHTML(phone)+'</b><p style="font-size:11px;color:#c6d8e5">Progression, personnage et préférences sont associés à ce compte.</p></div><h4>Compte et sécurité</h4><button id="accountSignOut">Se déconnecter</button><div style="margin-top:12px;padding:12px;border:1px solid #c94b4b88;border-radius:12px;background:#501c2533"><b style="color:#ffaaaa">Zone de suppression définitive</b><p style="font-size:11px;color:#f0cccc">Supprime le compte en ligne, les sauvegardes, le personnage, la progression et les données locales associées. Cette opération est irréversible.</p><button id="accountDelete" style="background:#9b2929;border-color:#ff8c8c">Supprimer mon compte</button></div><p id="accountSettingStatus" style="font-size:11px;color:#ffe0a0;min-height:20px"></p>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
  document.getElementById('accountSignOut').onclick=()=>{closePhone();activeGameAccount=null;openAccountGate();};
- document.getElementById('accountDelete').onclick=()=>{const status=document.getElementById('accountSettingStatus');if(!activeGameAccount){status.textContent='Aucun compte actif.';return;}if(!confirm('Supprimer ce compte et toutes ses sauvegardes locales ? Cette action est irréversible.'))return;const accounts=readGameAccounts();delete accounts[activeGameAccount];safeSet(ACCOUNT_INDEX_KEY,JSON.stringify(accounts));safeRemove(LIFE_SAVE_KEY);safeRemove('abj-life-gallery-v1');activeGameAccount=null;closePhone();gameStarted=false;worldReady=false;document.getElementById('creatorOverlay').classList.remove('open');document.getElementById('startScreen').style.display='flex';status.textContent='Compte supprimé.';showMessage('Compte et sauvegardes supprimés.');};
+ document.getElementById('accountDelete').onclick=async()=>{
+  const status=document.getElementById('accountSettingStatus'),account=activeGameAccount;
+  if(!account){status.textContent='Aucun compte actif.';return;}
+  if(!confirm('ATTENTION : supprimer définitivement ton compte, toutes tes sauvegardes en ligne et locales, ton personnage et ta progression ? Cette action est irréversible.'))return;
+  const btn=document.getElementById('accountDelete');btn.disabled=true;status.textContent='Suppression sécurisée du compte en cours…';
+  try{
+   const authToken=safeGet('abj-online-token:'+account);
+   if(!authToken)throw new Error('Session sécurisée absente. Reconnecte-toi avant de supprimer ton compte.');
+   const base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+   const response=await fetch(base+'/api/account/me',{method:'DELETE',headers:{Authorization:'Bearer '+authToken}});
+   const result=await response.json().catch(()=>({}));
+   if(!response.ok||!result.deleted)throw new Error(result.error||'Le serveur n’a pas confirmé la suppression.');
+   const accounts=readGameAccounts();delete accounts[account];safeSet(ACCOUNT_INDEX_KEY,JSON.stringify(accounts));
+   safeRemove('abidjan-life-life-v1:'+account);safeRemove('abj-online-token:'+account);safeRemove('abj-installed-apps:'+account);
+   if(typeof LIFE_SAVE_KEY==='string')safeRemove(LIFE_SAVE_KEY);
+   safeRemove('abj-life-gallery-v1');
+   if(window.ABJ_PENDING_REMOTE_SAVE&&window.ABJ_PENDING_REMOTE_SAVE.phone===account)window.ABJ_PENDING_REMOTE_SAVE=null;
+   if(window.ABJ_GAME_SOCKET){try{window.ABJ_GAME_SOCKET.disconnect();}catch(e){}window.ABJ_GAME_SOCKET=null;}
+   activeGameAccount=null;LIFE_SAVE_KEY='abidjan-life-life-v1';gameStarted=false;worldReady=false;
+   const creator=document.getElementById('creatorOverlay');if(creator)creator.classList.remove('open');
+   const phoneEl=document.getElementById('phone');if(phoneEl)phoneEl.classList.remove('open');
+   status.textContent='Compte supprimé. Retour à l’accueil…';
+   setTimeout(()=>location.reload(),350);
+  }catch(error){status.textContent=error.message||'Suppression impossible. Réessaie.';btn.disabled=false;}
+ };
 }
 
 function renderCheatApp(){
@@ -5278,7 +5303,7 @@ function initMapInteractions(){
   canvas.addEventListener('pointerdown',function(e){
     if(!mapOpen||e.button!==0)return;
     mapView.dragging=true;mapView.follow=false;mapView.lastX=e.clientX;mapView.lastY=e.clientY;
-    canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';
+    try{if(canvas.isConnected&&typeof canvas.setPointerCapture==='function'&&e.pointerId!=null)canvas.setPointerCapture(e.pointerId);}catch(err){console.debug('Capture pointeur ignorée :',err.name);}canvas.style.cursor='grabbing';
   });
   canvas.addEventListener('pointermove',function(e){
     if(!mapOpen||!mapView.dragging)return;
@@ -6988,6 +7013,22 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
  };
  const back=document.getElementById('creatorChoicesBack');if(back)back.addEventListener('click',()=>requestAnimationFrame(()=>updateCreatorPreview()));
  const cancel=document.getElementById('creatorCancel');if(cancel)cancel.addEventListener('click',stopIdentityPreview);
+})();
+</script>
+
+<script>
+/* Paramètres accessibles depuis l'accueil et Wave facultatif. */
+(function(){
+ const apps=document.getElementById('phoneApps');
+ if(apps&&!apps.querySelector('[data-app="parametres"]')){
+  const page=apps.querySelector('.phoneAppsPage:last-child')||apps;
+  const b=document.createElement('button');b.className='phoneApp';b.dataset.app='parametres';b.innerHTML='<span>⚙️</span>Paramètres';b.addEventListener('click',()=>openPhoneApp('parametres'));page.appendChild(b);
+ }
+ const originalOpen=window.openPhoneApp;
+ if(typeof originalOpen==='function'&&!window.__ABJ_SETTINGS_GATE_PATCH){
+  window.__ABJ_SETTINGS_GATE_PATCH=true;
+  window.openPhoneApp=function(app){if(app==='parametres')return originalOpen(app);return originalOpen(app);};
+ }
 })();
 </script>
 </body>
