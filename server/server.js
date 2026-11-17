@@ -585,7 +585,7 @@ app.post('/api/auth/migrate-local', async (req, res) => {
       sport: answer(s.sport)
     },
     profile: {
-      name: clean(profile.name, 24) || 'Mon personnage',
+      name: safePlayerName(phone, profile.name || 'Mon personnage'),
       gender: profile.gender === 'femme' ? 'femme' : 'homme',
       skin: Number(profile.skin) || 0x7a4a24,
       hair: Number(profile.hair) || 0x17120f,
