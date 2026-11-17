@@ -235,6 +235,19 @@
 #creatorCard .creatorNote{color:#b9cec1!important;text-align:center}
 @media(max-width:760px){#creatorCard{padding:14px}.creatorLayout{grid-template-columns:1fr;gap:12px}.creatorCenter{min-height:0;order:0}.creatorCenter #creatorPreview{width:100%;max-width:250px;height:270px}.creatorOptions{order:1;flex-direction:row;flex-wrap:wrap}.creatorOptionBtn{flex:1 1 42%}.creatorDetail{order:2;min-height:auto}}
 </style>
+
+<style id="abj-creator-preview-polish">
+#creatorCard{width:min(1080px,100%);background:linear-gradient(145deg,#183a3a,#101e29)}
+.creatorLayout{grid-template-columns:minmax(155px,205px) minmax(250px,1fr) minmax(190px,255px);align-items:stretch}
+.creatorCenter #creatorPreview{width:min(100%,280px);height:340px;min-height:300px;border-radius:24px;overflow:hidden;font-size:0;background:radial-gradient(ellipse at 50% 25%,#37635a,#0b1720 76%)}
+#creatorPreview canvas{width:100%!important;height:100%!important;display:block}
+.creatorDetail{background:linear-gradient(160deg,#0c2027,#101923)}
+.creatorOptionBtn{min-height:56px}
+.creatorOptionBtn.active{border-color:#e6c47d;box-shadow:inset 3px 0 #e6c47d}
+#creatorLifeChoices{box-shadow:0 18px 55px #0007}
+#creator3DPreview canvas{max-width:100%;height:auto!important;border-radius:18px}
+@media(max-width:760px){.creatorLayout{grid-template-columns:1fr}.creatorOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.creatorCenter #creatorPreview{width:min(100%,260px);height:300px;min-height:260px}.creatorDetail{min-height:0}.creatorActions{position:sticky;bottom:0;background:#101d2a;padding:10px 0;z-index:3}}
+</style>
 </head>
 <body>
 
@@ -3459,49 +3472,55 @@ function updateParticles(delta) {
 // PERSONNAGES
 // ============================================================
 function createCharacter(opts) {
-  const g = new THREE.Group();
-  const skinTones = [0x8d5524, 0x6b3f1d, 0xa0663a, 0x5a3018, 0x7a4a24];
-  const skin = opts.skin || skinTones[Math.floor(Math.random() * skinTones.length)];
-  const shirt = opts.shirt || 0xff6b6b;
-  const pants = opts.pants || 0x2c3e50;
+  opts=opts||{};
+  const g=new THREE.Group();
+  const skin=Number(opts.skin)||0x7a4a24,shirt=Number(opts.shirt)||0xe74c3c,pants=Number(opts.pants)||0x2c3e50;
   const female=opts.gender==='femme';
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(female?0.25:0.27, female?0.29:0.32, 0.72, 10), new THREE.MeshLambertMaterial({ color: shirt }));
-  torso.position.y = 1.35; torso.castShadow = true; torso.userData.clothingPart='shirt'; g.add(torso);
-  const hips = new THREE.Mesh(new THREE.CylinderGeometry(female?0.31:0.28, female?0.31:0.28, 0.32, 10), new THREE.MeshLambertMaterial({ color: pants }));
-  hips.position.y = 0.9; hips.castShadow = true; hips.userData.clothingPart='pants'; g.add(hips);
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.18, 8), new THREE.MeshLambertMaterial({ color: skin }));
-  neck.position.y = 1.8; g.add(neck);
-  const headGroup = new THREE.Group();
-  headGroup.position.y = 2.08;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 12), new THREE.MeshLambertMaterial({ color: skin }));
-  head.scale.set(1, 1.08, 0.95); head.castShadow = true; headGroup.add(head);
-  const hair = new THREE.Mesh(new THREE.SphereGeometry(opts.gender==='femme'?0.285:0.27, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: opts.hair||0x111111 }));
-  hair.position.y = 0.05; headGroup.add(hair);
-  g.add(headGroup);
-  function makeArm(side) {
-    const a = new THREE.Group();
-    const u = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.075, 0.48, 8), new THREE.MeshLambertMaterial({ color: shirt }));
-    u.position.y = -0.24; u.castShadow = true; u.userData.clothingPart='shirt'; a.add(u);
-    const l = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.48, 8), new THREE.MeshLambertMaterial({ color: skin }));
-    l.position.y = -0.72; l.castShadow = true; a.add(l);
-    a.position.set(side * 0.36, 1.6, 0); g.add(a);
-    return a;
+  const mat=(color,roughness=.86)=>new THREE.MeshStandardMaterial({color,roughness,metalness:0});
+  const skinMat=mat(skin),shirtMat=mat(shirt),pantsMat=mat(pants),hairMat=mat(Number(opts.hair)||0x17120f),shoeMat=mat(0x242321),eyeWhite=mat(0xf4eee3),eyeDark=mat(0x241a16),lipMat=mat(female?0x713b3a:0x51302a);
+  function part(geo,material,x,y,z,parent=g){const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
+  // Silhouette humaine plus fine : bassin, taille, épaules, membres articulés et chaussures.
+  const torso=part(new THREE.CapsuleGeometry(female?.235:.255,.42,5,10),shirtMat,0,1.39,0);torso.scale.set(female?1.02:1,1,.82);torso.userData.clothingPart='shirt';
+  const hips=part(new THREE.CapsuleGeometry(female?.245:.225,.18,4,9),pantsMat,0,.91,0);hips.scale.set(female?1.12:1,1,.9);hips.userData.clothingPart='pants';
+  const neck=part(new THREE.CylinderGeometry(.075,.09,.17,10),skinMat,0,1.79,0);
+  const headGroup=new THREE.Group();headGroup.position.y=2.06;g.add(headGroup);
+  const head=part(new THREE.SphereGeometry(.245,18,16),skinMat,0,0,0,headGroup);head.scale.set(.88,1.12,.91);
+  // Oreilles, yeux, nez et bouche tournés vers l'avant (+Z).
+  for(const side of [-1,1]){
+    const ear=part(new THREE.SphereGeometry(.061,10,8),skinMat,side*.225,-.005,0,headGroup);ear.scale.set(.58,1,.42);
+    const eye=part(new THREE.SphereGeometry(.034,10,8),eyeWhite,side*.087,.035,.205,headGroup);eye.scale.set(1.12,.82,.5);
+    part(new THREE.SphereGeometry(.018,8,6),eyeDark,side*.087,.035,.222,headGroup);
+    const brow=part(new THREE.BoxGeometry(.075,.018,.025),hairMat,side*.087,.092,.205,headGroup);brow.rotation.z=side*-.08;
   }
-  const armL = makeArm(-1), armR = makeArm(1);
-  function makeLeg(side) {
-    const l = new THREE.Group();
-    const u = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.48, 8), new THREE.MeshLambertMaterial({ color: pants }));
-    u.position.y = -0.24; u.castShadow = true; u.userData.clothingPart='pants'; l.add(u);
-    const lo = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.075, 0.48, 8), new THREE.MeshLambertMaterial({ color: pants }));
-    lo.position.y = -0.72; lo.castShadow = true; lo.userData.clothingPart='pants'; l.add(lo);
-    l.position.set(side * 0.14, 0.85, 0); g.add(l);
-    return l;
+  const nose=part(new THREE.SphereGeometry(.047,10,8),skinMat,0,-.035,.224,headGroup);nose.scale.set(.72,.85,.8);
+  const mouth=part(new THREE.BoxGeometry(.075,.012,.018),lipMat,0,-.112,.207,headGroup);
+  const cap=part(new THREE.SphereGeometry(.255,16,10,0,Math.PI*2,0,Math.PI*.55),hairMat,0,.075,-.012,headGroup);cap.scale.set(1.02,.72,1);
+  if(female){
+    const backHair=part(new THREE.SphereGeometry(.205,12,10),hairMat,0,-.11,-.105,headGroup);backHair.scale.set(1.05,1.35,.82);
+    for(const side of [-1,1]){const lock=part(new THREE.CapsuleGeometry(.055,.28,4,7),hairMat,side*.205,-.18,-.005,headGroup);lock.rotation.z=side*-.08;}
+  } else {
+    const sideHair=part(new THREE.SphereGeometry(.235,12,8,0,Math.PI*2,0,Math.PI*.38),hairMat,0,.015,-.01,headGroup);sideHair.scale.set(1,.8,1);
   }
-  const legL = makeLeg(-1), legR = makeLeg(1);
-  g.userData = { armL, armR, legL, legR, phase: 0, headGroup };
+  function makeArm(side){
+    const pivot=new THREE.Group();pivot.position.set(side*.315,1.62,0);g.add(pivot);
+    const upper=part(new THREE.CapsuleGeometry(.075,.34,4,8),shirtMat,0,-.22,0,pivot);upper.userData.clothingPart='shirt';
+    const elbow=part(new THREE.SphereGeometry(.067,8,7),skinMat,0,-.43,0,pivot);
+    const fore=part(new THREE.CapsuleGeometry(.057,.36,4,8),skinMat,0,-.65,0,pivot);
+    const hand=part(new THREE.SphereGeometry(.065,9,8),skinMat,0,-.88,.012,pivot);hand.scale.set(.82,1.15,.72);
+    return pivot;
+  }
+  function makeLeg(side){
+    const pivot=new THREE.Group();pivot.position.set(side*.125,.82,0);g.add(pivot);
+    const upper=part(new THREE.CapsuleGeometry(.092,.34,4,8),pantsMat,0,-.22,0,pivot);upper.userData.clothingPart='pants';
+    part(new THREE.SphereGeometry(.083,8,7),pantsMat,0,-.43,0,pivot);
+    const lower=part(new THREE.CapsuleGeometry(.068,.37,4,8),pantsMat,0,-.65,0,pivot);lower.userData.clothingPart='pants';
+    const foot=part(new THREE.BoxGeometry(.15,.11,.27),shoeMat,0,-.91,.065,pivot);foot.castShadow=true;
+    return pivot;
+  }
+  const armL=makeArm(-1),armR=makeArm(1),legL=makeLeg(-1),legR=makeLeg(1);
+  g.userData={armL,armR,legL,legR,phase:0,headGroup,anatomyVersion:2};
   return g;
 }
-
 function applyPlayerClothing(){if(!player||!lifeState.playerProfile)return;const shirt=lifeState.playerProfile.shirt||0xe74c3c,pants=lifeState.playerProfile.pants||0x2c3e50;player.traverse(o=>{if(!o.isMesh||!o.userData.clothingPart)return;o.material.color.setHex(o.userData.clothingPart==='shirt'?shirt:pants);});}
 function createPlayer() {
   const profile=lifeState.playerProfile||{};
