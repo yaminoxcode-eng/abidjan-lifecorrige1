@@ -7037,7 +7037,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
  'use strict';
  const api=()=>window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
  const token=()=>activeGameAccount?safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount)):null;
- let socket=null,lastSend=0,remote=new Map();
+ let socket=null,lastSend=0,lastFullSync=0,lastNetState=null,remote=new Map();
  function makeRemoteAvatar(data){
   if(typeof scene==='undefined'||!scene||!window.THREE||typeof createCharacter!=='function')return null;
   const p=data.profile||{};
@@ -7071,13 +7071,25 @@ function updateRemote(data){
  const x=Number(data.position.x)||0,z=Number(data.position.z)||0;
  if(before)obj.position.copy(before);else obj.position.set(x,terrainHeight(x,z)+.03,z);
  obj.userData.netTarget={x,z,yaw:Number.isFinite(data.position.yaw)?data.position.yaw:obj.rotation.y};
+ obj.userData.netMoving=!!data.moving;
  if(obj.userData.remoteVehicle&&data.vehicle){obj.userData.remoteVehicle.userData.netTarget={x:Number(data.vehicle.x)||0,z:Number(data.vehicle.z)||0,yaw:Number(data.vehicle.yaw)||0};}
 }
 function updateRemoteAvatars(delta){
  if(!remote||!remote.size)return;const alpha=1-Math.pow(.001,Math.min(.05,delta));
  remote.forEach(obj=>{
-  const t=obj.userData&&obj.userData.netTarget;if(t){obj.position.x+=(t.x-obj.position.x)*alpha;obj.position.z+=(t.z-obj.position.z)*alpha;let diff=t.yaw-obj.rotation.y;while(diff>Math.PI)diff-=Math.PI*2;while(diff< -Math.PI)diff+=Math.PI*2;obj.rotation.y+=diff*alpha;}
-  const car=obj.userData&&obj.userData.remoteVehicle,ct=car&&car.userData.netTarget;if(car&&ct){car.position.x+=(ct.x-car.position.x)*alpha;car.position.z+=(ct.z-car.position.z)*alpha;let diff=ct.yaw-car.rotation.y;while(diff>Math.PI)diff-=Math.PI*2;while(diff< -Math.PI)diff+=Math.PI*2;car.rotation.y+=diff*alpha;}
+  const t=obj.userData&&obj.userData.netTarget;
+  if(t){
+   obj.position.x+=(t.x-obj.position.x)*alpha;obj.position.z+=(t.z-obj.position.z)*alpha;
+   if(typeof terrainHeight==='function')obj.position.y+=(terrainHeight(obj.position.x,obj.position.z)+.03-obj.position.y)*alpha;
+   let diff=t.yaw-obj.rotation.y;while(diff>Math.PI)diff-=Math.PI*2;while(diff< -Math.PI)diff+=Math.PI*2;obj.rotation.y+=diff*alpha;
+   if(typeof animateCharacter==='function')animateCharacter(obj,delta,!!obj.userData.netMoving);
+  }
+  const car=obj.userData&&obj.userData.remoteVehicle,ct=car&&car.userData.netTarget;
+  if(car&&ct){
+   car.position.x+=(ct.x-car.position.x)*alpha;car.position.z+=(ct.z-car.position.z)*alpha;
+   if(typeof terrainHeight==='function')car.position.y+=(terrainHeight(car.position.x,car.position.z)+.14-car.position.y)*alpha;
+   let diff=ct.yaw-car.rotation.y;while(diff>Math.PI)diff-=Math.PI*2;while(diff< -Math.PI)diff+=Math.PI*2;car.rotation.y+=diff*alpha;
+  }
  });
 }
 window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
@@ -7126,21 +7138,37 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    setTimeout(()=>{if(m.clientUrl){const u=new URL(m.clientUrl);u.searchParams.set('abjVersion',m.version);location.replace(u.toString());}else location.reload();},1200);
   }catch(e){console.debug('Vérification des mises à jour indisponible',e);}
  }
- // La position est envoyée à fréquence limitée; les systèmes solo restent inchangés.
+ // Synchronisation adaptative : déplacements rapides, état complet moins fréquent.
  setInterval(()=>{
   if(!socket?.connected||!player||!worldReady)return;
-  const now=Date.now();if(now-lastSend<50)return;lastSend=now;
+  const now=Date.now();if(now-lastSend<50)return;
   const pos=new THREE.Vector3();player.getWorldPosition(pos);
-  const p=lifeState.playerProfile||{};
+  const yaw=player.rotation?.y||0;
   const ride=typeof activeCourseGoRide!=='undefined'&&activeCourseGoRide?.taxi?{x:activeCourseGoRide.taxi.position.x,z:activeCourseGoRide.taxi.position.z,yaw:activeCourseGoRide.taxi.rotation.y,phase:activeCourseGoRide.phase,boarded:!!activeCourseGoRide.boarded}:null;
-  const ws=typeof V12!=='undefined'?{hour:lifeState.hour,minute:lifeState.minute,weather:V12.weather,temperature:V12.temperature}:null;
-  if(window.ABJ_WORLD_HOST&&socket.connected&&Date.now()-lastWorldTelemetryAt>5000){
+  const prev=lastNetState;
+  const vehicleChanged=JSON.stringify(ride)!==JSON.stringify(prev?.ride||null);
+  let yawDiff=yaw-(prev?.yaw||0);while(yawDiff>Math.PI)yawDiff-=Math.PI*2;while(yawDiff< -Math.PI)yawDiff+=Math.PI*2;
+  const moved=!prev||Math.hypot(pos.x-prev.x,pos.z-prev.z)>.015||Math.abs(yawDiff)>.018||vehicleChanged;
+  const heartbeat=now-lastSend>=500;
+  const fullSync=now-lastFullSync>=1000;
+  if(!moved&&!heartbeat&&!fullSync)return;
+  lastSend=now;
+  lastNetState={x:pos.x,z:pos.z,yaw,ride:ride?{x:ride.x,z:ride.z,yaw:ride.yaw,boarded:ride.boarded,phase:ride.phase}:null};
+  const payload={version:window.ABJ_BUILD_VERSION,position:{x:pos.x,z:pos.z,yaw},vehicle:ride};
+  if(fullSync){
+   lastFullSync=now;
+   const p=lifeState.playerProfile||{};
+   payload.profile={name:p.name||'Citoyen',gender:p.gender||'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50,bodyType:p.bodyType||'standard',hairstyle:p.hairstyle||'court',outfit:p.outfit||'urbain'};
+   payload.needs={hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,health:lifeState.health,money:lifeState.money};
+   if(typeof V12!=='undefined')payload.worldState={hour:lifeState.hour,minute:lifeState.minute,weather:V12.weather,temperature:V12.temperature};
+  }
+  if(fullSync&&window.ABJ_WORLD_HOST&&socket.connected&&Date.now()-lastWorldTelemetryAt>5000){
    lastWorldTelemetryAt=Date.now();
    const vc={gbaka:0,taxi:0,yango:0,woro:0,moto_livreur:0,moto:0,bus:0,voiture:0,luxe:0};
    vehicles.forEach(v=>{const d=v.userData||{},k=String(d.vType||d.trafficKind||d.vehicleKind||d.kind||d.model||'voiture').toLowerCase();const key=Object.keys(vc).find(x=>k.includes(x))||'voiture';vc[key]++;});
    socket.emit('world:telemetry',{npcTotal:npcs.length,npcActive:npcs.filter(n=>n.visible&&!n.userData?.dead).length,vehicles:vc});
   }
-  socket.emit('player:update',{version:window.ABJ_BUILD_VERSION,position:{x:pos.x,z:pos.z,yaw:player.rotation?.y||0},vehicle:ride,worldState:ws,profile:{name:p.name||'Citoyen',gender:p.gender||'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50,bodyType:p.bodyType||'standard',hairstyle:p.hairstyle||'court',outfit:p.outfit||'urbain'},needs:{hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,health:lifeState.health,money:lifeState.money}});
+  if(socket.volatile)socket.volatile.emit('player:update',payload);else socket.emit('player:update',payload);
  },50);
  const oldActivate=activateGameAccount;
  activateGameAccount=function(phone){oldActivate(phone);setTimeout(connectOnline,700);};
