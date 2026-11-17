@@ -1320,14 +1320,26 @@ function init() {
   renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
   renderer.domElement.addEventListener('wheel',onCameraWheel,{passive:false});
   renderer.domElement.addEventListener('click', function() {
-    if (!V15.mouseMode && !isLocked && !dialogOpen && !panelOpen && !mapOpen) {
-      const lockResult=renderer.domElement.requestPointerLock();
-      if(lockResult&&typeof lockResult.catch==='function')lockResult.catch(()=>{});
-    }
+    if (!V15.mouseMode && !isLocked && !dialogOpen && !panelOpen && !mapOpen) requestGamePointerLock();
   });
   document.addEventListener('pointerlockchange', function() {
     isLocked = document.pointerLockElement === renderer.domElement;
   });
+}
+
+function requestGamePointerLock(){
+  const canvas=renderer&&renderer.domElement;
+  if(!canvas||typeof canvas.requestPointerLock!=='function')return false;
+  if(typeof V15!=='undefined'&&V15.mouseMode)return false;
+  if(typeof navigator!=='undefined'&&navigator.maxTouchPoints>0&&typeof window!=='undefined'&&window.innerWidth<900)return false;
+  try{
+    const result=canvas.requestPointerLock();
+    if(result&&typeof result.catch==='function')result.catch(()=>{});
+    return true;
+  }catch(error){
+    console.debug('Verrouillage de souris non disponible dans cet environnement.',error);
+    return false;
+  }
 }
 
 function onKeyDown(e) {
@@ -4523,7 +4535,7 @@ function openPhone(){
 function closePhone(){
   phoneOpen=false;const p=document.getElementById('phone');if(p)p.classList.remove('open');
   showPhoneHome();
-  if(renderer&&!dialogOpen&&!panelOpen&&!mapOpen)renderer.domElement.requestPointerLock&&renderer.domElement.requestPointerLock();
+  if(renderer&&!dialogOpen&&!panelOpen&&!mapOpen)requestGamePointerLock();
 }
 function escapeHTML(value){return String(value==null?'':value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 
@@ -5390,7 +5402,7 @@ function openBigMap(){
 function closeBigMap(){
   mapOpen=false;mapView.dragging=false;
   document.getElementById('bigMap').style.display='none';
-  if(renderer&&!dialogOpen&&!panelOpen)renderer.domElement.requestPointerLock&&renderer.domElement.requestPointerLock();
+  if(renderer&&!dialogOpen&&!panelOpen)requestGamePointerLock();
 }
 function getWorldMapExtent(){
   // Emprise réaliste des communes du jeu (pas tout le CITY_SIZE)
@@ -5700,7 +5712,7 @@ function v11ShowLoading(){
     const speed=worldReady?70:14;LS.p=Math.min(goal,LS.p+speed*dt);
     document.getElementById('lsFill').style.width=LS.p.toFixed(1)+'%';
     document.getElementById('lsTxt').textContent=msg+' '+Math.floor(LS.p)+'%';
-    if(worldReady&&LS.p>=99.9){LS.on=false;setTimeout(()=>{el.classList.add('done');setTimeout(()=>{el.style.display='none';},800);const c=renderer&&renderer.domElement;if(c&&c.requestPointerLock){try{const r=c.requestPointerLock();if(r&&r.catch)r.catch(()=>{});}catch(e){}}},350);return;}
+    if(worldReady&&LS.p>=99.9){LS.on=false;setTimeout(()=>{el.classList.add('done');setTimeout(()=>{el.style.display='none';},800);requestGamePointerLock();},350);return;}
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -5785,7 +5797,7 @@ function v11OpenMenu(title,opts){
 }
 function v11CloseMenu(){
   V11.menu=false;dialogOpen=false;document.getElementById('itemMenu').style.display='none';
-  if(renderer&&renderer.domElement.requestPointerLock){try{const r=renderer.domElement.requestPointerLock();if(r&&r.catch)r.catch(()=>{});}catch(e){}}
+  requestGamePointerLock();
 }
 function v11Eat(i){
   const t=V11T[i.type];lifeState.hunger=Math.min(100,lifeState.hunger+(t.h||0));if(t.en)lifeState.energy=Math.min(100,lifeState.energy+t.en);
@@ -7117,7 +7129,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
  // La position est envoyée à fréquence limitée; les systèmes solo restent inchangés.
  setInterval(()=>{
   if(!socket?.connected||!player||!worldReady)return;
-  const now=Date.now();if(now-lastSend<120)return;lastSend=now;
+  const now=Date.now();if(now-lastSend<50)return;lastSend=now;
   const pos=new THREE.Vector3();player.getWorldPosition(pos);
   const p=lifeState.playerProfile||{};
   const ride=typeof activeCourseGoRide!=='undefined'&&activeCourseGoRide?.taxi?{x:activeCourseGoRide.taxi.position.x,z:activeCourseGoRide.taxi.position.z,yaw:activeCourseGoRide.taxi.rotation.y,phase:activeCourseGoRide.phase,boarded:!!activeCourseGoRide.boarded}:null;
