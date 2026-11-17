@@ -6254,24 +6254,26 @@ V11tick=function(delta){v12OrigTick(delta);v12Climate(delta);};
 // Correction de sécurité supplémentaire à la sortie de l'ascenseur : hauteur et gravité sont recalées sur l'étage actif.
 const v12OrigActivateAccount=activateGameAccount;
 activateGameAccount=function(phone){
-  // L'authentification créateur est asynchrone : afficher le chargement avant init.
+  // Laisser le navigateur afficher l'écran AVANT le travail lourd de création du monde.
   v11ShowLoading();
-  let result;
-  try{result=v12OrigActivateAccount(phone);}
-  catch(error){LS.on=false;const el=document.getElementById('loadingScreen');if(el)el.style.display='none';throw error;}
-  Promise.resolve(result).then(()=>{
-    if(!gameStarted){
-      LS.on=false;
-      const el=document.getElementById('loadingScreen');
-      if(el){el.classList.remove('done');el.style.display='none';}
-    }else if(!LS.on){v11ShowLoading();}
-  }).catch(error=>{
-    LS.on=false;
-    const el=document.getElementById('loadingScreen');
-    if(el){el.classList.remove('done');el.style.display='none';}
-    console.error('Activation du compte impossible :',error);
+  const el=document.getElementById('loadingScreen');
+  if(el){el.style.zIndex='9999';el.style.display='flex';el.classList.remove('done');}
+  return new Promise((resolve,reject)=>{
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        let result;
+        try{result=v12OrigActivateAccount(phone);}
+        catch(error){LS.on=false;if(el){el.classList.remove('done');el.style.display='none';}reject(error);return;}
+        Promise.resolve(result).then(value=>{
+          if(!gameStarted){LS.on=false;if(el){el.classList.remove('done');el.style.display='none';}}
+          resolve(value);
+        }).catch(error=>{
+          LS.on=false;if(el){el.classList.remove('done');el.style.display='none';}
+          console.error('Activation du compte impossible :',error);reject(error);
+        });
+      });
+    });
   });
-  return result;
 };
 const v12OrigElevatorUpdate=updateElevatorTravel;
 updateElevatorTravel=function(delta){
@@ -7383,5 +7385,46 @@ renderAccountSettingsApp=function(){
  section.querySelector('#abjSaveSettings').onclick=()=>{lifeState.gameSettings={graphics:graphics.value,cameraSensitivity:Number(sens.value),controlMode:controls.value,showHints:hints.checked};applyAbjGameSettings();saveLifeProgress(false);section.querySelector('#abjSettingsStatus').textContent='Paramètres enregistrés.';};
 };
 </script>
+
+
+/* V1.25 — chargement visible avant l'initialisation lourde + locomotion plus naturelle. */
+(function(){
+  const loadStyle=document.createElement('style');
+  loadStyle.textContent='#loadingScreen{z-index:9999!important;will-change:opacity}#loadingScreen .ls-bar i{transition:width .12s linear}';
+  document.head.appendChild(loadStyle);
+
+  // Marche/course : cadence progressive, contre-balancement des bras, amorti et anticipation du saut.
+  const previousAnimateCharacter=animateCharacter;
+  animateCharacter=function(char,delta,moving){
+    if(!char||!char.userData)return;
+    const d=char.userData;
+    if(char===player&&playerSitting){previousAnimateCharacter(char,delta,false);return;}
+    if(!d.legL||d.dead){previousAnimateCharacter(char,delta,moving);return;}
+    const running=char===player&&!!keys['shift']&&moving;
+    const airborne=char===player&&movementState&&!movementState.onGround;
+    const blend=1-Math.exp(-Math.max(0,delta)*10);
+    const target=moving?1:0;
+    d.gaitWeight=(d.gaitWeight||0)+(target-(d.gaitWeight||0))*blend;
+    if(moving)d.phase=(d.phase||0)+delta*(running?10.8:7.2);
+    const phase=d.phase||0,weight=d.gaitWeight;
+    const swing=Math.sin(phase)*(running?.62:.43)*weight;
+    const lift=Math.max(0,Math.cos(phase*2))*(running?.10:.045)*weight;
+    const jump=airborne?Math.max(0,Math.min(1,(movementState.yVelocity+2)/9)):0;
+    const smooth=(obj,key,value)=>{obj.rotation[key]+=(value-obj.rotation[key])*blend;};
+    smooth(d.legL,'x',airborne?-.28*jump:swing);
+    smooth(d.legR,'x',airborne?-.28*jump:-swing);
+    smooth(d.armL,'x',airborne?-.42*jump:-swing*.72-.06*weight);
+    smooth(d.armR,'x',airborne?-.42*jump:swing*.72-.06*weight);
+    smooth(d.armL,'z',running?-.035*weight:0);
+    smooth(d.armR,'z',running?.035*weight:0);
+    if(d.headGroup){smooth(d.headGroup,'x',moving?Math.sin(phase*2)*.012:0);smooth(d.headGroup,'z',moving?Math.sin(phase)*.009:0);}
+    // Petit amorti vertical du bassin : discret, sans faire rebondir tout le corps.
+    const bob=moving&&!airborne?Math.abs(Math.sin(phase*2))*(running?.025:.012):0;
+    char.position.y+=(bob-(d.walkBob||0))*blend;
+    d.walkBob=bob;
+    if(char===player&&d.bodyGroup){smooth(d.bodyGroup,'x',running?-.055*weight:moving?-.025*weight:0);}
+  };
+})();
+
 </body>
 </html>
