@@ -2357,12 +2357,13 @@ async function openCreatorWorldMenu(){
  let panel=document.getElementById('creatorWorldPanel');
  if(!panel){panel=document.createElement('div');panel.id='creatorWorldPanel';panel.style.cssText='position:fixed;inset:0;z-index:120;background:#06121aee;display:flex;align-items:center;justify-content:center;padding:16px;color:#fff;font:14px Segoe UI,Arial';document.body.appendChild(panel);}
  panel.innerHTML='<section style="width:min(900px,96vw);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#183545,#0b1721);border:1px solid #d8b15d;border-radius:18px;padding:18px;box-shadow:0 20px 70px #000"><header style="display:flex;justify-content:space-between;align-items:center"><div><small style="color:#d8b15d;letter-spacing:2px">AF_GAMER · CONTRÔLE DU MONDE</small><h2 style="margin:5px 0">MONDE</h2></div><button id="creatorWorldClose">Fermer ✕</button></header><nav style="display:flex;gap:8px;flex-wrap:wrap"><button data-tab="world">Vue du monde</button><button data-tab="reports">Messages & erreurs</button><button data-tab="ai">Assistant IA</button></nav><div id="creatorWorldBody" style="padding:12px 0">Chargement des données…</div></section>';
- panel.querySelector('#creatorWorldClose').onclick=()=>panel.remove();
+ panel.querySelector('#creatorWorldClose').onclick=()=>{if(window.ABJ_CREATOR_DASH_TIMER)clearInterval(window.ABJ_CREATOR_DASH_TIMER);panel.remove();};
  panel.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>renderCreatorWorldTab(b.dataset.tab));
  await renderCreatorWorldTab('world');
 }
 async function renderCreatorWorldTab(tab){
  const body=document.getElementById('creatorWorldBody');if(!body)return;
+ if(window.ABJ_CREATOR_DASH_TIMER){clearInterval(window.ABJ_CREATOR_DASH_TIMER);window.ABJ_CREATOR_DASH_TIMER=null;}
  if(tab==='ai'){body.innerHTML='<h3>Assistant IA du jeu</h3><div id="creatorAiLog" style="height:240px;overflow:auto;background:#07131c;padding:10px;border-radius:10px">Pose une question sur Abidjan Life, ses systèmes ou ses améliorations.</div><form id="creatorAiForm" style="display:flex;gap:8px;margin-top:10px"><input id="creatorAiInput" placeholder="Écris ta question…" style="flex:1;min-width:0;padding:12px;background:#102637;color:white;border:1px solid #ffffff44;border-radius:9px"><button>Envoyer</button></form><p style="font-size:11px;color:#a9bdc8">L’assistant utilise les connaissances du jeu. Les réponses génératives nécessitent la clé IA côté serveur.</p>';
   document.getElementById('creatorAiForm').onsubmit=async e=>{e.preventDefault();const input=document.getElementById('creatorAiInput'),log=document.getElementById('creatorAiLog'),q=input.value.trim();if(!q)return;input.value='';log.innerHTML+='<p><b>Toi :</b> '+escapeHTML(q)+'</p><p>Assistant : réflexion…</p>';log.scrollTop=log.scrollHeight;try{const r=await fetch(creatorApi()+'/api/game/assistant',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({message:q})});const d=await r.json();log.innerHTML+='<p><b>Assistant :</b> '+escapeHTML(d.answer||d.error||'Pas de réponse.')+'</p>'; }catch(err){log.innerHTML+='<p style="color:#ff8993">Connexion IA indisponible.</p>';}log.scrollTop=log.scrollHeight;};return;
  }
@@ -2370,7 +2371,7 @@ async function renderCreatorWorldTab(tab){
  }
  body.innerHTML='<h3>État du monde en direct</h3><div id="creatorWorldStats">Actualisation…</div><button id="creatorWorldRefresh">Actualiser</button>';
  const refresh=async()=>{const box=document.getElementById('creatorWorldStats');if(!box)return;try{const r=await fetch(creatorApi()+'/api/creator/world',{headers:{Authorization:'Bearer '+creatorToken()}});const d=await r.json();if(!r.ok)throw new Error(d.error);const v=d.vehicles||{};box.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px">'+[['Joueurs connectés',d.playersOnline],['PNJ total',d.npcTotal],['PNJ actifs',d.npcActive],['PNJ inactifs',d.npcInactive],...Object.entries(v).map(([k,n])=>['Véhicules · '+k,n])].map(([k,n])=>'<article style="padding:13px;background:#0a202b;border:1px solid #ffffff20;border-radius:10px"><small style="color:#9db8c5">'+escapeHTML(k)+'</small><div style="font-size:25px;font-weight:800;color:#f2d18d">'+Number(n||0).toLocaleString('fr-FR')+'</div></article>').join('')+'</div><p style="color:#a9bdc8;font-size:11px">Dernière télémétrie : '+(d.telemetryUpdatedAt?new Date(d.telemetryUpdatedAt).toLocaleTimeString():'en attente')+'</p>'; }catch(e){box.textContent=e.message||'Données indisponibles.';}};
- document.getElementById('creatorWorldRefresh').onclick=refresh;await refresh();
+ document.getElementById('creatorWorldRefresh').onclick=refresh;await refresh();window.ABJ_CREATOR_DASH_TIMER=setInterval(refresh,5000);
 }
 async function reportGameIssue(kind,message){
  if(!activeGameAccount||!creatorToken())return;
@@ -7330,11 +7331,11 @@ renderMairieApp=function(){
 })();
 
 const __abjAnimateCharacterNatural=animateCharacter;
-animateCharacter=function(char,delta,moving){__abjAnimateCharacterNatural(char,delta,moving);const d=char&&char.userData;if(!d)return;if(d.headGroup){d.headGroup.rotation.x=moving?Math.sin((d.phase||0)*2)*.035:0;d.headGroup.rotation.z=moving?Math.sin(d.phase||0)*.018:0;}if(d.bodyGroup){d.bodyGroup.rotation.x=moving?-.035:0;d.bodyGroup.rotation.z=moving?Math.sin(d.phase||0)*.022:0;}};
+animateCharacter=function(char,delta,moving){__abjAnimateCharacterNatural(char,delta,moving);const d=char&&char.userData;if(!d||(char===player&&playerSitting))return;if(d.headGroup){d.headGroup.rotation.x=moving?Math.sin((d.phase||0)*2)*.035:0;d.headGroup.rotation.z=moving?Math.sin(d.phase||0)*.018:0;}if(d.bodyGroup){d.bodyGroup.rotation.x=moving?-.035:0;d.bodyGroup.rotation.z=moving?Math.sin(d.phase||0)*.022:0;}};
 
 function applyAbjGameSettings(){
  const g=lifeState.gameSettings||{};if(renderer){const mobile=window.innerWidth<700||/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);renderer.shadowMap.enabled=g.graphics==='quality'?!mobile:g.graphics==='performance'?false:!mobile;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,g.graphics==='performance'?1:mobile?1:1.5));}
- const show=g.showHints!==false;['interiorHint','floorHint'].forEach(id=>{const el=document.getElementById(id);if(el&&!show)el.style.display='none';});
+ const show=g.showHints!==false;['interiorHint','floorHint'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=show?'':'none';});
 }
 const __abjSettingsRotate=rotateCameraByMouse;
 rotateCameraByMouse=function(dx,dy){const sensitivity=Math.max(.5,Math.min(1.8,Number(lifeState.gameSettings?.cameraSensitivity)||1));__abjSettingsRotate(dx*sensitivity,dy*sensitivity);};
