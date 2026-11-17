@@ -7049,7 +7049,8 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   const p=lifeState.playerProfile||{};
   const ride=typeof activeCourseGoRide!=='undefined'&&activeCourseGoRide?.taxi?{x:activeCourseGoRide.taxi.position.x,z:activeCourseGoRide.taxi.position.z,yaw:activeCourseGoRide.taxi.rotation.y,phase:activeCourseGoRide.phase,boarded:!!activeCourseGoRide.boarded}:null;
   const ws=typeof V12!=='undefined'?{hour:lifeState.hour,minute:lifeState.minute,weather:V12.weather,temperature:V12.temperature}:null;
-  if(window.ABJ_WORLD_HOST&&socket.connected&&Date.now()-lastWorldTelemetryAt>5000){\n   lastWorldTelemetryAt=Date.now();
+  if(window.ABJ_WORLD_HOST&&socket.connected&&Date.now()-lastWorldTelemetryAt>5000){
+   lastWorldTelemetryAt=Date.now();
    const vc={gbaka:0,taxi:0,yango:0,woro:0,moto_livreur:0,moto:0,bus:0,voiture:0,luxe:0};
    vehicles.forEach(v=>{const d=v.userData||{},k=String(d.trafficKind||d.vehicleKind||d.kind||d.model||'voiture').toLowerCase();const key=Object.keys(vc).find(x=>k.includes(x))||'voiture';vc[key]++;});
    socket.emit('world:telemetry',{npcTotal:npcs.length,npcActive:npcs.filter(n=>n.visible&&!n.userData?.dead).length,vehicles:vc});
