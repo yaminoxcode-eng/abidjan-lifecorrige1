@@ -7604,7 +7604,22 @@ renderAccountSettingsApp=function(){
   boutique:['🏪 Boutiques','Consulte les commerces et achats de la ville.'],glovo:['🛵 LivraGo','Commande une livraison dans le jeu.'],
   jumia:['🛒 CasaMart','Parcours les produits et commandes simulées.'],localisation:['🗺️ Plans','Ouvre la carte et prépare un itinéraire.'],
   google:['🔎 ChercheABJ','Recherche un lieu, un service ou une aide.'],inventaire:['🎒 Inventaire','Consulte tes objets et équipements.'],
-  proemploi:['🧰 Pro Emploi','Gère les offres, contrats, certificats et missions.'],offrescreateur:['⭐ Offres Creator','Consulte les options du compte créateur.']
+  proemploi:['🧰 Pro Emploi','Gère les offres, contrats, certificats et missions.'],offrescreateur:['⭐ Offres Creator','Consulte les options du compte créateur.'],
+  agenda:['📅 Agenda','Retrouve les rendez-vous, activités et rappels de ta vie dans la ville.'],
+  youtube:['▶️ Diffuz','Publie des contenus depuis ta galerie, développe ton audience et consulte les vues simulées.'],
+  tiktok:['🎵 Clipz','Publie des vidéos courtes depuis ta galerie et développe ta communauté dans le jeu.'],
+  cheats:['⌨️ Codes','Saisis les codes autorisés dans ta partie. Certains codes sont réservés au créateur.'],
+  jeux:['🎮 Apps Jeux','Ouvre la boutique pour télécharger, installer ou désinstaller les applications du téléphone.'],
+  appstore:['🎮 Boutique d’applications','Télécharge les applications disponibles et ajoute leurs icônes au téléphone.'],
+  mobilite:['🚕 Mobilité','Regroupe CourseGo et les transports publics Mobili.'],
+  achats:['🛍️ Achats et livraisons','Regroupe les boutiques, CasaMart et LivraGo.'],
+  finances:['💳 Finances','Regroupe Banque ABJ et WaveABJ ; les opérations restent simulées.'],
+  communication:['💬 Communication','Regroupe Contacts, Messages et Forum mondial.'],
+  medias:['📸 Médias','Regroupe Caméra, Galerie, Diffuz et Clipz.'],
+  viepratique:['🏙️ Vie pratique','Regroupe Mairie, Santé, Études et Logement.'],
+  monsuccess:['🏆 Mon Success','Consulte le classement fictif des entrepreneurs et personnalités influentes.'],
+  immoabj:['🏘️ Immo ABJ','Consulte les projets et possibilités immobilières disponibles dans le jeu.'],
+  projets:['🏗️ Projets','Retrouve les projets de construction, d’entreprise et d’aménagement de ton personnage.']
  };
  const style=document.createElement('style');style.textContent='@keyframes abjPulse{0%,100%{filter:brightness(1);box-shadow:0 0 0 0 #f3c56a00}50%{filter:brightness(1.3);box-shadow:0 0 0 5px #f3c56a66}}.abj-guide-pulse{animation:abjPulse 1.25s ease-in-out infinite!important}#abjHelpBubble{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:min(440px,calc(100vw - 28px));z-index:13000;padding:15px;border:1px solid #e9c77b;border-radius:16px;background:linear-gradient(145deg,#173a4b,#0b1b28);box-shadow:0 18px 55px #000c;color:white;display:none}#abjHelpBubble strong{display:block;color:#ffe0a0;margin-bottom:6px}#abjHelpBubble p{font-size:13px;line-height:1.5;margin:0 0 12px;color:#dce8ef}#abjHelpBubble button{border:1px solid #e9c77b;border-radius:9px;padding:8px 12px;background:#254b5e;color:white;font-weight:800}#phoneApps .phoneApp span{border:1px solid #ffffff35;background:linear-gradient(145deg,#ffffff35,#ffffff0a);box-shadow:0 4px 12px #0004}';document.head.appendChild(style);
  const bubble=document.createElement('div');bubble.id='abjHelpBubble';bubble.innerHTML='<strong id="abjHelpTitle"></strong><p id="abjHelpText"></p><div style="display:flex;justify-content:flex-end;gap:8px"><button id="abjHelpClose">Fermer</button><button id="abjHelpNext">Suivant</button></div>';document.body.appendChild(bubble);
