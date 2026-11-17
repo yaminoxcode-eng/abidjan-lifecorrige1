@@ -5609,6 +5609,7 @@ function animate() {
     districtCheckTimer+=delta;if(districtCheckTimer>.45){districtCheckTimer=0;updateDistrictHUD();}
     const phoneClock=document.getElementById('phoneClock');if(phoneClock)phoneClock.textContent=String(lifeState.hour).padStart(2,'0')+':'+String(lifeState.minute).padStart(2,'0');
     if(mapOpen){if(mapView.realTiles){leafletDynamicTimer+=delta;abjRefreshLeafletDynamicLayers(false);}else drawBigMap();}
+    updateRemoteAvatars(delta);
     renderer.render(scene, camera);
   } catch (err) {
     console.error(err);
@@ -7009,6 +7010,25 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
    if(obj.userData.remoteVehicle){scene.remove(obj.userData.remoteVehicle);obj.userData.remoteVehicle=null;}
   }
  }
+
+const __abjOldUpdateRemote=updateRemote;
+function updateRemote(data){
+ const existing=data&&remote.get(data.id),before=existing?existing.position.clone():null;
+ __abjOldUpdateRemote(data);
+ const obj=data&&remote.get(data.id);if(!obj||!data.position)return;
+ const x=Number(data.position.x)||0,z=Number(data.position.z)||0;
+ if(before)obj.position.copy(before);else obj.position.set(x,terrainHeight(x,z)+.03,z);
+ obj.userData.netTarget={x,z,yaw:Number.isFinite(data.position.yaw)?data.position.yaw:obj.rotation.y};
+ if(obj.userData.remoteVehicle&&data.vehicle){obj.userData.remoteVehicle.userData.netTarget={x:Number(data.vehicle.x)||0,z:Number(data.vehicle.z)||0,yaw:Number(data.vehicle.yaw)||0};}
+}
+function updateRemoteAvatars(delta){
+ if(!remote||!remote.size)return;const alpha=1-Math.pow(.001,Math.min(.05,delta));
+ remote.forEach(obj=>{
+  const t=obj.userData&&obj.userData.netTarget;if(t){obj.position.x+=(t.x-obj.position.x)*alpha;obj.position.z+=(t.z-obj.position.z)*alpha;let diff=t.yaw-obj.rotation.y;while(diff>Math.PI)diff-=Math.PI*2;while(diff< -Math.PI)diff+=Math.PI*2;obj.rotation.y+=diff*alpha;}
+  const car=obj.userData&&obj.userData.remoteVehicle,ct=car&&car.userData.netTarget;if(car&&ct){car.position.x+=(ct.x-car.position.x)*alpha;car.position.z+=(ct.z-car.position.z)*alpha;let diff=ct.yaw-car.rotation.y;while(diff>Math.PI)diff-=Math.PI*2;while(diff< -Math.PI)diff+=Math.PI*2;car.rotation.y+=diff*alpha;}
+ });
+}
+
  function removeRemote(id){const obj=remote.get(id);if(obj&&typeof scene!=='undefined'&&scene){if(obj.userData.remoteVehicle)scene.remove(obj.userData.remoteVehicle);scene.remove(obj);}remote.delete(id);}
  function connectOnline(){
   const t=token();if(!t||!window.io||socket?.connected)return;
@@ -7064,11 +7084,11 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   if(window.ABJ_WORLD_HOST&&socket.connected&&Date.now()-lastWorldTelemetryAt>5000){
    lastWorldTelemetryAt=Date.now();
    const vc={gbaka:0,taxi:0,yango:0,woro:0,moto_livreur:0,moto:0,bus:0,voiture:0,luxe:0};
-   vehicles.forEach(v=>{const d=v.userData||{},k=String(d.trafficKind||d.vehicleKind||d.kind||d.model||'voiture').toLowerCase();const key=Object.keys(vc).find(x=>k.includes(x))||'voiture';vc[key]++;});
+   vehicles.forEach(v=>{const d=v.userData||{},k=String(d.vType||d.trafficKind||d.vehicleKind||d.kind||d.model||'voiture').toLowerCase();const key=Object.keys(vc).find(x=>k.includes(x))||'voiture';vc[key]++;});
    socket.emit('world:telemetry',{npcTotal:npcs.length,npcActive:npcs.filter(n=>n.visible&&!n.userData?.dead).length,vehicles:vc});
   }
   socket.emit('player:update',{version:window.ABJ_BUILD_VERSION,position:{x:pos.x,z:pos.z,yaw:player.rotation?.y||0},vehicle:ride,worldState:ws,profile:{name:p.name||'Citoyen',gender:p.gender||'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50,bodyType:p.bodyType||'standard',hairstyle:p.hairstyle||'court',outfit:p.outfit||'urbain'},needs:{hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,health:lifeState.health,money:lifeState.money}});
- },120);
+ },50);
  const oldActivate=activateGameAccount;
  activateGameAccount=function(phone){oldActivate(phone);setTimeout(connectOnline,700);};
  window.ABJ_CONNECT_ONLINE=connectOnline;
