@@ -1024,7 +1024,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    if (persistentStorageEnabled) {
+    if (persistentStorageEnabled && accounts.has(socket.phone)) {
       persistAccount(account).catch(error => console.error('Échec sauvegarde déconnexion:', error.message));
     }
     activePlayers.delete(socket.id);
