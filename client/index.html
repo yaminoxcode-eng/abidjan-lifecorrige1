@@ -546,6 +546,7 @@ const movementState = { yVelocity: 0, onGround: true };
 // ÉTAT GLOBAL
 // ============================================================
 let scene, camera, renderer, clock;
+let creatorEditMode=false, creatorHQDoor=null, creatorOrb=null, creatorOrbAlert=false, creatorHQPosition=null;
 let mobilePerformanceMode=false;
 let npcUpdateAccumulator=0,vehicleUpdateAccumulator=0;
 let distanceCullAccumulator=0;
@@ -1185,7 +1186,7 @@ function openCharacterCreator(){
   const saved=lifeState.playerProfile||{},overlay=document.getElementById('creatorOverlay');
   if(!overlay){showAccountStatus('Impossible d\'ouvrir la création de personnage.', true);return;}
   const set=(id,value)=>{const el=document.getElementById(id);if(el&&value!==undefined)el.value=String(value);};
-  set('creatorName',saved.name||'Mon personnage');
+  set('creatorName',isCreatorAccount(activeGameAccount)?'Créateur':saved.name||'Mon personnage');
   set('creatorGender',saved.gender||'homme');
   // Normalise les couleurs hex (toString(16) sans padding cassait les options)
   const hex=v=>'0x'+Number(v||0).toString(16);
@@ -1194,7 +1195,7 @@ function openCharacterCreator(){
   set('creatorShirt',hex(saved.shirt||0xe74c3c));
   set('creatorPants',hex(saved.pants||0x2c3e50));
   set('creatorBodyType',saved.bodyType||'standard');set('creatorHairstyle',saved.hairstyle||(saved.gender==='femme'?'long':'court'));set('creatorOutfit',saved.outfit||'urbain');
-  overlay.classList.add('open');
+  const creatorNameField=document.getElementById('creatorName');if(creatorNameField)creatorNameField.disabled=!!(creatorEditMode&&isCreatorAccount(activeGameAccount));\n  overlay.classList.add('open');
   updateCreatorPreview();
   renderCreatorDetail('gender');
   }catch(err){
@@ -2258,6 +2259,87 @@ function addOSMStorefront(pts,tags){
   glass.position.set(cx+nx*.16,1.45,cz+nz*.16);glass.rotation.y=Math.atan2(nx,nz);scene.add(glass);
 }
 
+
+// AF_GAMER : siège social et espace privé du compte créateur.
+function createAFGamerHQ(){
+ if(!scene||creatorHQDoor)return;
+ const base=geoToWorld(5.323,-4.02),x=base.x+235,z=base.z+165;
+ creatorHQPosition={x,z};
+ const g=new THREE.Group(),stone=new THREE.MeshStandardMaterial({color:0x263b4a,roughness:.72}),glass=new THREE.MeshStandardMaterial({color:0x39a6ad,roughness:.22,metalness:.25,emissive:0x0a3439}),gold=new THREE.MeshStandardMaterial({color:0xd8b15d,metalness:.35,roughness:.38});
+ const podium=new THREE.Mesh(new THREE.BoxGeometry(27,5,23),stone);podium.position.y=2.5;g.add(podium);
+ const tower=new THREE.Mesh(new THREE.BoxGeometry(18,31,17),stone);tower.position.set(0,20.5,0);g.add(tower);
+ for(let floor=0;floor<8;floor++){
+  const band=new THREE.Mesh(new THREE.BoxGeometry(18.25,.18,17.25),gold);band.position.set(0,6+floor*3.75,0);g.add(band);
+  const win=new THREE.Mesh(new THREE.BoxGeometry(18.3,2.5,.12),glass);win.position.set(0,7.8+floor*3.75,8.58);g.add(win);
+ }
+ const roof=new THREE.Mesh(new THREE.BoxGeometry(19,1,18),gold);roof.position.set(0,36.5,0);g.add(roof);
+ const signCanvas=document.createElement('canvas');signCanvas.width=768;signCanvas.height=220;
+ const ctx=signCanvas.getContext('2d');ctx.fillStyle='#122a37';ctx.fillRect(0,0,768,220);ctx.strokeStyle='#d9b35d';ctx.lineWidth=8;ctx.strokeRect(12,12,744,196);ctx.fillStyle='#fff0c6';ctx.font='bold 72px Arial';ctx.textAlign='center';ctx.fillText('AF_GAMER',384,105);ctx.font='28px Arial';ctx.fillText('STUDIO · ABIDJAN',384,160);
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(13,3.7),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signCanvas),transparent:true,side:THREE.DoubleSide}));sign.position.set(0,5.4,11.62);g.add(sign);
+ g.position.set(x,terrainHeight(x,z),z);scene.add(g);
+ const id='afgamer900';
+ const interior=generateInterior(id,23,21,4,0x263b4a,'resident');
+ interior.creatorHQ=true;
+ const makePanel=(floor,label,color)=>{const p=new THREE.Mesh(new THREE.BoxGeometry(2.1,1.45,.16),new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.32}));p.position.set(0,1.8,-3.2);interior.floors[floor].add(p);interior.interactables.push({x:0,z:-2.05,type:label==='MONDE'?'creatorConsole':'creatorWardrobe',label,floor,object:p});};
+ makePanel(3,'MONDE',0x10212d);
+ makePanel(2,'APPARENCE',0x247b79);
+ const doorGroup=new THREE.Group(),frame=new THREE.Mesh(new THREE.BoxGeometry(2.2,3,.3),gold),door=new THREE.Mesh(new THREE.BoxGeometry(1.55,2.55,.12),stone);
+ door.position.y=1.28;doorGroup.add(frame,door);doorGroup.position.set(x,terrainHeight(x,z),z+11.7);scene.add(doorGroup);
+ creatorHQDoor={x,z:z+11.7,id,rot:0,normal:new THREE.Vector3(0,0,1),group:doorGroup,home:true,creatorOnly:true,buildingName:'AF_GAMER · Siège social'};
+ doors.push(creatorHQDoor);
+ poi.push({x,z,type:'company',nom:'AF_GAMER',data:{description:'Siège social AF_GAMER · Accès public au rez-de-chaussée, étage privé réservé au créateur'}});
+}
+function createCreatorOrb(){
+ if(creatorOrb||!scene)return;
+ creatorOrb=new THREE.Group();
+ const core=new THREE.Mesh(new THREE.SphereGeometry(.24,20,16),new THREE.MeshStandardMaterial({color:0x6eeaff,emissive:0x27c9ff,emissiveIntensity:2.2,roughness:.2,metalness:.25}));
+ const halo=new THREE.Mesh(new THREE.TorusGeometry(.36,.025,8,32),new THREE.MeshBasicMaterial({color:0x8df5ff,transparent:true,opacity:.9}));halo.rotation.x=Math.PI/2;
+ const light=new THREE.PointLight(0x38dfff,2.2,10);creatorOrb.add(core,halo,light);creatorOrb.userData.core=core;creatorOrb.userData.halo=halo;creatorOrb.visible=false;scene.add(creatorOrb);
+}
+function updateCreatorOrb(delta){
+ if(!scene||!player)return;
+ if(!isCreatorAccount(activeGameAccount)){if(creatorOrb)creatorOrb.visible=false;return;}
+ createCreatorOrb();creatorOrb.visible=true;
+ const t=clock?clock.elapsedTime:0;
+ const target=new THREE.Vector3(player.position.x+Math.sin(t*.8)*.8,player.position.y+2.7+Math.sin(t*2.1)*.18,player.position.z-1.25);
+ creatorOrb.position.lerp(target,Math.min(1,delta*5));creatorOrb.rotation.y+=delta*.8;
+ const core=creatorOrb.userData.core;core.material.color.set(creatorOrbAlert?0xff394e:0x6eeaff);core.material.emissive.set(creatorOrbAlert?0xff1237:0x27c9ff);
+ creatorOrb.userData.halo.material.color.set(creatorOrbAlert?0xff6675:0x8df5ff);
+}
+function creatorToken(){return activeGameAccount?safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount)):null;}
+function creatorApi(){return String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');}
+async function openCreatorWorldMenu(){
+ if(!isCreatorAccount(activeGameAccount)||!currentInterior?.creatorHQ||currentFloor!==3)return;
+ if(document.exitPointerLock)document.exitPointerLock();
+ let panel=document.getElementById('creatorWorldPanel');
+ if(!panel){panel=document.createElement('div');panel.id='creatorWorldPanel';panel.style.cssText='position:fixed;inset:0;z-index:120;background:#06121aee;display:flex;align-items:center;justify-content:center;padding:16px;color:#fff;font:14px Segoe UI,Arial';document.body.appendChild(panel);}
+ panel.innerHTML='<section style="width:min(900px,96vw);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#183545,#0b1721);border:1px solid #d8b15d;border-radius:18px;padding:18px;box-shadow:0 20px 70px #000"><header style="display:flex;justify-content:space-between;align-items:center"><div><small style="color:#d8b15d;letter-spacing:2px">AF_GAMER · CONTRÔLE DU MONDE</small><h2 style="margin:5px 0">MONDE</h2></div><button id="creatorWorldClose">Fermer ✕</button></header><nav style="display:flex;gap:8px;flex-wrap:wrap"><button data-tab="world">Vue du monde</button><button data-tab="reports">Messages & erreurs</button><button data-tab="ai">Assistant IA</button></nav><div id="creatorWorldBody" style="padding:12px 0">Chargement des données…</div></section>';
+ panel.querySelector('#creatorWorldClose').onclick=()=>panel.remove();
+ panel.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>renderCreatorWorldTab(b.dataset.tab));
+ await renderCreatorWorldTab('world');
+}
+async function renderCreatorWorldTab(tab){
+ const body=document.getElementById('creatorWorldBody');if(!body)return;
+ if(tab==='ai'){body.innerHTML='<h3>Assistant IA du jeu</h3><div id="creatorAiLog" style="height:240px;overflow:auto;background:#07131c;padding:10px;border-radius:10px">Pose une question sur Abidjan Life, ses systèmes ou ses améliorations.</div><form id="creatorAiForm" style="display:flex;gap:8px;margin-top:10px"><input id="creatorAiInput" placeholder="Écris ta question…" style="flex:1;min-width:0;padding:12px;background:#102637;color:white;border:1px solid #ffffff44;border-radius:9px"><button>Envoyer</button></form><p style="font-size:11px;color:#a9bdc8">L’assistant utilise les connaissances du jeu. Les réponses génératives nécessitent la clé IA côté serveur.</p>';
+  document.getElementById('creatorAiForm').onsubmit=async e=>{e.preventDefault();const input=document.getElementById('creatorAiInput'),log=document.getElementById('creatorAiLog'),q=input.value.trim();if(!q)return;input.value='';log.innerHTML+='<p><b>Toi :</b> '+escapeHTML(q)+'</p><p>Assistant : réflexion…</p>';log.scrollTop=log.scrollHeight;try{const r=await fetch(creatorApi()+'/api/game/assistant',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({message:q})});const d=await r.json();log.innerHTML+='<p><b>Assistant :</b> '+escapeHTML(d.answer||d.error||'Pas de réponse.')+'</p>'; }catch(err){log.innerHTML+='<p style="color:#ff8993">Connexion IA indisponible.</p>';}log.scrollTop=log.scrollHeight;};return;
+ }
+ if(tab==='reports'){body.innerHTML='<h3>Signalements des joueurs</h3><div id="creatorReportsList">Chargement…</div>';try{const r=await fetch(creatorApi()+'/api/creator/reports',{headers:{Authorization:'Bearer '+creatorToken()}});const d=await r.json();const list=document.getElementById('creatorReportsList');if(!r.ok)throw new Error(d.error);list.innerHTML=(d.items||[]).map(x=>'<article style="padding:10px;margin:8px 0;background:#091a25;border-left:3px solid #e66;border-radius:8px"><b>'+escapeHTML(x.player)+' · '+escapeHTML(x.kind)+'</b><small style="display:block;color:#a8bdc8">'+escapeHTML(x.createdAt)+' · '+escapeHTML(x.district)+'</small><p>'+escapeHTML(x.message)+'</p></article>').join('')||'Aucun signalement pour le moment.';creatorOrbAlert=false;}catch(e){document.getElementById('creatorReportsList').textContent=e.message||'Impossible de charger les signalements.';}return;
+ }
+ body.innerHTML='<h3>État du monde en direct</h3><div id="creatorWorldStats">Actualisation…</div><button id="creatorWorldRefresh">Actualiser</button>';
+ const refresh=async()=>{const box=document.getElementById('creatorWorldStats');if(!box)return;try{const r=await fetch(creatorApi()+'/api/creator/world',{headers:{Authorization:'Bearer '+creatorToken()}});const d=await r.json();if(!r.ok)throw new Error(d.error);const v=d.vehicles||{};box.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px">'+[['Joueurs connectés',d.playersOnline],['PNJ total',d.npcTotal],['PNJ actifs',d.npcActive],['PNJ inactifs',d.npcInactive],...Object.entries(v).map(([k,n])=>['Véhicules · '+k,n])].map(([k,n])=>'<article style="padding:13px;background:#0a202b;border:1px solid #ffffff20;border-radius:10px"><small style="color:#9db8c5">'+escapeHTML(k)+'</small><div style="font-size:25px;font-weight:800;color:#f2d18d">'+Number(n||0).toLocaleString('fr-FR')+'</div></article>').join('')+'</div><p style="color:#a9bdc8;font-size:11px">Dernière télémétrie : '+(d.telemetryUpdatedAt?new Date(d.telemetryUpdatedAt).toLocaleTimeString():'en attente')+'</p>'; }catch(e){box.textContent=e.message||'Données indisponibles.';}};
+ document.getElementById('creatorWorldRefresh').onclick=refresh;await refresh();
+}
+async function reportGameIssue(kind,message){
+ if(!activeGameAccount||!creatorToken())return;
+ try{await fetch(creatorApi()+'/api/game/report',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({kind,message:String(message||'').slice(0,500),version:window.ABJ_BUILD_VERSION||'',district:currentQuartier||''})});}catch(e){console.warn('Signalement non transmis',e);}
+}
+function openCreatorAppearanceRoom(){
+ if(!isCreatorAccount(activeGameAccount)||!currentInterior?.creatorHQ||currentFloor!==2)return;
+ creatorEditMode=true;openCharacterCreator();
+ const name=document.getElementById('creatorName');if(name){name.value='Créateur';name.disabled=true;}
+ const start=document.getElementById('creatorStart');if(start)start.textContent='ENREGISTRER ET REPRENDRE';
+}
+
 function createOSMResidentialEntrance(pts, tags, height, color) {
   if (doors.length >= 36 || pts.length < 4) return;
   const xs=pts.map(p=>p.x), zs=pts.map(p=>p.z);
@@ -2305,7 +2387,7 @@ function createOSMResidentialEntrance(pts, tags, height, color) {
 function findNearbyResidentialDoor() {
   if(!player || currentInterior) return null;
   let best=null,dist=5.8;
-  for(const d of doors){if(!d.home||!interiors[d.id])continue;const n=Math.hypot(player.position.x-d.x,player.position.z-d.z);if(n<dist){dist=n;best=d;}}
+  for(const d of doors){if(!d.home||!interiors[d.id]||(d.creatorOnly&&!isCreatorAccount(activeGameAccount)))continue;const n=Math.hypot(player.position.x-d.x,player.position.z-d.z);if(n<dist){dist=n;best=d;}}
   return best;
 }
 
@@ -3764,7 +3846,7 @@ function startPlayerAtHome(){
 }
 
 function enterBuilding(door) {
-  if(!door || !door.home || currentInterior || !player) return;
+  if(!door || !door.home || currentInterior || !player || (door.creatorOnly&&!isCreatorAccount(activeGameAccount))) return;
   const interior=interiors[door.id]; if(!interior) return;
   lastExteriorPosition={x:door.x+door.normal.x*3.6,z:door.z+door.normal.z*3.6,y:terrainHeight(door.x+door.normal.x*3.6,door.z+door.normal.z*3.6)+0.02,rotation:Math.atan2(door.normal.x,door.normal.z),door};
   currentInterior=interior;currentApartment=null;interior.group.visible=true;interior.currentFloor=0;currentFloor=0;restoreHomeDecor(interior);
@@ -3864,7 +3946,7 @@ function dropHeldFurniture(){
 function openElevatorMenu(){
   if(!currentInterior||currentInterior.numFloors<2||elevatorTravel)return;
   const wrap=document.getElementById('elevatorMenu'),list=document.getElementById('elevatorFloors');list.innerHTML='';
-  for(let floor=0;floor<currentInterior.numFloors;floor++){const b=document.createElement('button');b.type='button';b.className=floor===currentFloor?'current':'';b.textContent=floor===0?'RDC':'Étage '+floor;b.disabled=floor===currentFloor;b.addEventListener('click',()=>startElevatorTravel(floor));list.appendChild(b);}
+  const allowedFloors=currentInterior.creatorHQ?[0,2,3]:Array.from({length:currentInterior.numFloors},(_,i)=>i);\n  for(const floor of allowedFloors){const b=document.createElement('button');b.type='button';b.className=floor===currentFloor?'current':'';b.textContent=floor===0?'RDC':'Étage '+floor;b.disabled=floor===currentFloor;b.addEventListener('click',()=>startElevatorTravel(floor));list.appendChild(b);}
   elevatorMenuOpen=true;wrap.style.display='flex';if(document.exitPointerLock)document.exitPointerLock();
 }
 function closeElevatorMenu(){elevatorMenuOpen=false;const el=document.getElementById('elevatorMenu');if(el)el.style.display='none';}
@@ -5456,7 +5538,7 @@ function animate() {
   const rawDelta=clock.getDelta();
   const delta=Math.min(Number.isFinite(rawDelta)?rawDelta:0,0.05);
   try {
-    updateLifeSimulation(delta);
+    updateLifeSimulation(delta);\n    updateCreatorOrb(delta);
     updateCourseGoRide(delta);
     updateCourseGoCamera(delta);
     updateElevatorTravel(delta);
@@ -7030,6 +7112,17 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   window.__ABJ_SETTINGS_GATE_PATCH=true;
   window.openPhoneApp=function(app){if(app==='parametres')return originalOpen(app);return originalOpen(app);};
  }
+})();
+</script>
+
+<script>
+(function(){
+ if(!window.__ABJ_GAME_ERROR_REPORTING){
+  window.__ABJ_GAME_ERROR_REPORTING=true;
+  window.addEventListener('error',e=>{if(activeGameAccount)reportGameIssue('javascript-error',(e.message||'Erreur JavaScript')+' · '+(e.filename||'')+':'+(e.lineno||0));});
+  window.addEventListener('unhandledrejection',e=>{if(activeGameAccount)reportGameIssue('promise-error',String(e.reason?.message||e.reason||'Promesse rejetée'));});
+ }
+ const style=document.createElement('style');style.textContent='#creatorName:disabled{opacity:.8;color:#f3d18d}';document.head.appendChild(style);
 })();
 </script>
 </body>
