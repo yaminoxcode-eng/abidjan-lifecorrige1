@@ -2448,6 +2448,27 @@ function trafficJunctionOccupied(v,px,pz){
   }
   return false;
 }
+// Index spatial léger : les véhicules ne testent que les usagers situés dans les cellules voisines.
+var abjTrafficVehicleGrid = new Map(), abjTrafficNpcGrid = new Map();
+var ABJ_TRAFFIC_GRID_CELL = 16;
+function abjTrafficCellKey(x,z){return Math.floor(x/ABJ_TRAFFIC_GRID_CELL)+':'+Math.floor(z/ABJ_TRAFFIC_GRID_CELL);}
+function abjTrafficGridAdd(grid,obj){
+  const key=abjTrafficCellKey(obj.position.x,obj.position.z);
+  if(!grid.has(key))grid.set(key,[]);
+  grid.get(key).push(obj);
+}
+function abjTrafficGridNearby(grid,x,z){
+  const out=[],cx=Math.floor(x/ABJ_TRAFFIC_GRID_CELL),cz=Math.floor(z/ABJ_TRAFFIC_GRID_CELL);
+  for(let gx=cx-1;gx<=cx+1;gx++)for(let gz=cz-1;gz<=cz+1;gz++){
+    const cell=grid.get(gx+':'+gz);if(cell)for(const obj of cell)out.push(obj);
+  }
+  return out;
+}
+function abjBuildTrafficSpatialIndex(){
+  abjTrafficVehicleGrid.clear();abjTrafficNpcGrid.clear();
+  for(const v of vehicles)if(v&&v.visible&&v.userData&&!v.userData.wreck)abjTrafficGridAdd(abjTrafficVehicleGrid,v);
+  for(const n of npcs)if(n&&n.visible&&n.userData&&!n.userData.dead)abjTrafficGridAdd(abjTrafficNpcGrid,n);
+}
 function advanceTrafficVehicle(v,delta){
   const d=v.userData;let remaining=d.speed*delta,guard=0;
   if(d.transit||d.transitDwell>0){d.transitStopCooldown=Math.max(0,(d.transitStopCooldown||0)-delta);if((d.transitDwell||0)>0){d.transitDwell=Math.max(0,d.transitDwell-delta);updateTrafficVehiclePose(v);return;}}
@@ -2456,15 +2477,21 @@ function advanceTrafficVehicle(v,delta){
     const dx=segNow.b.x-segNow.a.x,dz=segNow.b.z-segNow.a.z,len=Math.hypot(dx,dz)||1;
     const t=Math.max(0,Math.min(1,d.progress/len)),px=segNow.a.x+dx*t,pz=segNow.a.z+dz*t,ux=dx/len,uz=dz/len;
     let stop=trafficSignalShouldStop(px,pz,dx,dz)||trafficJunctionOccupied(v,px,pz);
-    if(!stop)for(const other of vehicles){
-      if(other===v||other.userData.wreck||!other.visible)continue;
-      const rx=other.position.x-px,rz=other.position.z-pz,ahead=rx*ux+rz*uz,lateral=Math.abs(rx*uz-rz*ux);
-      if(ahead>0&&ahead<9&&lateral<3.1){stop=true;break;}
+    if(!stop){
+      const nearbyVehicles=abjTrafficGridNearby(abjTrafficVehicleGrid,px,pz);
+      for(const other of nearbyVehicles){
+        if(other===v||other.userData.wreck||!other.visible)continue;
+        const rx=other.position.x-px,rz=other.position.z-pz,ahead=rx*ux+rz*uz,lateral=Math.abs(rx*uz-rz*ux);
+        if(ahead>0&&ahead<9&&lateral<3.1){stop=true;break;}
+      }
     }
-    if(!stop)for(const npc of npcs){
-      if(npc.userData.dead||!npc.visible)continue;
-      const rx=npc.position.x-px,rz=npc.position.z-pz,ahead=rx*ux+rz*uz,lateral=Math.abs(rx*uz-rz*ux);
-      if(ahead>0&&ahead<7&&lateral<2.2){stop=true;break;}
+    if(!stop){
+      const nearbyNPCs=abjTrafficGridNearby(abjTrafficNpcGrid,px,pz);
+      for(const npc of nearbyNPCs){
+        if(npc.userData.dead||!npc.visible)continue;
+        const rx=npc.position.x-px,rz=npc.position.z-pz,ahead=rx*ux+rz*uz,lateral=Math.abs(rx*uz-rz*ux);
+        if(ahead>0&&ahead<7&&lateral<2.2){stop=true;break;}
+      }
     }
     if(stop){d.speedFactor=Math.max(0,(d.speedFactor||1)-delta*5);updateTrafficVehiclePose(v);return;}
     if(d.transit&&d.transitStopCooldown<=0&&transportStops.length){
@@ -3480,6 +3507,7 @@ function createVehicleMesh(type) {
 }
 
 function updateVehicles(delta) {
+  if(typeof abjBuildTrafficSpatialIndex==='function')abjBuildTrafficSpatialIndex();
   vehicles.forEach(v=>{
     if(v.userData.wreck)return;
     const d=v.userData;
