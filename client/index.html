@@ -1196,7 +1196,6 @@ function openCharacterCreator(){
   set('creatorPants',hex(saved.pants||0x2c3e50));
   set('creatorBodyType',saved.bodyType||'standard');set('creatorHairstyle',saved.hairstyle||(saved.gender==='femme'?'long':'court'));set('creatorOutfit',saved.outfit||'urbain');
   const creatorNameField=document.getElementById('creatorName');if(creatorNameField)creatorNameField.disabled=!!(creatorEditMode&&isCreatorAccount(activeGameAccount));
-  const creatorNameField=document.getElementById('creatorName');if(creatorNameField)creatorNameField.disabled=!!(creatorEditMode&&isCreatorAccount(activeGameAccount));
   overlay.classList.add('open');
   updateCreatorPreview();
   renderCreatorDetail('gender');
@@ -1257,7 +1256,7 @@ document.getElementById('startBtn').addEventListener('click',openAccountGate);
 document.getElementById('creatorStart').addEventListener('click',launchGameFromCreator);
 document.getElementById('creatorStart').addEventListener('click',stopIdentityPreview,true);
 document.getElementById('creatorCancel').addEventListener('click',stopIdentityPreview);
-document.getElementById('creatorCancel').addEventListener('click',()=>document.getElementById('creatorOverlay').classList.remove('open'));
+document.getElementById('creatorCancel').addEventListener('click',()=>{creatorEditMode=false;const n=document.getElementById('creatorName');if(n)n.disabled=false;const b=document.getElementById('creatorStart');if(b)b.textContent='COMMENCER';document.getElementById('creatorOverlay').classList.remove('open');});
 document.getElementById('creatorOptions').addEventListener('click',function(e){
   const btn=e.target.closest('.creatorOptionBtn');
   if(!btn)return;
@@ -1573,6 +1572,7 @@ function generateCity() {
     // une ville visible et dense autour du point de départ même si OSM est incomplet.
     buildMappedRoadsideInfill();
     buildMappedStreetTrees();
+    createAFGamerHQ();
     document.getElementById('mapStatus').textContent += ' · rues, bâtiments et espaces verts issus du réseau cartographique';
     if (!npcPopulationCreated) {
       // Population volontairement modérée : priorité à la stabilité et au temps de calcul.
@@ -1588,6 +1588,7 @@ function generateCity() {
     document.getElementById('mapStatus').textContent = 'Carte OSM indisponible : circulation désactivée jusqu’au chargement des vraies routes.';
     // Ne pas créer de rues fictives : aucun véhicule ne roule hors du réseau OSM.
     osmRoadSegments.length=0;trafficRoadSegments.length=0;trafficGraph.clear();
+    createAFGamerHQ();
     worldReady = true;startPlayerAtHome();
     if(mapOpen) drawBigMap();
   });
