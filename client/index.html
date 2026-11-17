@@ -2847,6 +2847,52 @@ function generateInterior(id, bw, bd, numFloors, wallColor, style) {
           box(1.9,1.35,.5,x,.68,z,0x343b42);
           box(1.55,.88,.045,x,1.15,z-.27,[0x263e56,0x263e56,0x365d66][i],false);
         }
+      }else if(kind==='education'){
+        // Salle de classe ivoirienne : tableau, bureau enseignant et rangées d'élèves.
+        box(Math.min(5.8,roomW*.62),1.45,.14,0,1.65,-roomD*.43,0x245b50,false);
+        box(Math.min(5.9,roomW*.64),.16,.18,0,2.42,-roomD*.43,0x8a6847,false);
+        box(1.8,.82,.82,0,.43,-roomD*.22,0x79543b);
+        for(let row=0;row<2;row++)for(let col=0;col<3;col++){
+          const x=(col-1)*roomW*.27,z=-roomD*.02+row*roomD*.28;
+          box(1.35,.16,.62,x,.78,z,0x9b704b);
+          box(.14,.72,.14,x-.53,.39,z-.2,0x5d4939,false);
+          box(.14,.72,.14,x+.53,.39,z-.2,0x5d4939,false);
+        }
+        interactables.push({x:0,z:-roomD*.31,type:'regarder',label:'Tableau de cours',floor:f},{x:0,z:-roomD*.20,type:'assoir',label:'Bureau du professeur',floor:f});
+      }else if(kind==='health'){
+        // Accueil de clinique et lits d'examen, avec équipement médical simple.
+        box(Math.min(4.8,roomW*.5),1.05,.85,0,.55,-roomD*.34,0xe8eee9);
+        for(const x of [-roomW*.27,roomW*.27]){
+          box(2.15,.38,3.0,x,.35,roomD*.12,0xe9e8df);
+          box(2.05,.16,1.25,x,.62,roomD*.12,0x8fc7d0,false);
+          box(.18,.8,.18,x-.88,.4,roomD*.12,0x8a9698,false);
+          interactables.push({x,z:roomD*.12,type:'assoir',label:'Lit de consultation',floor:f});
+        }
+        box(1.0,1.55,.65,roomW*.35,.78,-roomD*.08,0xb8c8c4);
+        interactables.push({x:0,z:-roomD*.34,type:'regarder',label:'Accueil médical',floor:f});
+      }else if(kind==='emergency'){
+        // Poste de police / pompiers : accueil, postes de contrôle et banc d'attente.
+        box(Math.min(4.8,roomW*.5),1.05,.85,0,.55,-roomD*.34,0x365a75);
+        for(const x of [-roomW*.27,roomW*.27]){
+          box(1.7,.78,.72,x,.42,roomD*.02,0x536d7a);
+          box(1.25,.72,.06,x,.95,roomD*.02,0x263d4c,false);
+          interactables.push({x,z:roomD*.02,type:'assoir',label:'Poste de service',floor:f});
+        }
+        box(2.7,.48,.72,0,.27,roomD*.34,0x8b765f);
+        interactables.push({x:0,z:-roomD*.34,type:'regarder',label:'Comptoir d’accueil',floor:f});
+      }else if(kind==='public-service'){
+        // Mairie, banque, poste ou service public : guichets et salle d'attente.
+        box(Math.min(5.8,roomW*.62),1.05,.82,0,.55,-roomD*.34,0x795b3d);
+        for(let i=0;i<3;i++){
+          const x=(i-1)*roomW*.27;
+          box(1.05,.72,.08,x,1.13,-roomD*.34,0x365b70,false);
+          box(.62,.08,.08,x,.98,-roomD*.34,0xd7b66d,false);
+          interactables.push({x,z:-roomD*.20,type:'regarder',label:'Guichet '+(i+1),floor:f});
+        }
+        for(const x of [-roomW*.28,0,roomW*.28]){
+          box(1.65,.38,.58,x,.28,roomD*.22,0x526d79);
+          interactables.push({x,z:roomD*.22,type:'assoir',label:'Banc d’attente',floor:f});
+        }
       }else{
         // Superette / alimentation : rayons, étals, frigos et produits colorés.
         for(const x of [-roomW*.32,roomW*.32]){
