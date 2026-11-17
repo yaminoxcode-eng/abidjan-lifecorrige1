@@ -167,6 +167,12 @@ function rateLimit(key, max = 12, windowMs = 60000) {
   return old.count <= max;
 }
 
+function safePlayerName(phone, value) {
+  if (isCreatorPhone(phone)) return 'Créateur';
+  const name = clean(value,24) || 'Citoyen';
+  const normalized = name.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  return normalized.includes('createur') || normalized.includes('creator') ? 'Citoyen' : name;
+}
 function publicPlayer(account, id) {
   return {
     id,
@@ -479,7 +485,7 @@ app.post('/api/auth/register', async (req, res) => {
       sport: answer(s.sport)
     },
     profile: {
-      name: 'Mon personnage',
+      name: safePlayerName(phone, 'Mon personnage'),
       gender: 'homme',
       skin: 0x7a4a24,
       hair: 0x17120f,
@@ -899,7 +905,7 @@ io.on('connection', (socket) => {
       const p = payload.profile;
 
       state.profile = account.profile = {
-        name: clean(p.name, 24) || 'Citoyen',
+        name: safePlayerName(socket.phone, p.name),
         gender: p.gender === 'femme' ? 'femme' : 'homme',
         skin: Number(p.skin) || 0x7a4a24,
         hair: Number(p.hair) || 0x17120f,
@@ -987,7 +993,7 @@ io.on('connection', (socket) => {
       if (save.playerProfile && typeof save.playerProfile === 'object') {
         const p = save.playerProfile;
         account.profile = state.profile = {
-          name: clean(p.name, 24) || 'Citoyen',
+          name: safePlayerName(socket.phone, p.name),
           gender: p.gender === 'femme' ? 'femme' : 'homme',
           skin: Number(p.skin) || 0x7a4a24,
           hair: Number(p.hair) || 0x17120f,
