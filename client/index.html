@@ -546,7 +546,7 @@ const movementState = { yVelocity: 0, onGround: true };
 // ÉTAT GLOBAL
 // ============================================================
 let scene, camera, renderer, clock;
-let creatorEditMode=false, creatorHQDoor=null, creatorOrb=null, creatorOrbAlert=false, creatorHQPosition=null, abjGpsPath=null;
+let creatorEditMode=false, creatorHQDoor=null, creatorOrb=null, creatorOrbAlert=false, creatorHQPosition=null, abjGpsPath=null, lastWorldTelemetryAt=0;
 let mobilePerformanceMode=false;
 let npcUpdateAccumulator=0,vehicleUpdateAccumulator=0;
 let distanceCullAccumulator=0;
@@ -5415,7 +5415,7 @@ function initMapInteractions(){
   },{passive:false});
   canvas.addEventListener('pointerdown',function(e){
     if(!mapOpen||e.button!==0)return;
-    mapView.dragging=true;mapView.follow=false;mapView.lastX=e.clientX;mapView.lastY=e.clientY;
+    mapView.dragging=true;mapView.follow=false;mapView.startX=e.clientX;mapView.startY=e.clientY;mapView.lastX=e.clientX;mapView.lastY=e.clientY;
     try{if(canvas.isConnected&&typeof canvas.setPointerCapture==='function'&&e.pointerId!=null)canvas.setPointerCapture(e.pointerId);}catch(err){console.debug('Capture pointeur ignorée :',err.name);}canvas.style.cursor='grabbing';
   });
   canvas.addEventListener('pointermove',function(e){
@@ -5431,7 +5431,7 @@ function initMapInteractions(){
     drawBigMap();
   });
   const endDrag=function(e){mapView.dragging=false;canvas.style.cursor='grab';};
-  canvas.addEventListener('pointerup',function(e){const wasDragging=mapView.dragging;const moved=Math.hypot(e.clientX-mapView.lastX,e.clientY-mapView.lastY)>5;endDrag(e);if(!wasDragging||!moved||!creatorHQPosition)return;const rect=canvas.getBoundingClientRect(),win=mapVisibleWindow(),mx=(e.clientX-rect.left)/rect.width,my=(e.clientY-rect.top)/rect.height,wx=win.minX+mx*(win.maxX-win.minX),wz=win.minZ+my*(win.maxZ-win.minZ);if(Math.hypot(wx-creatorHQPosition.x,wz-creatorHQPosition.z)<Math.max(180,220/(mapView.zoom||1)))showAFGamerMapCard();});
+  canvas.addEventListener('pointerup',function(e){const wasDragging=mapView.dragging;const moved=Math.hypot(e.clientX-mapView.startX,e.clientY-mapView.startY)>5;endDrag(e);if(!wasDragging||!moved||!creatorHQPosition)return;const rect=canvas.getBoundingClientRect(),win=mapVisibleWindow(),mx=(e.clientX-rect.left)/rect.width,my=(e.clientY-rect.top)/rect.height,wx=win.minX+mx*(win.maxX-win.minX),wz=win.minZ+my*(win.maxZ-win.minZ);if(Math.hypot(wx-creatorHQPosition.x,wz-creatorHQPosition.z)<Math.max(180,220/(mapView.zoom||1)))showAFGamerMapCard();});
   canvas.addEventListener('pointercancel',endDrag);
   const zi=document.getElementById('mapZoomIn'),zo=document.getElementById('mapZoomOut'),rc=document.getElementById('mapRecenter');
   if(zi)zi.onclick=()=>{mapView.zoom=Math.min(24,mapView.zoom*1.3);mapView.follow=false;drawBigMap();};
@@ -7045,7 +7045,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
   const p=lifeState.playerProfile||{};
   const ride=typeof activeCourseGoRide!=='undefined'&&activeCourseGoRide?.taxi?{x:activeCourseGoRide.taxi.position.x,z:activeCourseGoRide.taxi.position.z,yaw:activeCourseGoRide.taxi.rotation.y,phase:activeCourseGoRide.phase,boarded:!!activeCourseGoRide.boarded}:null;
   const ws=typeof V12!=='undefined'?{hour:lifeState.hour,minute:lifeState.minute,weather:V12.weather,temperature:V12.temperature}:null;
-  if(window.ABJ_WORLD_HOST&&socket.connected){
+  if(window.ABJ_WORLD_HOST&&socket.connected&&Date.now()-lastWorldTelemetryAt>5000){\n   lastWorldTelemetryAt=Date.now();
    const vc={gbaka:0,taxi:0,yango:0,woro:0,moto_livreur:0,moto:0,bus:0,voiture:0,luxe:0};
    vehicles.forEach(v=>{const d=v.userData||{},k=String(d.trafficKind||d.vehicleKind||d.kind||d.model||'voiture').toLowerCase();const key=Object.keys(vc).find(x=>k.includes(x))||'voiture';vc[key]++;});
    socket.emit('world:telemetry',{npcTotal:npcs.length,npcActive:npcs.filter(n=>n.visible&&!n.userData?.dead).length,vehicles:vc});
