@@ -12,6 +12,9 @@ const PORT = Number(process.env.PORT || 10000);
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('hex');
 const CLIENT_ORIGINS = (process.env.CLIENT_ORIGINS || '*').split(',').map(s => s.trim()).filter(Boolean);
 const UPDATE_ADMIN_TOKEN = process.env.UPDATE_ADMIN_TOKEN || '';
+const CREATOR_ACCOUNT_PHONE = phoneOf(process.env.CREATOR_ACCOUNT_PHONE || '');
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
 const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.26.0';
 const DEFAULT_CLIENT_URL = process.env.CLIENT_URL || '';
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -58,6 +61,10 @@ function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.siz
 
 const recoveryTickets = new Map();
 const attempts = new Map();
+const worldTelemetry = { npcTotal: 0, npcActive: 0, vehicles: {}, updatedAt: 0 };
+const creatorReports = [];
+function isCreatorPhone(phone) { return !!CREATOR_ACCOUNT_PHONE && phone === CREATOR_ACCOUNT_PHONE; }
+function requireCreator(req,res,next) { if (!isCreatorPhone(req.phone)) return res.status(403).json({error:'Accès réservé au compte créateur officiel.'}); next(); }
 
 async function supabaseRequest(path, options = {}) {
   if (!persistentStorageEnabled) return null;
@@ -721,6 +728,58 @@ app.delete('/api/account/me', auth, async (req, res) => {
   res.set('Cache-Control', 'no-store').json({ ok: true, deleted: true });
 });
 
+
+// Outils privés du créateur : statistiques monde, signalements et assistant du jeu.
+app.get('/api/creator/world', auth, requireCreator, (_req,res) => {
+  const byVersion = {};
+  for (const p of activePlayers.values()) byVersion[p.version || 'inconnue'] = (byVersion[p.version || 'inconnue'] || 0) + 1;
+  res.set('Cache-Control','no-store').json({
+    playersOnline: activePlayers.size,
+    players: [...activePlayers.values()].map(p=>({name:clean(p.profile?.name,24)||'Citoyen',version:p.version||'inconnue'})),
+    npcTotal: worldTelemetry.npcTotal,
+    npcActive: worldTelemetry.npcActive,
+    npcInactive: Math.max(0,worldTelemetry.npcTotal-worldTelemetry.npcActive),
+    vehicles: worldTelemetry.vehicles,
+    telemetryUpdatedAt: worldTelemetry.updatedAt || null,
+    playersByVersion: byVersion
+  });
+});
+app.get('/api/creator/reports', auth, requireCreator, (_req,res) => {
+  res.set('Cache-Control','no-store').json({items:creatorReports.slice(-150).reverse()});
+});
+app.post('/api/game/report', auth, (req,res) => {
+  if (!rateLimit(req.phone+':game-report',12,60000)) return res.status(429).json({error:'Trop de signalements. Réessaie plus tard.'});
+  const message=clean(req.body.message,500),kind=clean(req.body.kind,40)||'client-error';
+  if(!message)return res.status(400).json({error:'Signalement vide.'});
+  creatorReports.push({id:crypto.randomUUID(),kind,message,player:clean(accounts.get(req.phone)?.profile?.name,24)||'Citoyen',phone:req.phone,version:clean(req.body.version,32),district:clean(req.body.district,80),createdAt:new Date().toISOString(),status:'nouveau'});
+  if(creatorReports.length>500)creatorReports.shift();
+  io.emit('creator:report:new',{id:creatorReports[creatorReports.length-1].id});
+  res.status(201).json({ok:true});
+});
+app.post('/api/game/assistant', auth, async (req,res) => {
+  if(!rateLimit(req.phone+':game-ai',20,60000))return res.status(429).json({error:'Tu poses trop de questions. Attends un instant.'});
+  const question=clean(req.body.message,1200);
+  if(!question)return res.status(400).json({error:'Écris une question sur Abidjan Life.'});
+  const knowledge=`Tu es l'assistant intégré d'Abidjan Life, un jeu de vie 3D situé à Abidjan. Tu réponds en français, clairement et sans prétendre qu'une fonctionnalité non confirmée existe. Le jeu actuel comprend un monde urbain fondé sur les données OpenStreetMap, des quartiers/communes, déplacements à pied, véhicules et circulation IA (gbaka, taxis, motos, voitures, bus), PNJ, bâtiments et intérieurs, téléphone avec applications simulées, économie en FCFA, compte en ligne, sauvegarde Supabase, multijoueur et services de vie (emploi, études, santé, mairie, logement, banque, Wave simulé). Les commandes principales : ZQSD/WASD pour se déplacer, souris pour caméra, E pour interagir/entrer/sortir/ascenseur, F pour interagir avec meubles, P ou M pour téléphone/carte selon configuration. Tu peux aider à expliquer, dépanner et proposer des améliorations du jeu. Tu ne peux pas modifier le jeu directement. Les paiements Wave ne sont pas réels. Le permis, les achats réels et les fonctions annoncées mais pas encore livrées ne doivent pas être présentés comme disponibles.`;
+  if(!OPENAI_API_KEY)return res.json({answer:'Assistant de jeu en mode connaissances locales : '+localGameAnswer(question),mode:'local-faq',note:'Pour les réponses IA génératives, configure OPENAI_API_KEY sur le serveur Render.'});
+  try{
+    const response=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+OPENAI_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({model:OPENAI_MODEL,messages:[{role:'system',content:knowledge},{role:'user',content:question}],temperature:.35,max_tokens:500})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error?.message||'Service IA indisponible');
+    res.set('Cache-Control','no-store').json({answer:clean(data.choices?.[0]?.message?.content,3000)||'Je n’ai pas trouvé de réponse fiable.',mode:'ai'});
+  }catch(error){res.status(503).json({error:'Assistant temporairement indisponible. '+clean(error.message,180)});}
+});
+function localGameAnswer(q){
+ const t=q.toLowerCase();
+ if(/commande|bouger|déplacer|touche/.test(t))return 'Déplace-toi avec ZQSD ou WASD, utilise la souris pour orienter la caméra et E pour interagir avec les portes, bâtiments et ascenseurs.';
+ if(/wave|payer|paiement|argent/.test(t))return 'WaveABJ est une simulation interne : les achats se règlent avec l’argent du jeu. Aucun paiement réel n’est exécuté.';
+ if(/sauveg|compte|connexion/.test(t))return 'Connecte-toi à ton compte pour retrouver ton personnage et ta progression. La sauvegarde en ligne dépend de la disponibilité du serveur et de Supabase.';
+ if(/pnj|voiture|circulation|gbaka|taxi/.test(t))return 'La ville utilise des PNJ et des véhicules circulant sur le réseau routier OSM. Les véhicules comprennent notamment gbaka, taxis, motos, bus et voitures.';
+ if(/multijoueur|joueur|connect/.test(t))return 'Le multijoueur synchronise les positions et profils des joueurs connectés. Une connexion stable au serveur est nécessaire.';
+ return 'Je peux aider sur les déplacements, le téléphone, les comptes, les sauvegardes, la circulation, les PNJ, les bâtiments et le multijoueur. Pour une réponse plus précise, configure OPENAI_API_KEY sur le serveur.';
+}
+app.get('/api/creator/status', auth, requireCreator, (_req,res)=>res.json({ok:true,creator:true,configuredAI:!!OPENAI_API_KEY}));
+
 app.get('/api/me', auth, (req, res) =>
   res.json({ player: publicPlayer(accounts.get(req.phone), req.phone) })
 );
@@ -798,6 +857,16 @@ io.on('connection', (socket) => {
     vehicle: state.vehicle
   });
 
+  socket.on('world:telemetry', payload => {
+    if (socket.id !== worldStateOwner || !payload || typeof payload !== 'object') return;
+    const vehicles = payload.vehicles && typeof payload.vehicles === 'object' ? payload.vehicles : {};
+    const safeVehicles = {};
+    for (const key of ['gbaka','taxi','yango','woro','moto_livreur','moto','bus','voiture','luxe']) safeVehicles[key] = Math.max(0,Math.min(5000,Math.floor(Number(vehicles[key])||0)));
+    worldTelemetry.npcTotal = Math.max(0,Math.min(10000,Math.floor(Number(payload.npcTotal)||0)));
+    worldTelemetry.npcActive = Math.max(0,Math.min(worldTelemetry.npcTotal,Math.floor(Number(payload.npcActive)||0)));
+    worldTelemetry.vehicles = safeVehicles;
+    worldTelemetry.updatedAt = Date.now();
+  });
   socket.on('player:update', (payload = {}) => {
     if (payload.version) {
       state.version = clean(payload.version, 32) || state.version;
