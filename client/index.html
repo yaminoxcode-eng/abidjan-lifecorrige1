@@ -404,6 +404,9 @@
         <select id="creatorHair" style="display:none"><option value="0x17120f">Noir</option><option value="0x3b2418">Brun</option><option value="0x6d4c35">Châtain</option><option value="0x222b36">Bleu nuit</option></select>
         <select id="creatorShirt" style="display:none"><option value="0xe74c3c">Rouge</option><option value="0x2878b8">Bleu</option><option value="0x2e9b62">Vert</option><option value="0xe0b43c">Jaune</option><option value="0xe8e8e8">Blanc</option><option value="0x49356f">Violet</option></select>
         <select id="creatorPants" style="display:none"><option value="0x2c3e50">Bleu marine</option><option value="0x171717">Noir</option><option value="0x6a4932">Marron</option><option value="0x9b9b9b">Gris</option><option value="0x315c43">Vert</option></select>
+        <select id="creatorBodyType" style="display:none"><option value="standard">Standard</option><option value="fin">Fin</option><option value="athletique">Athlétique</option><option value="fort">Fort</option></select>
+        <select id="creatorHairstyle" style="display:none"><option value="court">Court</option><option value="degrade">Dégradé</option><option value="afro">Afro</option><option value="tresses">Tresses</option><option value="long">Long</option></select>
+        <select id="creatorOutfit" style="display:none"><option value="urbain">Urbain</option><option value="chic">Chic</option><option value="sport">Sport</option></select>
       </div>
     </div>
     <section id="creatorLifeChoices" style="display:none;margin:18px auto 8px;max-width:980px;padding:18px;border:1px solid #d5ad65;border-radius:18px;background:linear-gradient(145deg,#102738,#091521);color:#fff;text-align:left"><h3 style="margin:0 0 6px;color:#ffe0a0">Tes traits et ton rêve</h3><p style="margin:0 0 12px;color:#bfd0dc;font-size:13px">Choisis exactement 2 traits, puis 1 rêve pour ton personnage.</p><div id="creator3DPreview" style="display:flex;justify-content:center;align-items:center;min-height:220px;margin:4px auto 12px"></div><div id="creatorTraitChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px"></div><p id="creatorTraitCount" style="font-size:12px;color:#ffe0a0;margin:10px 0">Traits choisis : 0/2</p><h3 style="margin:14px 0 8px;color:#ffe0a0">Ton rêve</h3><div id="creatorDreamChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px"></div><div id="creatorChoiceSummary" style="margin-top:14px;padding:12px;border-radius:12px;background:#ffffff12;color:#e6edf2;font-size:13px">Ton récapitulatif apparaîtra ici.</div><button type="button" id="creatorChoicesBack" style="margin-top:12px;padding:9px 14px;border-radius:10px;border:1px solid #ffffff45;background:#263b4b;color:white">← Retour à l’apparence</button></section>
@@ -1184,6 +1187,7 @@ function openCharacterCreator(){
   set('creatorHair',hex(saved.hair||0x17120f));
   set('creatorShirt',hex(saved.shirt||0xe74c3c));
   set('creatorPants',hex(saved.pants||0x2c3e50));
+  set('creatorBodyType',saved.bodyType||'standard');set('creatorHairstyle',saved.hairstyle||(saved.gender==='femme'?'long':'court'));set('creatorOutfit',saved.outfit||'urbain');
   overlay.classList.add('open');
   updateCreatorPreview();
   renderCreatorDetail('gender');
@@ -1212,7 +1216,7 @@ function renderIdentityPreview(){
   host.appendChild(ren.domElement);abjIdentityPreviewRenderer=ren;abjIdentityPreviewScene=s;abjIdentityPreviewCamera=cam;
  }
  disposeIdentityActor(abjIdentityPreviewActor);
- const actor=createCharacter({gender:document.getElementById('creatorGender').value,skin:parseInt(document.getElementById('creatorSkin').value),hair:parseInt(document.getElementById('creatorHair').value),shirt:parseInt(document.getElementById('creatorShirt').value),pants:parseInt(document.getElementById('creatorPants').value)});
+ const actor=createCharacter({gender:document.getElementById('creatorGender').value,skin:parseInt(document.getElementById('creatorSkin').value),hair:parseInt(document.getElementById('creatorHair').value),shirt:parseInt(document.getElementById('creatorShirt').value),pants:parseInt(document.getElementById('creatorPants').value),bodyType:document.getElementById('creatorBodyType')?.value,hairstyle:document.getElementById('creatorHairstyle')?.value,outfit:document.getElementById('creatorOutfit')?.value});
  abjIdentityPreviewScene.add(actor);abjIdentityPreviewActor=actor;
  if(!abjIdentityPreviewFrame){
   const tick=()=>{if(!abjIdentityPreviewRenderer||!overlay.classList.contains('open')||document.getElementById('creatorLifeChoices')?.style.display==='block'){stopIdentityPreview();return;}if(abjIdentityPreviewActor)abjIdentityPreviewActor.rotation.y+=.006;abjIdentityPreviewRenderer.render(abjIdentityPreviewScene,abjIdentityPreviewCamera);abjIdentityPreviewFrame=requestAnimationFrame(tick);};
@@ -1223,7 +1227,7 @@ function updateCreatorPreview(){renderIdentityPreview();syncCreatorOptionLabels(
 
 function launchGameFromCreator(){
   const value=id=>document.getElementById(id).value;
-  lifeState.playerProfile={name:value('creatorName').trim().slice(0,24)||'Mon personnage',gender:value('creatorGender'),skin:parseInt(value('creatorSkin')),hair:parseInt(value('creatorHair')),shirt:parseInt(value('creatorShirt')),pants:parseInt(value('creatorPants'))};
+  lifeState.playerProfile={name:value('creatorName').trim().slice(0,24)||'Mon personnage',gender:value('creatorGender'),skin:parseInt(value('creatorSkin')),hair:parseInt(value('creatorHair')),shirt:parseInt(value('creatorShirt')),pants:parseInt(value('creatorPants')),bodyType:value('creatorBodyType'),hairstyle:value('creatorHairstyle'),outfit:value('creatorOutfit')};
   if(isCreatorAccount(activeGameAccount))applyCreatorPrivileges();
   document.getElementById('creatorOverlay').classList.remove('open');
   document.getElementById('startScreen').style.display='none';
@@ -1242,7 +1246,7 @@ document.getElementById('creatorOptions').addEventListener('click',function(e){
   if(!btn)return;
   renderCreatorDetail(btn.dataset.opt);
 });
-['creatorGender','creatorSkin','creatorHair','creatorShirt','creatorPants'].forEach(id=>{
+['creatorGender','creatorSkin','creatorHair','creatorShirt','creatorPants','creatorBodyType','creatorHairstyle','creatorOutfit'].forEach(id=>{
   const el=document.getElementById(id);
   if(el) el.addEventListener('change',updateCreatorPreview);
 });
@@ -3476,12 +3480,16 @@ function createCharacter(opts) {
   const g=new THREE.Group();
   const skin=Number(opts.skin)||0x7a4a24,shirt=Number(opts.shirt)||0xe74c3c,pants=Number(opts.pants)||0x2c3e50;
   const female=opts.gender==='femme';
+  const bodyType=['fin','athletique','fort'].includes(opts.bodyType)?opts.bodyType:'standard';
+  const hairstyle=['court','degrade','afro','tresses','long'].includes(opts.hairstyle)?opts.hairstyle:(female?'long':'court');
+  const outfit=['urbain','chic','sport'].includes(opts.outfit)?opts.outfit:'urbain';
   const mat=(color,roughness=.86)=>new THREE.MeshStandardMaterial({color,roughness,metalness:0});
   const skinMat=mat(skin),shirtMat=mat(shirt),pantsMat=mat(pants),hairMat=mat(Number(opts.hair)||0x17120f),shoeMat=mat(0x242321),eyeWhite=mat(0xf4eee3),eyeDark=mat(0x241a16),lipMat=mat(female?0x713b3a:0x51302a);
   function part(geo,material,x,y,z,parent=g){const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
   // Silhouette humaine plus fine : bassin, taille, épaules, membres articulés et chaussures.
-  const torso=part(new THREE.CylinderGeometry(female?.235:.255,female?.275:.285,.78,12),shirtMat,0,1.39,0);torso.scale.set(female?1.02:1,1,.82);torso.userData.clothingPart='shirt';
-  const hips=part(new THREE.CylinderGeometry(female?.245:.225,female?.245:.225,.30,10),pantsMat,0,.91,0);hips.scale.set(female?1.12:1,1,.9);hips.userData.clothingPart='pants';
+  const bodyScale=bodyType==='fin'?.86:bodyType==='fort'?1.16:bodyType==='athletique'?1.04:1;
+  const torso=part(new THREE.CylinderGeometry(female?.235:.255,female?.275:.285,.78,12),shirtMat,0,1.39,0);torso.scale.set((female?1.02:1)*bodyScale,1,.82*bodyScale);torso.userData.clothingPart='shirt';
+  const hips=part(new THREE.CylinderGeometry(female?.245:.225,female?.245:.225,.30,10),pantsMat,0,.91,0);hips.scale.set((female?1.12:1)*(bodyType==='fin'?.9:bodyType==='fort'?1.12:1),1,.9);hips.userData.clothingPart='pants';
   const neck=part(new THREE.CylinderGeometry(.075,.09,.17,10),skinMat,0,1.79,0);
   const headGroup=new THREE.Group();headGroup.position.y=2.06;g.add(headGroup);
   const head=part(new THREE.SphereGeometry(.245,18,16),skinMat,0,0,0,headGroup);head.scale.set(.88,1.12,.91);
@@ -3494,12 +3502,18 @@ function createCharacter(opts) {
   }
   const nose=part(new THREE.SphereGeometry(.047,10,8),skinMat,0,-.035,.224,headGroup);nose.scale.set(.72,.85,.8);
   const mouth=part(new THREE.BoxGeometry(.075,.012,.018),lipMat,0,-.112,.207,headGroup);
-  const cap=part(new THREE.SphereGeometry(.255,16,10,0,Math.PI*2,0,Math.PI*.55),hairMat,0,.075,-.012,headGroup);cap.scale.set(1.02,.72,1);
-  if(female){
-    const backHair=part(new THREE.SphereGeometry(.205,12,10),hairMat,0,-.11,-.105,headGroup);backHair.scale.set(1.05,1.35,.82);
-    for(const side of [-1,1]){const lock=part(new THREE.CylinderGeometry(.055,.055,.36,8),hairMat,side*.205,-.18,-.005,headGroup);lock.rotation.z=side*-.08;}
-  } else {
+  const cap=part(new THREE.SphereGeometry(hairstyle==='afro'?.30:.255,16,10,0,Math.PI*2,0,Math.PI*.55),hairMat,0,.075,-.012,headGroup);cap.scale.set(hairstyle==='afro'?1.18:1.02,hairstyle==='afro'?1.02:.72,hairstyle==='afro'?1.12:1);
+  if(hairstyle==='long'||hairstyle==='tresses'||female&&hairstyle==='court'){
+    const backHair=part(new THREE.SphereGeometry(.205,12,10),hairMat,0,-.11,-.105,headGroup);backHair.scale.set(1.05,hairstyle==='tresses'?1.7:1.35,.82);
+    for(const side of [-1,1]){const lock=part(new THREE.CylinderGeometry(hairstyle==='tresses'?.035:.055,hairstyle==='tresses'?.035:.055,hairstyle==='tresses'?.48:.36,8),hairMat,side*.205,-.18,-.005,headGroup);lock.rotation.z=side*-.08;}
+  } else if(hairstyle==='degrade'||hairstyle==='court'){
     const sideHair=part(new THREE.SphereGeometry(.235,12,8,0,Math.PI*2,0,Math.PI*.38),hairMat,0,.015,-.01,headGroup);sideHair.scale.set(1,.8,1);
+  }
+  if(outfit==='chic'){
+    const collar=part(new THREE.CylinderGeometry(.105,.15,.12,8),mat(0xf4ead8),0,1.78,.012);collar.userData.clothingPart='detail';
+    const trim=part(new THREE.BoxGeometry(.025,.55,.012),mat(0xe8d29a),0,1.42,.214);trim.userData.clothingPart='detail';
+  } else if(outfit==='sport'){
+    const band=part(new THREE.BoxGeometry(.48,.07,.012),mat(0xf4ead8),0,1.57,.218);band.userData.clothingPart='detail';
   }
   function makeArm(side){
     const pivot=new THREE.Group();pivot.position.set(side*.315,1.62,0);g.add(pivot);
@@ -3518,13 +3532,13 @@ function createCharacter(opts) {
     return pivot;
   }
   const armL=makeArm(-1),armR=makeArm(1),legL=makeLeg(-1),legR=makeLeg(1);
-  g.userData={armL,armR,legL,legR,phase:0,headGroup,anatomyVersion:2};
+  g.userData={armL,armR,legL,legR,phase:0,headGroup,anatomyVersion:3,bodyType,hairstyle,outfit};
   return g;
 }
 function applyPlayerClothing(){if(!player||!lifeState.playerProfile)return;const shirt=lifeState.playerProfile.shirt||0xe74c3c,pants=lifeState.playerProfile.pants||0x2c3e50;player.traverse(o=>{if(!o.isMesh||!o.userData.clothingPart)return;o.material.color.setHex(o.userData.clothingPart==='shirt'?shirt:pants);});}
 function createPlayer() {
   const profile=lifeState.playerProfile||{};
-  player = createCharacter({ shirt: profile.shirt||0xe74c3c, pants: profile.pants||0x2c3e50, skin: profile.skin||0x7a4a24, hair:profile.hair||0x17120f, gender:profile.gender||'homme' });
+  player = createCharacter({ shirt: profile.shirt||0xe74c3c, pants: profile.pants||0x2c3e50, skin: profile.skin||0x7a4a24, hair:profile.hair||0x17120f, gender:profile.gender||'homme',bodyType:profile.bodyType,hairstyle:profile.hairstyle,outfit:profile.outfit });
   player.userData.displayName=profile.name||'Mon personnage';
   // Spawn près du noyau urbain (Plateau) pour éviter un monde vide au démarrage
   let sx=-80, sz=-40;
@@ -6726,7 +6740,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
  function makeRemoteAvatar(data){
   if(typeof scene==='undefined'||!scene||!window.THREE||typeof createCharacter!=='function')return null;
   const p=data.profile||{};
-  const group=createCharacter({gender:p.gender==='femme'?'femme':'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50});
+  const group=createCharacter({gender:p.gender==='femme'?'femme':'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50,bodyType:p.bodyType,hairstyle:p.hairstyle,outfit:p.outfit});
   group.userData.onlinePlayerId=data.id;group.userData.isOnlinePlayer=true;group.userData.displayName=p.name||'Citoyen';
   scene.add(group);return group;
  }
