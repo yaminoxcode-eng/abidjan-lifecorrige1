@@ -571,7 +571,7 @@ let messageTimer = 0;
 let lastLifeLightingHour = -1;
 
 // Simulation de vie : besoins, argent et horloge locale du monde.
-const lifeState = { hunger:100, energy:100, social:100, hygiene:100, health:100, respect:0, money:5000, bankBalance:25000, waveBalance:0, waveDailyWithdrawn:0, waveDayKey:'', waveNotifs:[], creatorTier:'none', hour:8, minute:0, jobCooldown:0, job:'Aucun emploi', workXP:0, bankTransactions:[], contacts:[], messages:[], inventory:{}, homeDecor:{}, documents:{}, education:{courseId:null,remaining:0,certificates:[]}, delivery:null, creator:{certified:false,displayName:'',youtubeFollowers:0,tiktokFollowers:0,posts:[],lastPayoutDay:-1}, housing:{ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1}, cheats:{money:false,hunger:false,energy:false}, phoneSkin:{id:'default',name:'ABJ Connect',color:'#171d24',accent:'#e9c16f'}, playerProfile:{name:'Mon personnage',gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50}, lastSave:0 };
+const lifeState = { hunger:100, energy:100, social:100, hygiene:100, health:100, respect:0, money:5000, bankBalance:25000, waveBalance:0, gameSettings:{graphics:'auto',cameraSensitivity:1,showHints:true,controlMode:'auto'}, waveDailyWithdrawn:0, waveDayKey:'', waveNotifs:[], creatorTier:'none', hour:8, minute:0, jobCooldown:0, job:'Aucun emploi', workXP:0, bankTransactions:[], contacts:[], messages:[], inventory:{}, homeDecor:{}, documents:{}, education:{courseId:null,remaining:0,certificates:[]}, delivery:null, creator:{certified:false,displayName:'',youtubeFollowers:0,tiktokFollowers:0,posts:[],lastPayoutDay:-1}, housing:{ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1}, cheats:{money:false,hunger:false,energy:false}, phoneSkin:{id:'default',name:'ABJ Connect',color:'#171d24',accent:'#e9c16f'}, playerProfile:{name:'Mon personnage',gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50}, lastSave:0 };
 let LIFE_SAVE_KEY = 'abidjan-life-life-v1';
 const ACCOUNT_INDEX_KEY='abidjan-life-accounts-v1';
 const CREATOR_ACCOUNT_PHONE='+2250799259362';
@@ -4245,6 +4245,7 @@ function loadLifeProgress(){
   try{
     const raw=safeGet(LIFE_SAVE_KEY); if(!raw)return;
     const saved=JSON.parse(raw);
+    if(saved.gameSettings&&typeof saved.gameSettings==='object')lifeState.gameSettings={graphics:['auto','performance','quality'].includes(saved.gameSettings.graphics)?saved.gameSettings.graphics:'auto',cameraSensitivity:Math.max(.5,Math.min(1.8,Number(saved.gameSettings.cameraSensitivity)||1)),showHints:saved.gameSettings.showHints!==false,controlMode:['auto','pc','touch'].includes(saved.gameSettings.controlMode)?saved.gameSettings.controlMode:'auto'};
     if(saved.worldPosition && Number.isFinite(saved.worldPosition.x) && Number.isFinite(saved.worldPosition.z)) pendingSavedWorldPosition={x:saved.worldPosition.x,z:saved.worldPosition.z,yaw:Number.isFinite(saved.worldPosition.yaw)?saved.worldPosition.yaw:0};
     if(Number.isFinite(saved.bankBalance))lifeState.bankBalance=Math.max(0,saved.bankBalance);if(Number.isFinite(saved.waveBalance))lifeState.waveBalance=Math.max(0,saved.waveBalance);if(Number.isFinite(saved.waveDailyWithdrawn))lifeState.waveDailyWithdrawn=Math.max(0,saved.waveDailyWithdrawn);if(typeof saved.waveDayKey==='string')lifeState.waveDayKey=saved.waveDayKey;if(Array.isArray(saved.waveNotifs))lifeState.waveNotifs=saved.waveNotifs.slice(0,12);if(saved.phoneSkin&&typeof saved.phoneSkin==='object'){lifeState.phoneSkin=saved.phoneSkin;try{applyPhoneSkin(lifeState.phoneSkin);}catch(e){}}['hunger','energy','social','hygiene','respect','health','money','hour','minute','workXP'].forEach(k=>{
       if(Number.isFinite(saved[k])) lifeState[k]=Math.max(0,Math.min(k==='hour'?23:(k==='minute'?59:(k==='money'?getMoneyCap():(k==='respect'?10000000:100))),saved[k]));
@@ -4276,7 +4277,7 @@ function saveLifeProgress(show=true){
     const __saveData = {
       schemaVersion:2,
       hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,hygiene:lifeState.hygiene,respect:lifeState.respect,health:lifeState.health,
-      money:lifeState.money,bankBalance:lifeState.bankBalance,waveBalance:lifeState.waveBalance||0,waveDailyWithdrawn:lifeState.waveDailyWithdrawn,waveDayKey:lifeState.waveDayKey,waveNotifs:lifeState.waveNotifs,phoneSkin:lifeState.phoneSkin,hour:lifeState.hour,minute:lifeState.minute,documents:lifeState.documents,education:lifeState.education,cheats:lifeState.cheats,creatorTier:lifeState.creatorTier||'none',playerProfile:lifeState.playerProfile,
+      money:lifeState.money,bankBalance:lifeState.bankBalance,waveBalance:lifeState.waveBalance||0,gameSettings:lifeState.gameSettings||{},waveDailyWithdrawn:lifeState.waveDailyWithdrawn,waveDayKey:lifeState.waveDayKey,waveNotifs:lifeState.waveNotifs,phoneSkin:lifeState.phoneSkin,hour:lifeState.hour,minute:lifeState.minute,documents:lifeState.documents,education:lifeState.education,cheats:lifeState.cheats,creatorTier:lifeState.creatorTier||'none',playerProfile:lifeState.playerProfile,
       job:lifeState.job,workXP:lifeState.workXP,bankTransactions:lifeState.bankTransactions,contacts:lifeState.contacts,messages:lifeState.messages,inventory:lifeState.inventory,homeDecor:lifeState.homeDecor,delivery:lifeState.delivery,creator:lifeState.creator,housing:lifeState.housing,projects:lifeState.projects||[],
       worldPosition:__worldPosition,
       savedAt:new Date().toISOString()
@@ -7330,6 +7331,28 @@ renderMairieApp=function(){
 
 const __abjAnimateCharacterNatural=animateCharacter;
 animateCharacter=function(char,delta,moving){__abjAnimateCharacterNatural(char,delta,moving);const d=char&&char.userData;if(!d)return;if(d.headGroup){d.headGroup.rotation.x=moving?Math.sin((d.phase||0)*2)*.035:0;d.headGroup.rotation.z=moving?Math.sin(d.phase||0)*.018:0;}if(d.bodyGroup){d.bodyGroup.rotation.x=moving?-.035:0;d.bodyGroup.rotation.z=moving?Math.sin(d.phase||0)*.022:0;}};
+
+function applyAbjGameSettings(){
+ const g=lifeState.gameSettings||{};if(renderer){const mobile=window.innerWidth<700||/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);renderer.shadowMap.enabled=g.graphics==='quality'?!mobile:g.graphics==='performance'?false:!mobile;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,g.graphics==='performance'?1:mobile?1:1.5));}
+ const show=g.showHints!==false;['interiorHint','floorHint'].forEach(id=>{const el=document.getElementById(id);if(el&&!show)el.style.display='none';});
+}
+const __abjSettingsRotate=rotateCameraByMouse;
+rotateCameraByMouse=function(dx,dy){const sensitivity=Math.max(.5,Math.min(1.8,Number(lifeState.gameSettings?.cameraSensitivity)||1));__abjSettingsRotate(dx*sensitivity,dy*sensitivity);};
+const __abjSettingsLoad=loadLifeProgress;
+loadLifeProgress=function(){__abjSettingsLoad();applyAbjGameSettings();};
+const __abjSettingsRender=renderAccountSettingsApp;
+renderAccountSettingsApp=function(){
+ __abjSettingsRender();
+ const c=document.getElementById('phoneAppContent');if(!c)return;
+ const g=lifeState.gameSettings||{graphics:'auto',cameraSensitivity:1,showHints:true,controlMode:'auto'};
+ const section=document.createElement('section');section.style.cssText='padding:12px;margin:12px 0;border:1px solid #d8b15d66;border-radius:12px;background:#ffffff0b';
+ section.innerHTML='<h4>🎮 Paramètres de jeu</h4><label style="display:block;font-size:12px;margin:8px 0">Qualité graphique<select id="abjGraphicsSetting" style="display:block;width:100%;padding:9px;margin-top:4px;background:#102637;color:white;border-radius:8px"><option value="auto">Automatique</option><option value="performance">Performance</option><option value="quality">Qualité visuelle</option></select></label><label style="display:block;font-size:12px;margin:8px 0">Sensibilité de la caméra <span id="abjSensitivityLabel"></span><input id="abjSensitivity" type="range" min=".5" max="1.8" step=".1" style="width:100%"></label><label style="display:block;font-size:12px;margin:8px 0">Commandes<select id="abjControlMode" style="display:block;width:100%;padding:9px;margin-top:4px;background:#102637;color:white;border-radius:8px"><option value="auto">Détection automatique</option><option value="pc">Clavier et souris</option><option value="touch">Commandes tactiles</option></select></label><label style="display:flex;align-items:center;gap:8px;font-size:12px;margin:10px 0"><input id="abjHints" type="checkbox"> Afficher les indications à l’écran</label><button id="abjSaveSettings">Enregistrer les paramètres</button><p id="abjSettingsStatus" style="font-size:11px;color:#ffe0a0"></p>';
+ c.insertBefore(section,c.firstChild);
+ const graphics=section.querySelector('#abjGraphicsSetting'),sens=section.querySelector('#abjSensitivity'),label=section.querySelector('#abjSensitivityLabel'),controls=section.querySelector('#abjControlMode'),hints=section.querySelector('#abjHints');
+ graphics.value=g.graphics||'auto';sens.value=String(g.cameraSensitivity||1);label.textContent=sens.value+'×';controls.value=g.controlMode||'auto';hints.checked=g.showHints!==false;
+ sens.oninput=()=>label.textContent=sens.value+'×';
+ section.querySelector('#abjSaveSettings').onclick=()=>{lifeState.gameSettings={graphics:graphics.value,cameraSensitivity:Number(sens.value),controlMode:controls.value,showHints:hints.checked};applyAbjGameSettings();saveLifeProgress(false);section.querySelector('#abjSettingsStatus').textContent='Paramètres enregistrés.';};
+};
 </script>
 </body>
 </html>
