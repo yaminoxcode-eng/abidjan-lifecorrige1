@@ -988,7 +988,7 @@ async function activateGameAccount(phone){
   if(!canonical){showAccountStatus('Numéro mobile ivoirien invalide.', true);return;}
   creatorVerifiedPhone=null;
   if(canonical===CREATOR_ACCOUNT_PHONE){
-    try{const token=safeGet('abj-online-token:'+canonical);const base=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');const check=await fetch(base+'/api/creator/status',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));if(check.ok&&result.creator===true)creatorVerifiedPhone=canonical;else console.warn('Compte créateur non confirmé par le serveur :',result.error||check.status);}
+    try{const token=safeGet('abj-online-token:'+canonical);const base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');const check=await fetch(base+'/api/creator/status',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));if(check.ok&&result.creator===true)creatorVerifiedPhone=canonical;else console.warn('Compte créateur non confirmé par le serveur :',result.error||check.status);}
     catch(error){console.warn('Vérification du compte créateur impossible :',error);}
   }
   const oldKeys=Object.keys(readGameAccounts()).filter(k=>normalizeIvorianMobile(k)===canonical);
