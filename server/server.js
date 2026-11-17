@@ -803,7 +803,10 @@ io.on('connection', (socket) => {
         skin: Number(p.skin) || 0x7a4a24,
         hair: Number(p.hair) || 0x17120f,
         shirt: Number(p.shirt) || 0xe74c3c,
-        pants: Number(p.pants) || 0x2c3e50
+        pants: Number(p.pants) || 0x2c3e50,
+        bodyType: ['fin','standard','athletique','fort'].includes(p.bodyType) ? p.bodyType : 'standard',
+        hairstyle: ['court','degrade','afro','tresses','long'].includes(p.hairstyle) ? p.hairstyle : 'court',
+        outfit: ['urbain','chic','sport'].includes(p.outfit) ? p.outfit : 'urbain'
       };
     }
 
