@@ -2494,7 +2494,7 @@ async function openCreatorWorldMenu(){
  if(document.exitPointerLock)document.exitPointerLock();
  let panel=document.getElementById('creatorWorldPanel');
  if(!panel){panel=document.createElement('div');panel.id='creatorWorldPanel';panel.style.cssText='position:fixed;inset:0;z-index:120;background:#06121aee;display:flex;align-items:center;justify-content:center;padding:16px;color:#fff;font:14px Segoe UI,Arial';document.body.appendChild(panel);}
- panel.innerHTML='<section style="width:min(900px,96vw);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#183545,#0b1721);border:1px solid #d8b15d;border-radius:18px;padding:18px;box-shadow:0 20px 70px #000"><header style="display:flex;justify-content:space-between;align-items:center"><div><small style="color:#d8b15d;letter-spacing:2px">AF_GAMER · CONTRÔLE DU MONDE</small><h2 style="margin:5px 0">MONDE</h2></div><button id="creatorWorldClose">Fermer ✕</button></header><nav style="display:flex;gap:8px;flex-wrap:wrap"><button data-tab="world">Vue du monde</button><button data-tab="reports">Messages & erreurs</button><button data-tab="inbox">Boîte AF_GAMER</button><button data-tab="ai">Assistant IA</button></nav><div id="creatorWorldBody" style="padding:12px 0">Chargement des données…</div></section>';
+ panel.innerHTML='<section style="width:min(900px,96vw);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#183545,#0b1721);border:1px solid #d8b15d;border-radius:18px;padding:18px;box-shadow:0 20px 70px #000"><header style="display:flex;justify-content:space-between;align-items:center"><div><small style="color:#d8b15d;letter-spacing:2px">AF_GAMER · CONTRÔLE DU MONDE</small><h2 style="margin:5px 0">MONDE</h2></div><button id="creatorWorldClose">Fermer ✕</button></header><nav style="display:flex;gap:8px;flex-wrap:wrap"><button data-tab="world">Vue du monde</button><button data-tab="reports">Messages & erreurs</button><button data-tab="inbox">Boîte AF_GAMER</button><button data-tab="accounts">Gestion des comptes</button><button data-tab="ai">Assistant IA</button></nav><div id="creatorWorldBody" style="padding:12px 0">Chargement des données…</div></section>';
  panel.querySelector('#creatorWorldClose').onclick=()=>{if(window.ABJ_CREATOR_DASH_TIMER)clearInterval(window.ABJ_CREATOR_DASH_TIMER);panel.remove();};
  panel.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>renderCreatorWorldTab(b.dataset.tab));
  await renderCreatorWorldTab('world');
@@ -2512,7 +2512,7 @@ async function renderCreatorWorldTab(tab){
    try{
     const r=await fetch(creatorApi()+'/api/creator/afgamer-inbox',{headers:{Authorization:'Bearer '+creatorToken()}});
     const d=await r.json();if(!r.ok)throw new Error(d.error||'Boîte indisponible.');
-    box.innerHTML=(d.items||[]).map(x=>'<article data-case="'+escapeHTML(x.id)+'" style="padding:12px;margin:9px 0;background:#091a25;border-left:3px solid '+(x.category==='suggestion'?'#69c7a5':'#d8b15d')+';border-radius:8px"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>'+escapeHTML(x.category==='suggestion'?'💡 Suggestion':'📩 Demande')+' · '+escapeHTML(x.player)+'</b><small>'+escapeHTML(new Date(x.createdAt).toLocaleString('fr-FR'))+'</small></div><h4>'+escapeHTML(x.subject||'Suggestion')+'</h4><p style="white-space:pre-wrap">'+escapeHTML(x.message)+'</p><label>État du dossier<select data-status><option value="nouveau" '+(x.status==='nouveau'?'selected':'')+'>Nouveau</option><option value="en_cours" '+(x.status==='en_cours'?'selected':'')+'>En cours</option><option value="traite" '+(x.status==='traite'?'selected':'')+'>Traité</option><option value="archive" '+(x.status==='archive'?'selected':'')+'>Archivé</option></select></label><label>Réponse au joueur<textarea data-reply maxlength="1200" rows="3" placeholder="Écris ta réponse…">'+escapeHTML(x.reply||'')+'</textarea></label><button data-save>Enregistrer la réponse et le statut</button><small data-result style="display:block;margin-top:7px;color:#e5c889"></small></article>').join('')||'Aucun message reçu pour le moment.';
+    box.innerHTML=(d.items||[]).map(x=>'<article data-case="'+escapeHTML(x.id)+'" style="padding:12px;margin:9px 0;background:#091a25;border-left:3px solid '+(x.category==='suggestion'?'#69c7a5':'#d8b15d')+';border-radius:8px"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>'+escapeHTML(x.category==='suggestion'?'💡 Suggestion':'📩 Demande')+' · '+escapeHTML(x.player)+'</b><small>'+escapeHTML(new Date(x.createdAt).toLocaleString('fr-FR'))+'</small></div><h4>'+escapeHTML(x.subject||'Suggestion')+'</h4><p style="font-size:12px;color:#b9d6e7">Numéro associé : '+escapeHTML(x.phone||'non disponible')+'</p><p style="white-space:pre-wrap">'+escapeHTML(x.message)+'</p><label>État du dossier<select data-status><option value="nouveau" '+(x.status==='nouveau'?'selected':'')+'>Nouveau</option><option value="en_cours" '+(x.status==='en_cours'?'selected':'')+'>En cours</option><option value="traite" '+(x.status==='traite'?'selected':'')+'>Traité</option><option value="archive" '+(x.status==='archive'?'selected':'')+'>Archivé</option></select></label><label>Réponse au joueur<textarea data-reply maxlength="1200" rows="3" placeholder="Écris ta réponse…">'+escapeHTML(x.reply||'')+'</textarea></label><button data-save>Enregistrer la réponse et le statut</button><small data-result style="display:block;margin-top:7px;color:#e5c889"></small></article>').join('')||'Aucun message reçu pour le moment.';
     box.querySelectorAll('[data-save]').forEach(btn=>btn.onclick=async()=>{
      const card=btn.closest('[data-case]'),result=card.querySelector('[data-result]');btn.disabled=true;result.textContent='Enregistrement…';
      try{
@@ -2525,6 +2525,28 @@ async function renderCreatorWorldTab(tab){
    }catch(e){box.textContent=e.message||'Impossible de charger la boîte.';}
   }
   await loadInbox();return;
+ }
+ if(tab==='accounts'){
+  body.innerHTML='<h3>👥 Gestion des comptes</h3><p>Liste des comptes enregistrés. Les mots de passe et leurs empreintes ne sont jamais affichés ici.</p><div id="creatorAccountsList">Chargement…</div>';
+  const box=document.getElementById('creatorAccountsList');
+  try{
+   const r=await fetch(creatorApi()+'/api/creator/accounts',{headers:{Authorization:'Bearer '+creatorToken()}}),d=await r.json();
+   if(!r.ok)throw new Error(d.error||'Liste des comptes indisponible.');
+   box.innerHTML=(d.items||[]).map(x=>'<article data-account="'+escapeHTML(x.phone)+'" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px;margin:8px 0;background:#091a25;border:1px solid #ffffff20;border-radius:10px"><div><b>'+escapeHTML(x.name||'Citoyen')+'</b><div style="font-size:12px;color:#a9bdc8">'+escapeHTML(x.phone)+'</div><small style="color:#8099a8">'+(x.createdAt?escapeHTML(new Date(x.createdAt).toLocaleDateString('fr-FR')):'Date inconnue')+'</small></div><button data-delete-account style="background:#842b32;border-color:#e58b91">Supprimer le compte</button><small data-result style="width:100%;color:#e5c889"></small></article>').join('')||'Aucun compte enregistré.';
+   box.querySelectorAll('[data-delete-account]').forEach(btn=>btn.onclick=async()=>{
+    const card=btn.closest('[data-account]'),phone=card.dataset.account,name=card.querySelector('b').textContent;
+    if(!confirm('Supprimer définitivement le compte de '+name+' ('+phone+') et toutes ses données de jeu ? Cette action est irréversible.'))return;
+    const confirmPhone=prompt('Pour confirmer, retape exactement le numéro du compte : '+phone);
+    if(confirmPhone===null)return;
+    btn.disabled=true;const result=card.querySelector('[data-result]');result.textContent='Suppression sécurisée en cours…';
+    try{
+     const response=await fetch(creatorApi()+'/api/creator/accounts/'+encodeURIComponent(phone),{method:'DELETE',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({confirmPhone})});
+     const data=await response.json();if(!response.ok||!data.deleted)throw new Error(data.error||'Suppression non confirmée.');
+     card.remove();if(!box.querySelector('[data-account]'))box.textContent='Aucun compte enregistré.';
+    }catch(error){result.textContent=error.message||'Suppression impossible.';btn.disabled=false;}
+   });
+  }catch(e){box.textContent=e.message||'Impossible de charger les comptes.';}
+  return;
  }
  if(tab==='reports'){body.innerHTML='<h3>Signalements des joueurs</h3><div id="creatorReportsList">Chargement…</div>';try{const r=await fetch(creatorApi()+'/api/creator/reports',{headers:{Authorization:'Bearer '+creatorToken()}});const d=await r.json();const list=document.getElementById('creatorReportsList');if(!r.ok)throw new Error(d.error);list.innerHTML=(d.items||[]).map(x=>'<article style="padding:10px;margin:8px 0;background:#091a25;border-left:3px solid #e66;border-radius:8px"><b>'+escapeHTML(x.player)+' · '+escapeHTML(x.kind)+'</b><small style="display:block;color:#a8bdc8">'+escapeHTML(x.createdAt)+' · '+escapeHTML(x.district)+'</small><p>'+escapeHTML(x.message)+'</p></article>').join('')||'Aucun signalement pour le moment.';creatorOrbAlert=false;}catch(e){document.getElementById('creatorReportsList').textContent=e.message||'Impossible de charger les signalements.';}return;
  }
@@ -5347,33 +5369,24 @@ function renderAccountSettingsApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
  const apps=document.getElementById('phoneApps');if(apps)apps.style.display='none';content.style.display='block';
  const phone=activeGameAccount||'Aucun compte';
- content.innerHTML='<button id="phoneBack">← Applications</button><h3>⚙️ Paramètres du jeu</h3><p style="font-size:12px;color:#c6d8e5">Réglages liés à ton compte et à ton expérience Abidjan Life.</p><div style="padding:12px;background:#ffffff12;border-radius:12px"><div style="font-size:11px;color:#b9d6e7">Compte connecté</div><b>'+escapeHTML(phone)+'</b><p style="font-size:11px;color:#c6d8e5">Progression, personnage et préférences sont associés à ce compte.</p></div><h4>Compte et sécurité</h4><button id="accountSignOut">Se déconnecter</button><div style="margin-top:12px;padding:12px;border:1px solid #c94b4b88;border-radius:12px;background:#501c2533"><b style="color:#ffaaaa">Zone de suppression définitive</b><p style="font-size:11px;color:#f0cccc">Supprime le compte en ligne, les sauvegardes, le personnage, la progression et les données locales associées. Cette opération est irréversible.</p><button id="accountDelete" style="background:#9b2929;border-color:#ff8c8c">Supprimer mon compte</button></div><p id="accountSettingStatus" style="font-size:11px;color:#ffe0a0;min-height:20px"></p>';
+ content.innerHTML='<button id="phoneBack">← Applications</button><h3>⚙️ Paramètres du jeu</h3><p style="font-size:12px;color:#c6d8e5">Réglages liés à ton compte et à ton expérience Abidjan Life.</p><div style="padding:12px;background:#ffffff12;border-radius:12px"><div style="font-size:11px;color:#b9d6e7">Compte connecté</div><b>'+escapeHTML(phone)+'</b><p style="font-size:11px;color:#c6d8e5">Progression, personnage et préférences sont associés à ce compte.</p></div><h4>Compte et sécurité</h4><button id="accountSignOut">Se déconnecter</button><div style="margin-top:12px;padding:12px;border:1px solid #c94b4b88;border-radius:12px;background:#501c2533"><b style="color:#ffaaaa">Demander la suppression du compte</b><p style="font-size:11px;color:#f0cccc">Ta demande sera envoyée à AF GAMER. Le compte et ses données ne seront supprimés qu’après validation par le créateur.</p><button id="accountDelete" style="background:#9b2929;border-color:#ff8c8c">Envoyer ma demande</button></div><p id="accountSettingStatus" style="font-size:11px;color:#ffe0a0;min-height:34px"></p>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
  document.getElementById('accountSignOut').onclick=()=>{closePhone();activeGameAccount=null;openAccountGate();};
  document.getElementById('accountDelete').onclick=async()=>{
-  const status=document.getElementById('accountSettingStatus'),account=activeGameAccount;
+  const status=document.getElementById('accountSettingStatus'),account=activeGameAccount,btn=document.getElementById('accountDelete');
   if(!account){status.textContent='Aucun compte actif.';return;}
-  if(!confirm('ATTENTION : supprimer définitivement ton compte, toutes tes sauvegardes en ligne et locales, ton personnage et ta progression ? Cette action est irréversible.'))return;
-  const btn=document.getElementById('accountDelete');btn.disabled=true;status.textContent='Suppression sécurisée du compte en cours…';
+  if(!confirm('Envoyer à AF GAMER une demande de suppression définitive de ce compte ? Ton compte restera actif tant que la demande ne sera pas traitée.'))return;
+  btn.disabled=true;status.textContent='Transmission de la demande à AF GAMER…';
   try{
    const authToken=safeGet('abj-online-token:'+account);
-   if(!authToken)throw new Error('Session sécurisée absente. Reconnecte-toi avant de supprimer ton compte.');
+   if(!authToken)throw new Error('Session sécurisée absente. Reconnecte-toi avant d’envoyer une demande.');
    const base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
-   const response=await fetch(base+'/api/account/me',{method:'DELETE',headers:{Authorization:'Bearer '+authToken}});
+   const response=await fetch(base+'/api/account/deletion-request',{method:'POST',headers:{Authorization:'Bearer '+authToken,'Content-Type':'application/json'},body:JSON.stringify({})});
    const result=await response.json().catch(()=>({}));
-   if(!response.ok||!result.deleted)throw new Error(result.error||'Le serveur n’a pas confirmé la suppression.');
-   const accounts=readGameAccounts();delete accounts[account];safeSet(ACCOUNT_INDEX_KEY,JSON.stringify(accounts));
-   safeRemove('abidjan-life-life-v1:'+account);safeRemove('abj-online-token:'+account);safeRemove('abj-installed-apps:'+account);
-   if(typeof LIFE_SAVE_KEY==='string')safeRemove(LIFE_SAVE_KEY);
-   safeRemove('abj-life-gallery-v1');
-   if(window.ABJ_PENDING_REMOTE_SAVE&&window.ABJ_PENDING_REMOTE_SAVE.phone===account)window.ABJ_PENDING_REMOTE_SAVE=null;
-   if(window.ABJ_GAME_SOCKET){try{window.ABJ_GAME_SOCKET.disconnect();}catch(e){}window.ABJ_GAME_SOCKET=null;}
-   activeGameAccount=null;LIFE_SAVE_KEY='abidjan-life-life-v1';gameStarted=false;worldReady=false;
-   const creator=document.getElementById('creatorOverlay');if(creator)creator.classList.remove('open');
-   const phoneEl=document.getElementById('phone');if(phoneEl)phoneEl.classList.remove('open');
-   status.textContent='Compte supprimé. Retour à l’accueil…';
-   setTimeout(()=>location.reload(),350);
-  }catch(error){status.textContent=error.message||'Suppression impossible. Réessaie.';btn.disabled=false;}
+   if(!response.ok||!result.ok)throw new Error(result.error||'La demande n’a pas été enregistrée.');
+   status.textContent=result.message||'Demande transmise à AF GAMER.';
+   btn.textContent='Demande envoyée';
+  }catch(error){status.textContent=error.message||'Envoi impossible. Réessaie.';btn.disabled=false;}
  };
 }
 
