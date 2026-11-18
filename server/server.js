@@ -773,7 +773,7 @@ app.post('/api/account/deletion-request', auth, async (req,res) => {
 });
 
 app.get('/api/creator/accounts', auth, requireCreator, (_req,res) => {
-  res.set('Cache-Control','no-store').json({items:[...accounts.values()].map(a=>({phone:a.phone,name:clean(a.profile?.name,24)||'Citoyen',createdAt:a.createdAt?new Date(a.createdAt).toISOString():null}))});
+  res.set('Cache-Control','no-store').json({items:[...accounts.values()].map(a=>({phone:a.phone,name:clean(a.profile?.name,24)||'Citoyen',isCreator:isCreatorPhone(a.phone),createdAt:a.createdAt?new Date(a.createdAt).toISOString():null}))});
 });
 
 app.delete('/api/creator/accounts/:phone', auth, requireCreator, async (req,res) => {
