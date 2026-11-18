@@ -867,6 +867,11 @@ function localGameAnswer(q){
  if(/multijoueur|joueur|connect/.test(t))return 'Le multijoueur synchronise les positions et profils des joueurs connectés. Une connexion stable au serveur est nécessaire.';
  return 'Je peux aider sur les déplacements, le téléphone, les comptes, les sauvegardes, la circulation, les PNJ, les bâtiments et le multijoueur. Pour une réponse plus précise, configure OPENAI_API_KEY sur le serveur.';
 }
+app.get('/api/account/role', auth, (req,res)=>{
+  const creator=isCreatorPhone(req.phone);
+  res.set('Cache-Control','no-store').json({ok:true,creator,title:creator?'Créateur du jeu':'Citoyen',privileges:creator?['creator_dashboard','account_management','moderation','world_management','creator_tools']:[]});
+});
+
 app.get('/api/creator/status', auth, requireCreator, (_req,res)=>res.json({ok:true,creator:true,configuredAI:!!OPENAI_API_KEY}));
 
 app.get('/api/me', auth, (req, res) =>
