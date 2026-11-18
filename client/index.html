@@ -1965,7 +1965,7 @@ function buildOSMRoads(ways, nodes) {
       const a=pts[i-1],b=pts[i],len=Math.hypot(b.x-a.x,b.z-a.z);if(len<.5)continue;
       addQuad(a,b,width,.13);
       if(['primary','secondary','tertiary','residential','living_street','unclassified'].includes(tag)){
-        const nx=-(b.z-a.z)/len,nz=(b.x-a.x)/len,side=width/2+1.35;
+        const nx=-(b.z-a.z)/len,nz=(b.x-a.x)/len,sidewalkWidth=(tag==='primary'||tag==='secondary')?3.1:2.55,side=width/2+sidewalkWidth/2+.12;
         const l1={x:a.x+nx*side,z:a.z+nz*side},l2={x:b.x+nx*side,z:b.z+nz*side};
         const r1={x:a.x-nx*side,z:a.z-nz*side},r2={x:b.x-nx*side,z:b.z-nz*side};
         addWalkQuad(l1,l2,sidewalkWidth,.205);addWalkQuad(r1,r2,sidewalkWidth,.205);
