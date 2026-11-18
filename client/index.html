@@ -7411,50 +7411,150 @@ function createTransitDepots(){
 
 /* Stations-service et garages mécaniques : lieux distincts et interactifs. */
 function createFuelStationsAndRepairGarages(){
- if(!scene||window.__ABJ_AUTO_SERVICES_CREATED)return;window.__ABJ_AUTO_SERVICES_CREATED=true;
+ if(!scene||window.__ABJ_AUTO_SERVICES_CREATED)return;
+ window.__ABJ_AUTO_SERVICES_CREATED=true;
  const base=geoToWorld(5.323,-4.02);
  const sites=[
-  {kind:'station',name:'Station Ivoire Énergie',x:-680,z:-520,color:0xd83c32},
-  {kind:'station',name:'Station Lagune',x:720,z:-470,color:0x268c62},
-  {kind:'station',name:'Station Abidjan Nord',x:-720,z:560,color:0x2869a8},
-  {kind:'station',name:'Station du Carrefour',x:700,z:620,color:0xe2ad35},
-  {kind:'garage',name:'Garage mécanique du Plateau',x:-260,z:760,color:0x537f91},
-  {kind:'garage',name:'Garage Auto Cocody',x:270,z:-760,color:0x9b673f},
-  {kind:'garage',name:'Garage Express Yopougon',x:-850,z:60,color:0x6e7f4b},
-  {kind:'garage',name:'Garage des Deux-Plateaux',x:850,z:80,color:0x795a9a}
+  {kind:'station',name:'Station Ivoire Énergie',x:-680,z:-520,color:0xd83c32,sub:'Carburant · Boutique · Toilettes'},
+  {kind:'station',name:'Station Lagune',x:720,z:-470,color:0x268c62,sub:'Carburant · Gonflage · Lavage'},
+  {kind:'station',name:'Station Abidjan Nord',x:-720,z:560,color:0x2869a8,sub:'Carburant · Boutique · Vidange'},
+  {kind:'station',name:'Station du Carrefour',x:700,z:620,color:0xe2ad35,sub:'Carburant · Gonflage · Boutique'},
+  {kind:'garage',name:'Garage mécanique du Plateau',x:-260,z:760,color:0x537f91,sub:'Mécanique · Diagnostic · Pneus'},
+  {kind:'garage',name:'Garage Auto Cocody',x:270,z:-760,color:0x9b673f,sub:'Entretien · Électricité · Freins'},
+  {kind:'garage',name:'Garage Express Yopougon',x:-850,z:60,color:0x6e7f4b,sub:'Dépannage · Moteur · Pneus'},
+  {kind:'garage',name:'Garage des Deux-Plateaux',x:850,z:80,color:0x795a9a,sub:'Révision · Climatisation · Carrosserie'}
  ];
- sites.forEach((site,index)=>{
-  const x=base.x+site.x,z=base.z+site.z;
-  if(isOnRoad(x,z,14)||isInsideAnyObstacle(x,z,5))return;
-  const g=new THREE.Group();
-  const concrete=new THREE.MeshStandardMaterial({color:0xc3c0b5,roughness:.95});
-  const accent=new THREE.MeshStandardMaterial({color:site.color,roughness:.7});
-  const dark=new THREE.MeshStandardMaterial({color:0x26343a,roughness:.85});
-  const floor=new THREE.Mesh(new THREE.BoxGeometry(42,.18,30),concrete);floor.position.y=.08;g.add(floor);
-  if(site.kind==='station'){
-   const canopy=new THREE.Mesh(new THREE.BoxGeometry(25,.8,13),accent);canopy.position.set(0,5,0);g.add(canopy);
-   for(const px of [-11,11])for(const pz of [-5,5]){const p=new THREE.Mesh(new THREE.BoxGeometry(.65,5,.65),concrete);p.position.set(px,2.5,pz);g.add(p);}
-   for(let n=0;n<3;n++){
-    const pump=new THREE.Group();const basePump=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.7,1.1),dark);basePump.position.y=.85;pump.add(basePump);
-    const top=new THREE.Mesh(new THREE.BoxGeometry(1.25,.5,.15),new THREE.MeshStandardMaterial({color:0xe9e8dc,emissive:0x202020}));top.position.set(0,1.4,.57);pump.add(top);
-    const hose=new THREE.Mesh(new THREE.TorusGeometry(.32,.045,6,12,Math.PI),dark);hose.rotation.z=Math.PI/2;hose.position.set(.72,.85,0);pump.add(hose);
-    pump.position.set(-7+n*7,.18,0);g.add(pump);
-   }
-  }else{
-   const roof=new THREE.Mesh(new THREE.BoxGeometry(23,.7,12),dark);roof.position.set(0,4.7,0);g.add(roof);
-   for(const px of [-10,10])for(const pz of [-5,5]){const p=new THREE.Mesh(new THREE.BoxGeometry(.7,4.5,.7),accent);p.position.set(px,2.25,pz);g.add(p);}
-   const lift=new THREE.Mesh(new THREE.BoxGeometry(5,.35,7),accent);lift.position.set(0,.5,0);g.add(lift);
-   const tool=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.2,.8),dark);tool.position.set(-14,.7,-8);g.add(tool);
+ const mat=(color,roughness=.8,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
+ const concrete=mat(0xb8b6aa,.95), asphalt=mat(0x343b3d,.98), white=mat(0xe5e0d1,.8), glass= new THREE.MeshStandardMaterial({color:0x6c9aa5,roughness:.22,metalness:.15,transparent:true,opacity:.72}), dark=mat(0x202a30,.8), steel=mat(0x899397,.42,.65), yellow=mat(0xe5b83f,.7);
+ const addBox=(g,w,h,d,m,x,y,z,rx=0,ry=0,rz=0)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.rotation.set(rx,ry,rz);g.add(o);return o;};
+ const addCylinder=(g,r1,r2,h,m,x,y,z,segments=12)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,segments),m);o.position.set(x,y,z);g.add(o);return o;};
+ const addLabel=(g,title,subtitle,color)=>{
+  const c=document.createElement('canvas');c.width=1024;c.height=256;const ctx=c.getContext('2d');
+  ctx.fillStyle='#15252b';ctx.fillRect(0,0,1024,256);ctx.fillStyle='#'+color.toString(16).padStart(6,'0');ctx.fillRect(0,0,18,256);
+  ctx.fillStyle='#fff4d9';ctx.font='bold 66px Arial';ctx.textAlign='left';ctx.fillText(title.toUpperCase(),55,108);
+  ctx.fillStyle='#c9d7d7';ctx.font='32px Arial';ctx.fillText(subtitle,58,170);
+  const texture=new THREE.CanvasTexture(c);texture.colorSpace=THREE.SRGBColorSpace;
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(20,5),new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide}));
+  sign.position.set(0,5.5,17.5);g.add(sign);
+ };
+ const findSite=(sx,sz,w,d)=>{
+  for(let ring=0;ring<=8;ring++)for(let n=0;n<(ring===0?1:16);n++){
+   const angle=n*Math.PI/8,dist=ring*12,x=sx+Math.cos(angle)*dist,z=sz+Math.sin(angle)*dist;
+   if(!wouldTouchRoad(x,z,w,d)&&!overlapsExisting(x,z,w,d,5))return {x,z};
   }
-  const signCanvas=document.createElement('canvas');signCanvas.width=640;signCanvas.height=150;const ctx=signCanvas.getContext('2d');
-  ctx.fillStyle='#172b35';ctx.fillRect(0,0,640,150);ctx.fillStyle='#fff0c8';ctx.font='bold 38px Arial';ctx.textAlign='center';ctx.fillText(site.name.toUpperCase(),320,92);
-  const sign=new THREE.Mesh(new THREE.PlaneGeometry(19,4.4),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signCanvas),side:THREE.DoubleSide}));sign.position.set(0,3.2,15.2);g.add(sign);
-  g.position.set(x,terrainHeight(x,z),z);scene.add(g);
-  poi.push({x,z,type:site.kind==='station'?'station-service':'garage-mecanique',nom:site.name,data:{service:site.kind,index,description:site.kind==='station'?'Faire le plein et contrôler le carburant':'Diagnostiquer et réparer les pannes des véhicules personnels'}});
+  return null;
+ };
+ sites.forEach((site,index)=>{
+  const dims=site.kind==='station'?{w:58,d:48}:{w:48,d:42};
+  const spot=findSite(base.x+site.x,base.z+site.z,dims.w,dims.d);
+  if(!spot){console.warn('Emplacement indisponible pour',site.name);return;}
+  const {x,z}=spot,ground=terrainHeight(x,z),g=new THREE.Group();
+  // Cour et accès : bordures, chaussée d'entrée, marquage au sol et places de stationnement.
+  addBox(g,60,.22,50,concrete,0,.02,0);
+  addBox(g,55,.08,20,asphalt,0,.16,14);
+  for(let n=-2;n<=2;n++)addBox(g,.16,.025,13,yellow,n*4,.22,14);
+  for(const side of [-1,1]){
+   addBox(g,.45,.5,49,white,side*29,.27,0);
+   for(let n=0;n<3;n++){const post=addCylinder(g,.17,.2,1.1,yellow,side*26,.65,-13+n*13,10);}
+  }
+  if(site.kind==='station'){
+   // Bâtiment de vente : murs crème, soubassement, vitrines, porte et enseigne.
+   addBox(g,18,5.4,12,white,-17,2.9,-13);
+   addBox(g,18,.65,12,site.kind==='station'?mat(0xddd0b7):white,-17,5.8,-13);
+   addBox(g,18,.45,12,dark,-17,.35,-13);
+   for(const wx of [-22,-16,-10]){
+    addBox(g,3.6,2.7,.18,glass,wx,3.1,-6.88);
+    addBox(g,3.9,.12,.25,steel,wx,3.1,-6.72);
+   }
+   addBox(g,2.1,3.5,.2,dark,-4.1,2.25,-6.8);
+   addBox(g,1.75,3.15,.08,glass,-4.1,2.25,-6.65);
+   // Auvent principal avec quatre poteaux ronds, éclairage et bandeau coloré.
+   addBox(g,31,.7,19,site.kind==='station'?mat(site.color,.6):white,3,6.2,0);
+   addBox(g,31,.28,19,dark,3,5.77,0);
+   addBox(g,30,.35,.35,white,3,6.55,9.35);
+   for(const px of [-10,16])for(const pz of [-7,7])addCylinder(g,.28,.34,5.7,steel,px,2.9,pz,14);
+   // Pompes détaillées : socle, écran, boutons, tuyau et pistolet.
+   for(let n=0;n<4;n++){
+    const px=-7+n*6.7,pump=new THREE.Group();
+    addBox(pump,1.65,1.95,1.25,dark,0,1,0);
+    addBox(pump,1.38,.62,.12,white,0,1.48,.66);
+    addBox(pump,.48,.22,.06,mat(0x263c43),0,1.5,.74);
+    for(let k=0;k<3;k++)addCylinder(pump,.055,.055,.06,k===0?mat(0x42a86e):k===1?mat(0xe6b53e):mat(0xd95348),-.42+k*.18,1.03,.68,8);
+    const hose=new THREE.Mesh(new THREE.TorusGeometry(.38,.055,8,18,Math.PI*1.15),dark);hose.rotation.z=Math.PI/2;hose.position.set(.9,.92,.05);pump.add(hose);
+    addBox(pump,.16,.38,.15,steel,1.12,.8,.1);
+    pump.position.set(px,.22,0);g.add(pump);
+    addBox(g,2.1,.12,2.1,mat(0x777d7b),px,.3,0);
+   }
+   // Petit kiosque de gonflage / lavage, poubelle et lampadaires.
+   addBox(g,8,3.2,7,mat(0xd4c7ae),-18,1.9,12);
+   addBox(g,8,.35,7,site.kind==='station'?mat(site.color):white,-18,3.65,12);
+   addBox(g,7,1.8,.12,glass,-18,2.1,8.42);
+   addCylinder(g,.55,.55,1.3,dark,22,.85,13,12);
+   for(const lx of [-24,24]){
+    addCylinder(g,.13,.18,7,steel,lx,3.5,-19,10);
+    addCylinder(g,.7,.7,.25,white,lx,7.1,-19,12);
+   }
+   // Petit auvent secondaire et panneau prix.
+   addBox(g,10,.3,5,mat(site.color),-18,4.1,12);
+   addLabel(g,site.name,site.sub,site.color);
+  }else{
+   // Atelier de mécanique : murs latéraux et fond, grandes baies ouvertes côté cour.
+   addBox(g,35,5.8,.65,mat(0xc1b7a4),0,3,-17);
+   addBox(g,.65,5.8,27,mat(0xb4aa98),-17.2,3,-3.5);
+   addBox(g,.65,5.8,27,mat(0xb4aa98),17.2,3,-3.5);
+   addBox(g,35,.45,.8,site.kind==='garage'?mat(site.color):white,0,5.95,-17);
+   // Toiture à deux pans avec charpente et panneaux de tôle nervurée.
+   const roofGeo=new THREE.BufferGeometry();
+   roofGeo.setAttribute('position',new THREE.Float32BufferAttribute([-18,6,-18,0,8,-18,0,8,14, -18,6,-18,0,8,14,-18,6,14, 0,8,-18,18,6,-18,18,6,14, 0,8,-18,18,6,14,0,8,14],3));
+   roofGeo.computeVertexNormals();
+   const roof=new THREE.Mesh(roofGeo,new THREE.MeshStandardMaterial({color:site.color,roughness:.85,side:THREE.DoubleSide}));g.add(roof);
+   for(let n=-16;n<=16;n+=2.5){
+    const ridge=new THREE.Mesh(new THREE.BoxGeometry(.07,.07,31),steel);ridge.position.set(n,6.8+(1-Math.abs(n)/18)*1.05,-1.5);g.add(ridge);
+   }
+   for(const bx of [-10,0,10]){
+    // Poteaux métalliques et poutres visibles autour de chaque baie.
+    addBox(g,.42,5.8,.42,steel,bx-4.4,2.9,13.8);
+    addBox(g,.42,5.8,.42,steel,bx+4.4,2.9,13.8);
+    addBox(g,9,.28,.35,site.kind==='garage'?mat(site.color):steel,bx,5.6,13.8);
+    // Pont élévateur à deux colonnes, bras et patins.
+    for(const side of [-1,1]){
+     addBox(g,.35,2.6,.42,site.kind==='garage'?mat(site.color):steel,bx+side*2.1,1.3,-1);
+     addBox(g,2.8,.16,.35,steel,bx+side*2.1,.45,-1);
+     addBox(g,1.2,.13,.7,dark,bx+side*2.1,.55,-1);
+    }
+   }
+   // Établi, armoire à outils, pneus empilés et compresseur.
+   addBox(g,7,1.1,1.4,mat(0x725b43),-12,.75,-11);
+   addBox(g,6.7,1.25,.18,site.kind==='garage'?mat(site.color):steel,-12,1.75,-10.2);
+   for(let n=0;n<4;n++){
+    const tire=new THREE.Mesh(new THREE.TorusGeometry(.72,.24,10,20),dark);tire.rotation.y=Math.PI/2;tire.position.set(12,.78+n*.08,-11+n*.6);g.add(tire);
+   }
+   addCylinder(g,.8,.8,1.7,steel,12,.85,-5,16);
+   addBox(g,4,2,2,mat(0x46535a),-12,1.2,3);
+   addBox(g,4,.12,2,site.kind==='garage'?mat(site.color):yellow,-12,2.28,3);
+   // Bureau vitré attenant, fenêtre, porte de service.
+   addBox(g,8,3.5,7,mat(0xd5c8b4),-12,1.9,8);
+   addBox(g,5,2,.15,glass,-12,2.2,4.42);
+   addBox(g,1.2,2.7,.18,dark,-8,1.6,4.35);
+   // Marquage de sécurité au sol et éclairage d'atelier.
+   for(const bx of [-10,0,10])for(let k=0;k<2;k++)addBox(g,.13,.03,8,yellow,bx-4.5+k*9,.28,4);
+   for(const lx of [-11,0,11]){
+    addBox(g,4,.12,.6,white,lx,5.5,-5);
+   }
+   addLabel(g,site.name,site.sub,site.color);
+  }
+  // Végétation discrète et poubelle pour ancrer le bâtiment dans la rue.
+  for(const tx of [-27,27]){
+   const trunk=addCylinder(g,.22,.32,2.4,mat(0x76533a),tx,1.2,-20,8);
+   const crown=new THREE.Mesh(new THREE.SphereGeometry(1.8,9,7),mat(0x55734b));crown.position.set(tx,3.5,-20);g.add(crown);
+  }
+  g.position.set(x,ground,z);scene.add(g);
+  addObstacle(x,z,dims.w,dims.d,9);
+  const serviceZ=z+25;
+  poi.push({x,z:serviceZ,type:site.kind==='station'?'station-service':'garage-mecanique',nom:site.name,data:{service:site.kind,index,description:site.kind==='station'?'Faire le plein, gonfler les pneus et contrôler le carburant':'Diagnostic, entretien, pneus et réparation des pannes',features:site.sub}});
  });
- console.info('Services automobiles créés :',poi.filter(p=>p.type==='station-service'||p.type==='garage-mecanique').length);
+ console.info('Services automobiles détaillés créés :',poi.filter(p=>p.type==='station-service'||p.type==='garage-mecanique').length);
 }
-
 const __abjOldCityInteract=interactWithCityLife;
 interactWithCityLife=function(){
  if(player&&!currentInterior){
