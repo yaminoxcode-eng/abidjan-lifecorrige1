@@ -882,14 +882,30 @@ async function accountContinue(){
       return;
     }
     const security={birthDay:day,birthMonth:month,parentName:normalizeSecurityAnswer(parent),petName:normalizeSecurityAnswer(pet),sport:normalizeSecurityAnswer(sport)};
-    const api=window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
-    const response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email,birthDay:day,birthMonth:month,security})});
-    const data=await response.json().catch(()=>({}));
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+    let response,data;
+    try{
+      response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email,birthDay:day,birthMonth:month,security})});
+      data=await response.json().catch(()=>({}));
+    }catch(registrationError){
+      // La connexion peut être coupée après l'enregistrement côté serveur.
+      // Vérifier le compte avant de demander à la personne de recommencer.
+      console.warn('Réponse de création de compte interrompue, vérification de la session…',registrationError);
+      try{
+        response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});
+        data=await response.json().catch(()=>({}));
+      }catch(verificationError){
+        console.error('Vérification du compte après interruption impossible:',verificationError);
+        showAccountStatus('La connexion au serveur a été interrompue. Ton compte n’a pas été confirmé : ne recommence pas immédiatement la création. Réessaie de te connecter avec les mêmes identifiants.',true);
+        return;
+      }
+    }
     if(!response.ok){showAccountStatus(data.error||'Création du compte impossible sur le serveur.',true);return;}
+    if(!data||!data.token){showAccountStatus('Le serveur n’a pas confirmé la session. Essaie de te connecter avec les mêmes identifiants.',true);return;}
     accounts[phone]={email,passwordHash:await passwordDigest(pass),createdAt:new Date().toISOString(),isCreator:false,security};
     writeGameAccounts(accounts);
     safeSet('abj-online-token:'+phone,data.token);
-    activateGameAccount(phone);
+    await activateGameAccount(phone);
     return;
   }
 
@@ -1585,73 +1601,83 @@ function resolveVehicleCollisions(pos, radius) {
 // GÉNÉRATION VILLE
 // ============================================================
 function generateCity() {
+  worldReady = false;
   outdoorGround = createAbidjanTerrain();
+
+  // Les éléments secondaires ne doivent jamais empêcher l'entrée dans le monde.
+  const optional = (label, build) => {
+    try { return build(); }
+    catch (error) {
+      console.warn('Élément urbain différé ou indisponible (' + label + ') :', error);
+      return null;
+    }
+  };
+  const openWorld = (statusText) => {
+    // Le monde devient jouable dès que le terrain et le joueur existent.
+    // Les enrichissements (trafic, éclairage, etc.) continuent ensuite sans bloquer l'entrée.
+    worldReady = true;
+    const status = document.getElementById('mapStatus');
+    if (status && statusText) status.textContent = statusText;
+    optional('position de départ', () => startPlayerAtHome());
+    if (mapOpen) optional('actualisation de la carte', () => drawBigMap());
+  };
+
   loadAbidjanOSM().then(() => {
-    document.getElementById('mapStatus').textContent = osmRoadSegments.length.toLocaleString('fr-FR') + ' segments de routes et rues · ' + allBuildings.length.toLocaleString('fr-FR') + ' bâtiments · ' + poi.length.toLocaleString('fr-FR') + ' commerces et lieux · ' + doors.length + ' maisons accessibles';
-    // Le réseau OSM apporte la géographie réelle ; ce noyau urbain garantit
-    // une ville visible et dense autour du point de départ même si OSM est incomplet.
-    // On évite l'ajout aléatoire de maisons le long des routes : il créait des parcelles dispersées.
-    // Les bâtiments OSM restent la source principale de l'implantation urbaine.
-    buildMappedStreetTrees();
-    createAFGamerHQ();
-    createDrivingSchools();
-    createTransitDepots();
-    createFuelStationsAndRepairGarages();
-    createAbidjanAirport();
-    createLandAndRentalParcels();
-    document.getElementById('mapStatus').textContent += ' · rues, bâtiments et espaces verts issus du réseau cartographique';
+    const status = document.getElementById('mapStatus');
+    if (status) status.textContent = osmRoadSegments.length.toLocaleString('fr-FR') + ' segments de routes et rues · ' + allBuildings.length.toLocaleString('fr-FR') + ' bâtiments · ' + poi.length.toLocaleString('fr-FR') + ' commerces et lieux · ' + doors.length + ' maisons accessibles';
+
+    optional('arbres des rues', buildMappedStreetTrees);
+    optional('siège AF GAMER', createAFGamerHQ);
+    optional('auto-écoles', createDrivingSchools);
+    optional('dépôts de transport', createTransitDepots);
+    optional('stations et garages', createFuelStationsAndRepairGarages);
+    optional('aéroport', createAbidjanAirport);
+    optional('terrains et locations', createLandAndRentalParcels);
+
     if (!npcPopulationCreated) {
-      // Population volontairement modérée : priorité à la stabilité et au temps de calcul.
-      createNPCs(mobilePerformanceMode?90:190);
+      optional('population initiale', () => createNPCs(mobilePerformanceMode ? 90 : 190));
       npcPopulationCreated = true;
     }
-    // Démarrage rapide : un premier groupe de véhicules suffit pour ouvrir le monde.
-    // Les autres arrivent par petits lots afin de laisser le navigateur rafraîchir l'écran
-    // et éviter que la barre de chargement reste figée à 93 % pendant une longue boucle.
-    const trafficTarget = mobilePerformanceMode ? 80 : 180;
-    const firstTrafficBatch = Math.min(20, trafficTarget);
-    createAbidjanTraffic(firstTrafficBatch);
-    worldReady = true;
-    startPlayerAtHome();
 
-    let trafficRemaining = trafficTarget - firstTrafficBatch;
+    // Ouvrir le monde avant le trafic : la création des véhicules n'est pas une condition
+    // nécessaire pour jouer et ne doit plus laisser la barre bloquée à 93 %.
+    openWorld((status ? status.textContent : '') + ' · monde jouable');
+
+    const trafficTarget = mobilePerformanceMode ? 80 : 180;
+    let trafficRemaining = trafficTarget;
     const addTrafficBatch = () => {
-      if (trafficRemaining > 0) {
-        const batch = Math.min(20, trafficRemaining);
-        trafficRemaining -= batch;
-        try {
-          createAbidjanTraffic(batch);
-        } catch (trafficError) {
-          console.warn('Création différée du trafic interrompue ; le monde reste jouable.', trafficError);
-          trafficRemaining = 0;
-        }
-        if (trafficRemaining > 0) {
-          requestAnimationFrame(addTrafficBatch);
-          return;
-        }
+      if (trafficRemaining <= 0) {
+        requestAnimationFrame(() => optional('feux et panneaux', buildUrbanTrafficSignals));
+        return;
       }
-      // Les feux et panneaux sont ajoutés après l'entrée du joueur dans le monde.
-      requestAnimationFrame(() => {
-        try { buildUrbanTrafficSignals(); }
-        catch (signalError) { console.warn('Habillage différé des carrefours indisponible.', signalError); }
-      });
+      const batch = Math.min(20, trafficRemaining);
+      trafficRemaining -= batch;
+      optional('lot de circulation', () => createAbidjanTraffic(batch));
+      if (trafficRemaining > 0) requestAnimationFrame(addTrafficBatch);
+      else requestAnimationFrame(() => optional('feux et panneaux', buildUrbanTrafficSignals));
     };
     requestAnimationFrame(addTrafficBatch);
   }).catch(err => {
-    console.warn('Données OSM indisponibles, chargement du quartier de secours', err);
-    document.getElementById('mapStatus').textContent = 'Carte OSM indisponible : circulation désactivée jusqu’au chargement des vraies routes.';
-    // Ne pas créer de rues fictives : aucun véhicule ne roule hors du réseau OSM.
-    osmRoadSegments.length=0;trafficRoadSegments.length=0;trafficGraph.clear();
-    createAFGamerHQ();
-    createDrivingSchools();
-    createTransitDepots();
-    createAbidjanAirport();
-    createLandAndRentalParcels();
-    worldReady = true;startPlayerAtHome();
-    if(mapOpen) drawBigMap();
+    console.warn('Données OSM indisponibles, démarrage du quartier de secours :', err);
+    osmRoadSegments.length = 0;
+    trafficRoadSegments.length = 0;
+    trafficGraph.clear();
+
+    // Ce noyau urbain de secours est déjà présent dans le projet mais n'était jamais appelé.
+    // Il permet de jouer même lorsque les serveurs cartographiques sont indisponibles.
+    optional('noyau urbain de secours', buildPlayableUrbanCore);
+    optional('siège AF GAMER', createAFGamerHQ);
+    optional('auto-écoles', createDrivingSchools);
+    optional('dépôts de transport', createTransitDepots);
+    optional('aéroport', createAbidjanAirport);
+    optional('terrains et locations', createLandAndRentalParcels);
+    if (!npcPopulationCreated) {
+      optional('population de secours', () => createNPCs(mobilePerformanceMode ? 60 : 120));
+      npcPopulationCreated = true;
+    }
+    openWorld('Mode de secours actif : ville jouable, certaines données cartographiques seront rechargées plus tard.');
   });
 }
-
 
 // ============================================================
 // NOYAU URBAIN GARANTI — quartier dense inspiré du Plateau
