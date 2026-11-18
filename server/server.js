@@ -756,11 +756,49 @@ app.get('/api/creator/world', auth, requireCreator, (_req,res) => {
 app.get('/api/creator/reports', auth, requireCreator, (_req,res) => {
   res.set('Cache-Control','no-store').json({items:creatorReports.slice(-150).reverse().map(({phone,...report})=>report)});
 });
+app.post('/api/account/deletion-request', auth, async (req,res) => {
+  if(!persistentStorageEnabled)return res.status(503).json({error:'Demandes indisponibles : stockage permanent non configuré.'});
+  if(!rateLimit(req.phone+':account-deletion-request',3,60*60*1000))return res.status(429).json({error:'Une demande a déjà été envoyée récemment. Réessaie plus tard.'});
+  const account=accounts.get(req.phone);
+  if(!account)return res.status(404).json({error:'Compte introuvable.'});
+  const subject='SUPPRESSION DE COMPTE';
+  try{
+    const previous=await supabaseRequest('afgamer_inbox?player_phone=eq.'+encodeURIComponent(req.phone)+'&category=eq.demande&subject=eq.'+encodeURIComponent(subject)+'&select=id,status&order=created_at.desc&limit=10');
+    if((previous||[]).some(x=>['nouveau','en_cours'].includes(x.status)))return res.status(409).json({error:'Une demande de suppression est déjà en attente auprès d’AF GAMER.'});
+    const player=clean(account.profile?.name,24)||'Citoyen';
+    await supabaseRequest('afgamer_inbox',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify([{player_name:player,player_phone:req.phone,category:'demande',subject,message:'Le joueur demande la suppression définitive de son compte et des données associées. La suppression attend la validation du créateur AF GAMER.',status:'nouveau'}])});
+    io.emit('creator:account-deletion-request',{phone:req.phone});
+    res.status(201).json({ok:true,message:'Ta demande a été transmise à AF GAMER. Ton compte reste actif jusqu’à son traitement.'});
+  }catch(error){console.error('Demande suppression compte:',error.message);res.status(503).json({error:'Impossible d’enregistrer la demande. Réessaie plus tard.'});}
+});
+
+app.get('/api/creator/accounts', auth, requireCreator, (_req,res) => {
+  res.set('Cache-Control','no-store').json({items:[...accounts.values()].map(a=>({phone:a.phone,name:clean(a.profile?.name,24)||'Citoyen',createdAt:a.createdAt?new Date(a.createdAt).toISOString():null}))});
+});
+
+app.delete('/api/creator/accounts/:phone', auth, requireCreator, async (req,res) => {
+  if(!persistentStorageEnabled)return res.status(503).json({error:'Suppression indisponible : stockage permanent non configuré.'});
+  const phone=phoneOf(req.params.phone),confirmation=phoneOf(req.body.confirmPhone);
+  if(!phone)return res.status(400).json({error:'Numéro de compte invalide.'});
+  if(phone===req.phone)return res.status(403).json({error:'Le compte créateur ne peut pas être supprimé depuis cette liste.'});
+  if(confirmation!==phone)return res.status(400).json({error:'Confirmation du numéro incorrecte.'});
+  const account=accounts.get(phone);
+  if(!account)return res.status(404).json({error:'Compte introuvable.'});
+  try{
+    await supabaseRequest('rpc/delete_game_account_data',{method:'POST',body:JSON.stringify({p_phone:phone})});
+  }catch(error){console.error('Suppression administrative compte:',error.message);return res.status(503).json({error:'La suppression des données n’a pas été confirmée. Le compte reste intact.'});}
+  accounts.delete(phone);
+  for(const [ticket,item] of recoveryTickets)if(item.phone===phone)recoveryTickets.delete(ticket);
+  for(const [id,player] of activePlayers){if(player.phone!==phone)continue;io.to(id).emit('account:deleted');activePlayers.delete(id);io.sockets.sockets.get(id)?.disconnect(true);io.emit('player:left',id);}
+  broadcastPlayerCount();
+  res.set('Cache-Control','no-store').json({ok:true,deleted:true,phone});
+});
+
 app.get('/api/creator/afgamer-inbox', auth, requireCreator, async (_req,res) => {
   if(!persistentStorageEnabled)return res.status(503).json({error:'Boîte AF_GAMER indisponible : stockage permanent non configuré.'});
   try{
-    const rows=await supabaseRequest('afgamer_inbox?select=id,created_at,player_name,category,subject,message,status,reply_text,replied_at&order=created_at.desc&limit=200');
-    res.set('Cache-Control','no-store').json({items:(rows||[]).map(x=>({id:x.id,createdAt:x.created_at,player:x.player_name,category:x.category,subject:x.subject,message:x.message,status:x.status,reply:x.reply_text,repliedAt:x.replied_at}))});
+    const rows=await supabaseRequest('afgamer_inbox?select=id,created_at,player_name,player_phone,category,subject,message,status,reply_text,replied_at&order=created_at.desc&limit=200');
+    res.set('Cache-Control','no-store').json({items:(rows||[]).map(x=>({id:x.id,createdAt:x.created_at,player:x.player_name,phone:x.player_phone,category:x.category,subject:x.subject,message:x.message,status:x.status,reply:x.reply_text,repliedAt:x.replied_at}))});
   }catch(error){console.error('Lecture boîte AF_GAMER:',error.message);res.status(503).json({error:'Impossible de charger la boîte AF_GAMER.'});}
 });
 app.patch('/api/creator/afgamer-inbox/:id', auth, requireCreator, async (req,res) => {
