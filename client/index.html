@@ -6882,9 +6882,51 @@ function v16ValidateTrafficRoutes(){
  }
  window.renderProjectsApp=()=>renderProjectsV19('home');
  // App Store et applications téléchargeables, ajoutées à l’écran du téléphone.
- const appCatalog=[{id:'mobilite',name:'Mobilité',emoji:'🚕',desc:'Yango, taxis, gbakas, bus et transports publics réunis.'},{id:'achats',name:'Achats & livraisons',emoji:'🛍️',desc:'Boutiques locales, Jumia et Glovo réunis.'},{id:'finances',name:'Finances',emoji:'💳',desc:'Banque et Wave réunies.'},{id:'communication',name:'Communication',emoji:'💬',desc:'Contacts, messages et forum réunis.'},{id:'medias',name:'Médias',emoji:'📸',desc:'Photo, galerie et plateformes vidéo réunies.'},{id:'viepratique',name:'Vie pratique',emoji:'🏙️',desc:'Mairie, santé, études et logement.'},{id:'monsuccess',name:'Mon Success',emoji:'🏆',desc:'Annuaire des entreprises et entrepreneurs.'},{id:'immoabj',name:'Immo ABJ',emoji:'🏘️',desc:'Terrains, magasins et dépôts à louer.'},{id:'proemploi',name:'Pro Emploi',emoji:'🧰',desc:'Contrats, certificats et missions.'},{id:'inventaire',name:'Inventaire',emoji:'🎒',desc:'Objets et équipement.'},{id:'afgamer',name:'AF GAMER CI',emoji:'🎮',desc:'Contacter le studio et envoyer des suggestions.'},{id:'google',name:'Recherche',emoji:'🔎',desc:'Rechercher des lieux et informations.'}];
+ const appCatalog=[
+ {id:'yango',name:'Yango',emoji:'🚕',category:'Mobilité',desc:'Commander un taxi et suivre tes déplacements.'},
+ {id:'transport',name:'Transports publics',emoji:'🚌',category:'Mobilité',desc:'Consulter les arrêts, gares, gbakas et lignes de bus.'},
+ {id:'myv',name:'MY V',emoji:'🚘',category:'Mobilité',desc:'Acheter et gérer tes voitures, motos et leurs documents.'},
+ {id:'autoecole',name:'Auto-école',emoji:'🪪',category:'Mobilité',desc:'Suivre les cours et préparer ton permis de conduire.'},
+ {id:'wave',name:'Wave',emoji:'💸',category:'Finances',desc:'Consulter ton solde WaveABJ et effectuer des paiements du jeu.'},
+ {id:'banque',name:'Banque ABJ',emoji:'🏦',category:'Finances',desc:'Consulter ton compte, tes opérations et tes transferts.'},
+ {id:'proemploi',name:'Pro Emploi',emoji:'🧰',category:'Emploi & carrière',desc:'Chercher un emploi, suivre tes contrats et tes missions.'},
+ {id:'monsuccess',name:'Mon Success',emoji:'🏆',category:'Emploi & carrière',desc:'Découvrir les entrepreneurs et suivre ton réseau professionnel.'},
+ {id:'immoabj',name:'Immo ABJ',emoji:'🏘️',category:'Logement & immobilier',desc:'Consulter les logements, terrains et locaux disponibles.'},
+ {id:'logement',name:'Mon logement',emoji:'🏠',category:'Logement & immobilier',desc:'Gérer ton logement, tes meubles et tes démarches.'},
+ {id:'mairie',name:'Mairie ABJ',emoji:'🏛️',category:'Vie quotidienne',desc:'Obtenir tes pièces d’identité et documents administratifs.'},
+ {id:'sante',name:'Santé ABJ',emoji:'🏥',category:'Vie quotidienne',desc:'Trouver les centres de santé et gérer tes soins.'},
+ {id:'etudes',name:'Études ABJ',emoji:'🎓',category:'Vie quotidienne',desc:'Suivre des formations et obtenir des attestations.'},
+ {id:'travail',name:'Emploi',emoji:'💼',category:'Vie quotidienne',desc:'Consulter les activités et les offres de travail.'},
+ {id:'boutique',name:'Boutiques',emoji:'🛍️',category:'Achats & livraisons',desc:'Acheter des produits auprès des commerces de la ville.'},
+ {id:'jumia',name:'Jumia',emoji:'📦',category:'Achats & livraisons',desc:'Commander des articles et équipements.'},
+ {id:'glovo',name:'Glovo',emoji:'🛵',category:'Achats & livraisons',desc:'Commander une livraison auprès des commerces et maquis.'},
+ {id:'contacts',name:'Contacts',emoji:'👥',category:'Communication',desc:'Retrouver les habitants rencontrés.'},
+ {id:'messages',name:'Messages',emoji:'✉️',category:'Communication',desc:'Échanger des messages avec tes contacts.'},
+ {id:'forum',name:'Forum',emoji:'🗣️',category:'Communication',desc:'Publier et lire les discussions des habitants.'},
+ {id:'camera',name:'Caméra',emoji:'📷',category:'Médias',desc:'Prendre des photos dans Abidjan Life.'},
+ {id:'gallery',name:'Galerie',emoji:'🖼️',category:'Médias',desc:'Retrouver les photos prises dans le jeu.'},
+ {id:'youtube',name:'YouTube',emoji:'▶️',category:'Médias',desc:'Ouvrir les contenus vidéo simulés du jeu.'},
+ {id:'tiktok',name:'TikTok',emoji:'🎵',category:'Médias',desc:'Consulter les contenus courts simulés du jeu.'},
+ {id:'inventaire',name:'Inventaire',emoji:'🎒',category:'Outils',desc:'Consulter les objets et équipements de ton personnage.'},
+ {id:'afgamer',name:'AF GAMER CI',emoji:'🎮',category:'Outils',desc:'Contacter le studio et envoyer des suggestions.'},
+ {id:'google',name:'Recherche ABJ',emoji:'🔎',category:'Outils',desc:'Rechercher des lieux et informations dans la ville.'}
+];
  function addInstalledIcon(app){const host=document.getElementById('phoneApps');if(!host||host.querySelector('[data-app="'+app.id+'"]'))return;let grid=host.querySelector('.phoneAppsPage:last-child');if(!grid||grid.querySelectorAll('.phoneApp').length>=9){grid=document.createElement('div');grid.className='phoneAppsPage';host.appendChild(grid);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=app.id;b.innerHTML='<span>'+app.emoji+'</span>'+app.name;b.onclick=()=>openPhoneApp(app.id);grid.appendChild(b);}
- function renderAppStore(){const c=$('phoneAppContent');if(!c)return;c.innerHTML='<button id="phoneBack">← Applications</button><h3>🎮 App Jeux — Boutique</h3><p style="font-size:12px;color:#cbd9e4">Télécharge les applications disponibles et ajoute-les à ton téléphone.</p>'+appCatalog.map(a=>'<article class="v19card"><b>'+a.emoji+' '+a.name+'</b><div>'+a.desc+'</div><button data-install="'+a.id+'">'+(state().installedApps.includes(a.id)?'Installée':'Télécharger')+'</button></article>').join('');c.querySelector('#phoneBack').onclick=()=>{c.style.display='none';showPhoneHome();};c.querySelectorAll('[data-install]').forEach(b=>b.onclick=()=>{const a=appCatalog.find(x=>x.id===b.dataset.install);if(!a)return;const s=state();if(!s.installedApps.includes(a.id))s.installedApps.push(a.id);addInstalledIcon(a);saveLifeProgress(false);b.textContent='Installée';showMessage(a.name+' a été téléchargée sur ton téléphone.');});}
+ function renderAppStore(){
+ const c=$('phoneAppContent');if(!c)return;
+ const installed=state().installedApps;
+ const categories=[...new Set(appCatalog.map(a=>a.category))];
+ c.innerHTML='<button id="phoneBack">← Applications</button><h3>🎮 Apps jeux — Boutique</h3><p style="font-size:12px;color:#cbd9e4">Télécharge chaque application séparément. Les catégories servent uniquement à classer les applis : chaque service garde son propre écran et son propre fonctionnement.</p>'+
+ categories.map(category=>'<h4 style="margin:16px 0 7px;color:#f0d18d;border-bottom:1px solid #ffffff30;padding-bottom:6px">'+category+'</h4>'+
+ appCatalog.filter(a=>a.category===category).map(a=>'<article class="v19card"><b>'+a.emoji+' '+a.name+'</b><div>'+a.desc+'</div><button data-install="'+a.id+'">'+(installed.includes(a.id)?'Installée':'Télécharger cette application')+'</button></article>').join('')).join('')+
+ '<p style="font-size:10px;color:#9fb5c4">Une application téléchargée apparaît individuellement sur ton téléphone.</p>';
+ c.querySelector('#phoneBack').onclick=()=>{c.style.display='none';showPhoneHome();};
+ c.querySelectorAll('[data-install]').forEach(b=>b.onclick=()=>{
+  const a=appCatalog.find(x=>x.id===b.dataset.install);if(!a)return;
+  const st=state();if(!st.installedApps.includes(a.id))st.installedApps.push(a.id);
+  addInstalledIcon(a);saveLifeProgress(false);b.textContent='Installée';showMessage(a.name+' a été téléchargée sur ton téléphone.');
+ });
+}
  const oldGames=renderPhoneGamesApp;renderPhoneGamesApp=function(){renderAppStore();};
  function renderUnifiedPhoneApp(app){const c=$('phoneAppContent');if(!c)return;const groups={mobilite:[['🚕','CourseGo / Yango','yango'],['🚌','Transports publics','transport']],achats:[['🏪','Boutiques locales','boutique'],['🛒','Jumia','jumia'],['🛵','Livraisons Glovo','glovo']],finances:[['🏦','Banque','banque'],['💸','Wave','wave']],communication:[['👥','Contacts','contacts'],['✉️','Messages','messages'],['🗣️','Forum','forum']],medias:[['📷','Appareil photo','camera'],['🖼️','Galerie','gallery'],['▶️','YouTube','youtube'],['🎵','TikTok','tiktok']],viepratique:[['🏛️','Mairie','mairie'],['🏥','Santé','sante'],['🎓','Études','etudes'],['🏠','Logement','logement']]};const names={mobilite:'Mobilité',achats:'Achats & livraisons',finances:'Finances',communication:'Communication',medias:'Médias',viepratique:'Vie pratique'};c.innerHTML='<button id="phoneBack">← Applications</button><h3>'+names[app]+'</h3><p>Les services de même fonction sont regroupés ici.</p>'+groups[app].map(x=>'<button data-open-service="'+x[2]+'" style="display:block;width:100%;text-align:left;padding:12px;margin:7px 0">'+x[0]+' '+x[1]+'</button>').join('');c.querySelector('#phoneBack').onclick=()=>{c.style.display='none';showPhoneHome();};c.querySelectorAll('[data-open-service]').forEach(b=>b.onclick=()=>window.__ABJ_ORIGINAL_OPEN_PHONE_APP(b.dataset.openService));}
 const oldOpen=window.openPhoneApp;window.openPhoneApp=function(app){if(['mobilite','achats','finances','communication','medias','viepratique'].includes(app)){const h=$('phoneHomeShell'),c=$('phoneAppContent');if(h)h.style.display='none';if(c)c.style.display='block';renderUnifiedPhoneApp(app);return;}if(app==='projets'){openPhone();const c=$('phoneAppContent'),h=$('phoneHomeShell');if(h)h.style.display='none';if(c)c.style.display='block';renderProjectsV19('home');return;}if(app==='appstore'||app==='jeux'){openPhone();const h=$('phoneHomeShell');if(h)h.style.display='none';const c=$('phoneAppContent');if(c)c.style.display='block';renderAppStore();return;}if(app==='monsuccess'||app==='immoabj'||app==='proemploi'){if(!state().installedApps.includes(app)){showMessage('Télécharge cette application dans App Jeux.');return;}const h=$('phoneHomeShell'),c=$('phoneAppContent');if(h)h.style.display='none';if(c){c.style.display='block';}if(app==='monsuccess')renderSuccessApp();else if(app==='immoabj')renderProjectsV19('home');else renderEmploymentV19();return;}return oldOpen.call(this,app);};
@@ -7387,11 +7429,41 @@ function abjCashMethodLabel(){return abjWaveInstalled()?'Payer avec WaveABJ (sol
 function renderMyVApp(){
  const c=document.getElementById('phoneAppContent');if(!c)return;
  const owned=abjV19().ownedVehicles;
- c.innerHTML='<button id="phoneBack">← Applications</button><h3>🚘 My V · Concession automobile</h3><p style="font-size:11px;color:#c6d8e5">Véhicules fictifs vendus en FCFA dans le jeu. Chaque achat reçoit une clé numérique unique liée à un seul véhicule.</p><h4>Mon garage ('+owned.length+')</h4>'+
- (owned.length?owned.map(v=>'<article style="padding:11px;margin:8px 0;border:1px solid #ffffff28;border-radius:11px;background:#ffffff0d"><b>'+escapeHTML(v.brand+' '+v.model)+'</b><div style="font-size:11px;color:#c6d8e5">'+v.year+' · '+escapeHTML(v.type)+'</div><div style="font-size:11px;color:#f0d18d">Clé : '+escapeHTML(v.key)+'</div><div style="font-size:10px;color:#a9c4d1">Documents : '+(v.documents||[]).map(escapeHTML).join(' · ')+'</div><button data-spawn="'+escapeHTML(v.id)+'">Sortir ce véhicule</button></article>').join(''):'<p>Aucun véhicule acheté.</p>')+
- '<h4>Concession</h4>'+ABJ_MYV_CATALOG.map(v=>'<article style="padding:11px;margin:8px 0;border:1px solid #ffffff28;border-radius:11px;background:#ffffff0d"><b>'+escapeHTML(v.brand+' '+v.model)+'</b><div style="font-size:11px;color:#c6d8e5">'+v.year+' · '+escapeHTML(v.description)+'</div><div style="font-size:17px;color:#f0d18d;font-weight:800">'+v.price.toLocaleString('fr-FR')+' FCFA</div><button data-buycar="'+v.id+'">'+abjCashMethodLabel()+'</button></article>').join('')+'<p id="myvStatus" style="font-size:11px;color:#ffe0a0"></p>';
+ const papers=[
+  {id:'carte_grise',label:'Carte grise',price:25000,requires:'cni',place:'mairie'},
+  {id:'assurance',label:'Assurance automobile',price:18000,requires:'carte_grise',place:'online'},
+  {id:'visite_technique',label:'Visite technique valide',price:10000,requires:'carte_grise',place:'online'}
+ ];
+ const officeNearby=()=>{const pos=currentInterior&&lastExteriorPosition?lastExteriorPosition:(player?player.position:{x:0,z:0});return doors.some(d=>d.isMunicipality&&Math.hypot(d.x-pos.x,d.z-pos.z)<95);};
+ const garage=owned.length?owned.map(v=>{
+  v.papers=v.papers&&typeof v.papers==='object'?v.papers:{};
+  const status=papers.map(p=>'<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin:6px 0;font-size:11px"><span>'+(v.papers[p.id]?'✓ ':'○ ')+p.label+'</span><button data-paper="'+escapeHTML(v.id)+'" data-paperid="'+p.id+'" '+(v.papers[p.id]?'disabled':'')+'>'+(v.papers[p.id]?'Obtenu':p.price.toLocaleString('fr-FR')+' F')+'</button></div>').join('');
+  return '<article style="padding:11px;margin:8px 0;border:1px solid #ffffff28;border-radius:11px;background:#ffffff0d"><b>'+escapeHTML(v.brand+' '+v.model)+'</b><div style="font-size:11px;color:#c6d8e5">'+v.year+' · '+escapeHTML(v.type)+'</div><div style="font-size:11px;color:#f0d18d">Clé numérique : '+escapeHTML(v.key)+'</div><div style="font-size:10px;color:#a9c4d1">Facture d’achat · Certificat de cession</div><h4 style="margin:10px 0 4px">Dossier du véhicule</h4>'+status+'<button data-spawn="'+escapeHTML(v.id)+'">Sortir ce véhicule</button></article>';
+ }).join(''):'<p>Aucun véhicule acheté.</p>';
+ c.innerHTML='<button id="phoneBack">← Applications</button><h3>🚘 MY V · Concession automobile</h3><p style="font-size:11px;color:#c6d8e5">Chaque véhicule possède sa propre clé et son dossier administratif. Pour acheter, présente ta carte nationale d’identité. Pour conduire, il faut aussi le permis, la carte grise, l’assurance et la visite technique.</p><h4>Mon garage ('+owned.length+')</h4>'+garage+'<h4>Concession</h4>'+ABJ_MYV_CATALOG.map(v=>'<article style="padding:11px;margin:8px 0;border:1px solid #ffffff28;border-radius:11px;background:#ffffff0d"><b>'+escapeHTML(v.brand+' '+v.model)+'</b><div style="font-size:11px;color:#c6d8e5">'+v.year+' · '+escapeHTML(v.description)+'</div><div style="font-size:17px;color:#f0d18d;font-weight:800">'+v.price.toLocaleString('fr-FR')+' FCFA</div><button data-buycar="'+v.id+'">Acheter ce véhicule</button></article>').join('')+'<p id="myvStatus" style="font-size:11px;color:#ffe0a0"></p>';
  c.querySelector('#phoneBack').onclick=()=>{c.style.display='none';showPhoneHome();};
- c.querySelectorAll('[data-buycar]').forEach(b=>b.onclick=()=>{const v=ABJ_MYV_CATALOG.find(x=>x.id===b.dataset.buycar);if(!v)return;const status=document.getElementById('myvStatus');if(!abjChargeForApp(v.price,'My V')){status.textContent=abjWaveInstalled()?'Solde WaveABJ insuffisant.':'Solde espèces insuffisant.';return;}if(!confirm('Acheter '+v.brand+' '+v.model+' pour '+v.price.toLocaleString('fr-FR')+' FCFA ?'))return;const key='MYV-'+Math.random().toString(36).slice(2,8).toUpperCase();abjV19().ownedVehicles.push({id:v.id+'-'+Date.now(),catalogId:v.id,brand:v.brand,model:v.model,year:v.year,type:v.type,price:v.price,key,documents:v.docs.slice(),purchasedAt:new Date().toISOString()});saveLifeProgress(false);renderMyVApp();const x=document.getElementById('myvStatus');if(x)x.textContent='Achat confirmé. Ta clé numérique unique est enregistrée dans ton garage.';});
+ c.querySelectorAll('[data-buycar]').forEach(b=>b.onclick=()=>{
+  const v=ABJ_MYV_CATALOG.find(x=>x.id===b.dataset.buycar);if(!v)return;
+  const status=document.getElementById('myvStatus');
+  if(!lifeState.documents?.cni){status.textContent='Carte nationale d’identité obligatoire. Obtiens-la à la mairie avant l’achat.';return;}
+  if(!confirm('Acheter '+v.brand+' '+v.model+' pour '+v.price.toLocaleString('fr-FR')+' FCFA ?'))return;
+  if(!abjChargeForApp(v.price,'MY V')){status.textContent=abjWaveInstalled()?'Solde WaveABJ insuffisant.':'Solde espèces insuffisant.';return;}
+  const key='MYV-'+Math.random().toString(36).slice(2,8).toUpperCase();
+  abjV19().ownedVehicles.push({id:v.id+'-'+Date.now(),catalogId:v.id,brand:v.brand,model:v.model,year:v.year,type:v.type,price:v.price,key,documents:['Facture d’achat','Certificat de cession'],papers:{carte_grise:null,assurance:null,visite_technique:null},purchasedAt:new Date().toISOString()});
+  saveLifeProgress(false);renderMyVApp();const x=document.getElementById('myvStatus');if(x)x.textContent='Achat confirmé : facture, certificat de cession et clé enregistrés dans ton garage.';
+ });
+ c.querySelectorAll('[data-paper]').forEach(b=>b.onclick=()=>{
+  const v=abjV19().ownedVehicles.find(x=>x.id===b.dataset.paper),p=papers.find(x=>x.id===b.dataset.paperid);if(!v||!p||v.papers?.[p.id])return;
+  const status=document.getElementById('myvStatus');
+  if(p.requires==='cni'&&!lifeState.documents?.cni){status.textContent='Obtiens d’abord ta carte nationale d’identité à la mairie.';return;}
+  if(p.requires==='carte_grise'&&!v.papers?.carte_grise){status.textContent='La carte grise doit être obtenue avant ce document.';return;}
+  if(p.place==='mairie'&&!officeNearby()){status.textContent='Pour obtenir la carte grise, rends-toi physiquement à la mairie.';return;}
+  if(!confirm('Obtenir '+p.label+' pour '+p.price.toLocaleString('fr-FR')+' FCFA ?'))return;
+  if(!abjChargeForApp(p.price,'Dossier MY V')){status.textContent='Solde insuffisant.';return;}
+  v.papers=v.papers||{};v.papers[p.id]={issuedAt:new Date().toLocaleDateString('fr-FR'),label:p.label};
+  v.documents=v.documents||[];v.documents.push(p.label);
+  saveLifeProgress(false);renderMyVApp();
+ });
  c.querySelectorAll('[data-spawn]').forEach(b=>b.onclick=()=>spawnOwnedVehicle(b.dataset.spawn));
 }
 function spawnOwnedVehicle(id){
@@ -7402,8 +7474,10 @@ function spawnOwnedVehicle(id){
  const forward=new THREE.Vector3(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));
  mesh.position.set(player.position.x+forward.x*4,terrainHeight(player.position.x+forward.x*4,player.position.z+forward.z*4)+.04,player.position.z+forward.z*4);mesh.rotation.y=player.rotation.y;scene.add(mesh);ownedVehicleMeshes.push(mesh);abjV19().activeVehicleKey=v.key;showMessage('Véhicule sorti. Clé '+v.key+' · E pour monter.');saveLifeProgress(false);
 }
+function recVehiclePapersReady(id){const v=abjV19().ownedVehicles.find(x=>x.id===id);return !!(v&&v.papers&&v.papers.carte_grise&&v.papers.assurance&&v.papers.visite_technique);}
 function enterOwnedVehicle(mesh){
  if(!lifeState.documents?.permis_conduire){showMessage('Permis obligatoire : termine les cours à l’auto-école puis fais la démarche à la mairie.');return;}
+ if(!recVehiclePapersReady(mesh.userData.ownedId)){showMessage('Dossier incomplet : carte grise, assurance automobile et visite technique sont obligatoires dans MY V.');return;}
  const rec=abjV19().ownedVehicles.find(v=>v.id===mesh.userData.ownedId);
  if(!rec||rec.key!==mesh.userData.vehicleKey||abjV19().activeVehicleKey!==rec.key){showMessage('Cette clé ne correspond pas à ce véhicule.');return;}
  drivingVehicle=mesh;player.visible=false;showMessage('Tu conduis '+rec.brand+' '+rec.model+' · ZQSD pour conduire · E pour descendre.');
