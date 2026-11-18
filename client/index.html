@@ -2012,8 +2012,8 @@ function buildOSMRoads(ways, nodes) {
         const l1={x:a.x+nx*side,z:a.z+nz*side},l2={x:b.x+nx*side,z:b.z+nz*side};
         const r1={x:a.x-nx*side,z:a.z-nz*side},r2={x:b.x-nx*side,z:b.z-nz*side};
         addWalkQuad(l1,l2,sidewalkWidth,.205);addWalkQuad(r1,r2,sidewalkWidth,.205);
-        addStripTo({x:a.x+nx*(r.width/2+.13),z:a.z+nz*(r.width/2+.13)},{x:b.x+nx*(r.width/2+.13),z:b.z+nz*(r.width/2+.13)},.28,.235,curbVertices,curbIndices);
-        addStripTo({x:a.x-nx*(r.width/2+.13),z:a.z-nz*(r.width/2+.13)},{x:b.x-nx*(r.width/2+.13),z:b.z-nz*(r.width/2+.13)},.28,.235,curbVertices,curbIndices);
+        addStripTo({x:a.x+nx*(width/2+.13),z:a.z+nz*(width/2+.13)},{x:b.x+nx*(width/2+.13),z:b.z+nz*(width/2+.13)},.28,.235,curbVertices,curbIndices);
+        addStripTo({x:a.x-nx*(width/2+.13),z:a.z-nz*(width/2+.13)},{x:b.x-nx*(width/2+.13),z:b.z-nz*(width/2+.13)},.28,.235,curbVertices,curbIndices);
         if(['primary','secondary','tertiary'].includes(tag)&&len>24){const dash=5,space=13,ux=(b.x-a.x)/len,uz=(b.z-a.z)/len;for(let at=8;at<len-3;at+=space){const p0={x:a.x+ux*at,z:a.z+uz*at},p1={x:a.x+ux*Math.min(len,at+dash),z:a.z+uz*Math.min(len,at+dash)};addStripTo(p0,p1,.16,.205,markVertices,markIndices);}}
         pedestrianNodes.push(l1,l2,r1,r2);
       }
