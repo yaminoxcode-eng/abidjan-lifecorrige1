@@ -7450,7 +7450,7 @@ function createDrivingSchools(){
 /* Aéroport international Félix-Houphouët-Boigny : terminal, piste, intérieur et vols simulés. */
 function createAbidjanAirport(){
  if(!scene||window.__ABJ_AIRPORT_CREATED)return;window.__ABJ_AIRPORT_CREATED=true;
- const center=geoToWorld(5.261,-3.926),x=center.x,z=center.z;
+ const center=geoToWorld(5.254,-3.927),x=center.x,z=center.z;
  const g=new THREE.Group();
  const mat=(color,roughness=.75,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
  const concrete=mat(0xb9b8b1,.95),asphalt=mat(0x343b40,.98),wall=mat(0xe5e0d4),roof=mat(0x647780,.7,.25),glass=new THREE.MeshStandardMaterial({color:0x65a6bb,roughness:.2,metalness:.12,transparent:true,opacity:.72}),dark=mat(0x25333b),yellow=mat(0xf1c65a),white=mat(0xf4f1e7);
@@ -7565,6 +7565,8 @@ function renderAirTravelApp(){
 }
 function interactWithAirport(){
  const ap=window.__ABJ_AIRPORT;if(!ap||!player)return false;
+ // Laisser la touche E ouvrir la porte principale avant d'intercepter les comptoirs extérieurs.
+ if(!currentInterior&&Math.hypot(player.position.x-ap.x,player.position.z-(ap.z+94))<7)return false;
  const docs=lifeState.documents||{},ready=!!docs.cni&&!!docs.passport,travel=lifeState.airTravel||{},pending=travel.pendingFlight;
  if(currentInterior==='abj-airport-terminal'){
   const localPoints=[{x:-9,z:-7,type:'airport-checkin'},{x:5,z:9,type:'airport-gate'}];
