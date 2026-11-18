@@ -1998,7 +1998,11 @@ function buildOSMRoads(ways, nodes) {
       return;
     }
     const width=roadWidths[tag]||4;
-    const tolerance=['motorway','motorway_link','trunk','trunk_link','primary','primary_link','secondary','secondary_link'].includes(tag)?2.5:(tag==='service'||tag==='track'?6:4);
+    // Simplification cartographique prudente : conserver les virages et les petites rues tels que relevés dans OSM.
+    // Les grands axes gardent une tolérance faible ; les rues locales ne sont jamais redressées sur de longues cordes.
+    const tolerance=['motorway','motorway_link','trunk','trunk_link','primary','primary_link'].includes(tag)?1.6:
+      (['secondary','secondary_link','tertiary','tertiary_link'].includes(tag)?2.1:
+      (tag==='service'||tag==='track'?3.2:2.6));
     const pts=simplifyRoadPoints(raw,tolerance);
     for(let i=1;i<pts.length;i++){
       const a=pts[i-1],b=pts[i],len=Math.hypot(b.x-a.x,b.z-a.z);if(len<.5)continue;
