@@ -579,11 +579,7 @@ let creatorVerifiedPhone=null;
 const MONEY_CAPS={none:999999999999,S:10000000000000,Z:100000000000000,SZ:1e21};
 const CHEAT_MONEY_AMOUNT=100000;
 function isCreatorAccount(phone){return !!creatorVerifiedPhone&&creatorVerifiedPhone===normalizeIvorianMobile(phone)&&creatorVerifiedPhone===CREATOR_ACCOUNT_PHONE;}
-function getCreatorTier(){
-  // Aucun privilège Creator n'est accordé côté navigateur : un rôle doit être
-  // confirmé par un serveur et des règles d'accès non modifiables par le joueur.
-  return 'none';
-}
+function getCreatorTier(){return isCreatorAccount(activeGameAccount)?'SZ':'none';}
 function getMoneyCap(){return MONEY_CAPS[getCreatorTier()]||MONEY_CAPS.none;}
 function clampMoney(){lifeState.money=Math.max(0,Math.min(getMoneyCap(),Number(lifeState.money)||0));lifeState.bankBalance=Math.max(0,Math.min(getMoneyCap(),Number(lifeState.bankBalance)||0));}
 function waveDayKeyNow(){return String(lifeState.housing&&lifeState.housing.gameDay||1)+'-'+String(lifeState.hour);}
@@ -610,10 +606,19 @@ function applyPhoneSkin(skin){
   if(top) top.textContent='📱 '+(skin.name||'ABJ CONNECT');
 }
 function applyCreatorPrivileges(){
-  // Compte créateur officiel : grade SZ (plafond très élevé). Besoins stabilisés, pas d'argent forcé.
+  // Ces avantages ne s'appliquent qu'après validation du compte créateur par le serveur.
+  if(!isCreatorAccount(activeGameAccount))return;
   lifeState.creatorTier='SZ';
-  lifeState.cheats=Object.assign({},lifeState.cheats||{},{hunger:true,energy:true,social:true,health:true,money:false});
-  lifeState.hunger=100;lifeState.energy=100;lifeState.social=100;lifeState.health=100;
+  lifeState.cheats=Object.assign({},lifeState.cheats||{},{hunger:true,energy:true,social:true,health:true,hygiene:true,money:true});
+  lifeState.gameSettings=Object.assign({},lifeState.gameSettings||{},{infiniteNeeds:true});
+  lifeState.hunger=100;lifeState.energy=100;lifeState.social=100;lifeState.health=100;lifeState.hygiene=100;
+  lifeState.respect=10000000;
+  lifeState.money=MONEY_CAPS.SZ;lifeState.bankBalance=MONEY_CAPS.SZ;
+  lifeState.documents=Object.assign({},lifeState.documents||{},{cni:true,permis_conduire:true,certificat_auto_ecole:true,permis_moto:true,carte_grise:true,assurance:true,visite_technique:true});
+  const garage=abjV19();
+  const motoId='creator-moto-'+normalizeIvorianMobile(activeGameAccount);
+  if(!garage.ownedVehicles.some(v=>v.id===motoId))garage.ownedVehicles.push({id:motoId,catalogId:'myv-moto',brand:'AF GAMER',model:'Moto Creator',year:2026,type:'moto',price:0,key:'AFGAMER-MOTO',documents:['Facture d’achat','Certificat de cession'],papers:{carte_grise:{label:'Carte grise',issuedAt:'AF GAMER'},assurance:{label:'Assurance automobile',issuedAt:'AF GAMER'},visite_technique:{label:'Visite technique valide',issuedAt:'AF GAMER'}},fuel:50,condition:100,distance:0,breakdown:false,purchasedAt:new Date().toISOString()});
+  garage.activeVehicleKey='AFGAMER-MOTO';
   clampMoney();
 }
 let activeGameAccount=null,accountFlow='login',pendingAccountPhone='',pendingRecoveryCode='',pendingRecoveryExpiry=0,pendingRecoveryAttempts=0;
@@ -1029,6 +1034,7 @@ async function activateGameAccount(phone){
     try{init();animate();}
     catch(err){const box=document.getElementById('errorBox');box.style.display='block';box.textContent='ERREUR INIT: '+err.message;console.error(err);}
   } else {
+    safeSet('abj-tutorial-pending:'+canonical,'1');
     try{openCharacterCreator();}
     catch(err){
       console.error(err);
@@ -1735,7 +1741,7 @@ function buildPlayableUrbanCore(){
   const sidewalkMat=new THREE.MeshLambertMaterial({color:0xb8b2a5});
   const markingMat=new THREE.MeshLambertMaterial({color:0xe9dfbd});
   const roadV=[],roadI=[],walkV=[],walkI=[],markV=[],markI=[];
-  function quad(v,idx,a,b,c,d,y){const k=v.length/3;[a,b,c,d].forEach(q=>v.push(q.x,terrainHeight(q.x,q.z)+y,q.z));idx.push(k,k+1,k+2,k,k+2,k+3);}
+  function quad(v,idx,a,b,c,d,y){const k=v.length/3,lift=Math.max(Number(y)||0,.48);[a,b,c,d].forEach(q=>v.push(q.x,terrainHeight(q.x,q.z)+lift,q.z));idx.push(k,k+1,k+2,k,k+2,k+3);}
   function strip(a,b,width,v,idx,y){const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz)||1,nx=-dz/len*width/2,nz=dx/len*width/2;quad(v,idx,{x:a.x+nx,z:a.z+nz},{x:b.x+nx,z:b.z+nz},{x:b.x-nx,z:b.z-nz},{x:a.x-nx,z:a.z-nz},y);}
   // Avenues, rues secondaires et rues transversales clairement visibles.
   const roads=[];
@@ -2024,7 +2030,7 @@ function buildOSMRoads(ways, nodes) {
     const aa={x:a.x-ux*extend,z:a.z-uz*extend},bb={x:b.x+ux*extend,z:b.z+uz*extend};
     const nx=-dz/len*w/2,nz=dx/len*w/2,k=vertices.length/3;
     const p1={x:aa.x+nx,z:aa.z+nz},p2={x:aa.x-nx,z:aa.z-nz},p3={x:bb.x-nx,z:bb.z-nz},p4={x:bb.x+nx,z:bb.z+nz};
-    vertices.push(p1.x,terrainHeight(p1.x,p1.z)+y,p1.z,p2.x,terrainHeight(p2.x,p2.z)+y,p2.z,p3.x,terrainHeight(p3.x,p3.z)+y,p3.z,p4.x,terrainHeight(p4.x,p4.z)+y,p4.z);
+    const lift=Math.max(Number(y)||0,.48);vertices.push(p1.x,terrainHeight(p1.x,p1.z)+lift,p1.z,p2.x,terrainHeight(p2.x,p2.z)+lift,p2.z,p3.x,terrainHeight(p3.x,p3.z)+lift,p3.z,p4.x,terrainHeight(p4.x,p4.z)+lift,p4.z);
     indices.push(k,k+1,k+2,k,k+2,k+3);
   }
   function addWalkQuad(a,b,w,y){
@@ -2032,10 +2038,10 @@ function buildOSMRoads(ways, nodes) {
     const ext=Math.min(1.2,len*.08),ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext};
     const nx=-dz/len*w/2,nz=dx/len*w/2,k=walkVertices.length/3;
     const p1={x:aa.x+nx,z:aa.z+nz},p2={x:aa.x-nx,z:aa.z-nz},p3={x:bb.x-nx,z:bb.z-nz},p4={x:bb.x+nx,z:bb.z+nz};
-    walkVertices.push(p1.x,terrainHeight(p1.x,p1.z)+y,p1.z,p2.x,terrainHeight(p2.x,p2.z)+y,p2.z,p3.x,terrainHeight(p3.x,p3.z)+y,p3.z,p4.x,terrainHeight(p4.x,p4.z)+y,p4.z);
+    const lift=Math.max(Number(y)||0,.50);walkVertices.push(p1.x,terrainHeight(p1.x,p1.z)+lift,p1.z,p2.x,terrainHeight(p2.x,p2.z)+lift,p2.z,p3.x,terrainHeight(p3.x,p3.z)+lift,p3.z,p4.x,terrainHeight(p4.x,p4.z)+lift,p4.z);
     walkIndices.push(k,k+1,k+2,k,k+2,k+3);
   }
-  function addStripTo(a,b,w,y,verts,inds){const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<1)return;const nx=-dz/len*w/2,nz=dx/len*w/2,ext=Math.min(.8,len*.04),ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext},k=verts.length/3;const p=[{x:aa.x+nx,z:aa.z+nz},{x:aa.x-nx,z:aa.z-nz},{x:bb.x-nx,z:bb.z-nz},{x:bb.x+nx,z:bb.z+nz}];p.forEach(q=>verts.push(q.x,terrainHeight(q.x,q.z)+y,q.z));inds.push(k,k+1,k+2,k,k+2,k+3);}
+  function addStripTo(a,b,w,y,verts,inds){const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<1)return;const nx=-dz/len*w/2,nz=dx/len*w/2,ext=Math.min(.8,len*.04),ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext},k=verts.length/3;const p=[{x:aa.x+nx,z:aa.z+nz},{x:aa.x-nx,z:aa.z-nz},{x:bb.x-nx,z:bb.z-nz},{x:bb.x+nx,z:bb.z+nz}];const lift=Math.max(Number(y)||0,.56);p.forEach(q=>verts.push(q.x,terrainHeight(q.x,q.z)+lift,q.z));inds.push(k,k+1,k+2,k,k+2,k+3);}
   ways.forEach(w=>{
     const tag=w.tags.highway;if(ignored.has(tag))return;
     const raw=w.nodes.map(id=>nodes.get(id)).filter(Boolean);if(raw.length<2)return;
@@ -2449,7 +2455,7 @@ function createAFGamerHQ(){
  makePanel(2,'APPARENCE',0x247b79);
  const doorGroup=new THREE.Group(),frame=new THREE.Mesh(new THREE.BoxGeometry(2.2,3,.3),gold),door=new THREE.Mesh(new THREE.BoxGeometry(1.55,2.55,.12),stone);
  door.position.y=1.28;doorGroup.add(frame,door);doorGroup.position.set(x,terrainHeight(x,z),z+11.7);scene.add(doorGroup);
- creatorHQDoor={x,z:z+11.7,id,rot:0,normal:new THREE.Vector3(0,0,1),group:doorGroup,home:true,creatorOnly:true,buildingType:'company',buildingName:'AF_GAMER · Siège social'};
+ creatorHQDoor={x,z:z+11.7,id,rot:0,normal:new THREE.Vector3(0,0,1),group:doorGroup,home:true,creatorOnly:false,buildingType:'company',buildingName:'AF_GAMER · Siège social'};
  doors.push(creatorHQDoor);
  poi.push({x,z,type:'company',nom:'AF_GAMER',data:{description:'Siège social AF_GAMER · Accès public au rez-de-chaussée, étage privé réservé au créateur'}});
 }
@@ -4024,12 +4030,12 @@ function startPlayerAtHome(){
   }
   const homes=doors.filter(d=>d.home&&interiors[d.id]&&!d.buildingType);
   if(!homes.length){initialHomeEntered=true;return;}
-  // Maison la plus proche du noyau Plateau (évite un spawn isolé au milieu de nulle part)
-  let core={x:0,z:0};
-  try{core=geoToWorld(5.323,-4.02);}catch(e){core={x:player.position.x,z:player.position.z};}
-  const ranked=homes.map(d=>({d,dist:Math.hypot(d.x-core.x,d.z-core.z)})).sort((a,b)=>a.dist-b.dist);
-  // Prendre une maison proche du centre urbain (pas n'importe où dans la métropole)
-  const nearest=(ranked.find(x=>x.dist<1800)||ranked[0]).d;
+  // Chaque nouveau compte reçoit un logement différent de façon stable, réparti parmi les maisons générées dans Abidjan.
+  const accountKey=normalizeIvorianMobile(activeGameAccount||'guest');
+  let homeHash=2166136261;
+  for(let i=0;i<accountKey.length;i++)homeHash=Math.imul(homeHash^accountKey.charCodeAt(i),16777619);
+  const preferredDoorId=lifeState.housing&&lifeState.housing.lease&&lifeState.housing.lease.doorId;
+  const nearest=homes.find(d=>d.id===preferredDoorId)||homes[(homeHash>>>0)%homes.length];
   const nx=nearest.x+nearest.normal.x*3.6, nz=nearest.z+nearest.normal.z*3.6;
   player.position.set(nx,terrainHeight(nx,nz)+.02,nz);
   camera.position.set(nx+6,player.position.y+4.2,nz+8);
@@ -8270,11 +8276,11 @@ renderAccountSettingsApp=function(){
  let action=null,step=0;const steps=[['Bienvenue dans Abidjan Life','Déplace-toi avec ZQSD ou WASD. La souris oriente la caméra, Maj permet de courir et Espace de sauter.'],['Interagir avec la ville','Approche une porte, un commerce ou un habitant puis appuie sur E. Utilise F pour les meubles et objets.'],['Ton téléphone','Appuie sur M pour ouvrir ton téléphone. Chaque application explique son rôle lors de sa première ouverture.'],['Transport et carte','Plans sert à te repérer. Transports affiche les arrêts numérotés et CourseGo commande un taxi.'],['Ta vie dans la ville','Travail, études, santé, logement, mairie, banque et entreprises font évoluer ton personnage.']];
  function show(title,body,fn,label){action=fn||null;document.getElementById('abjHelpTitle').textContent=title;document.getElementById('abjHelpText').textContent=body;document.getElementById('abjHelpNext').textContent=label||'Suivant';bubble.style.display='block';}
  function hide(){bubble.style.display='none';action=null;}
- document.getElementById('abjHelpClose').onclick=hide;document.getElementById('abjHelpNext').onclick=()=>{if(action){const fn=action;hide();fn();return;}step++;if(step<steps.length)show(steps[step][0],steps[step][1]);else hide();};
- document.addEventListener('click',e=>{const app=e.target.closest&&e.target.closest('#phoneApps .phoneApp');if(!app)return;const id=app.dataset.app,key='abj-help-app-seen:'+String(activeGameAccount||'guest')+':'+id;let seen=false;try{seen=localStorage.getItem(key)==='1';}catch(err){seen=true;}if(!seen){e.preventDefault();e.stopImmediatePropagation();try{localStorage.setItem(key,'1');}catch(err){}const d=help[id]||['Application du jeu','Ouvre cette application pour consulter ses services et options.'];show(d[0],d[1],()=>openPhoneApp(id),'Ouvrir l’application');}},true);
- function pulse(){document.querySelectorAll('#startBtn,#creatorStart,#phoneClose,#closeMapBtn,#mapRecenter,#phoneApps .phoneApp').forEach(el=>{if(!el.dataset.abjPulse){el.classList.add('abj-guide-pulse');el.dataset.abjPulse='1';}});}
+ document.getElementById('abjHelpClose').onclick=hide;document.getElementById('abjHelpNext').onclick=()=>{if(action){const fn=action;hide();fn();return;}step++;if(step<steps.length)show(steps[step][0],steps[step][1]);else{hide();const who=normalizeIvorianMobile(activeGameAccount||'guest');safeSet('abj-tutorial-completed:'+who,'1');safeRemove('abj-tutorial-pending:'+who);}};
+ document.addEventListener('click',e=>{const app=e.target.closest&&e.target.closest('#phoneApps .phoneApp');if(!app)return;const id=app.dataset.app;app.classList.remove('abj-guide-pulse');app.dataset.abjPulse='1';const key='abj-help-app-seen:'+String(activeGameAccount||'guest')+':'+id;let seen=false;try{seen=localStorage.getItem(key)==='1';}catch(err){seen=true;}if(!seen){e.preventDefault();e.stopImmediatePropagation();try{localStorage.setItem(key,'1');}catch(err){}const d=help[id]||['Application du jeu','Ouvre cette application pour consulter ses services et options.'];show(d[0],d[1],()=>openPhoneApp(id),'Ouvrir l’application');}},true);
+ function pulse(){document.querySelectorAll('#startBtn,#creatorStart,#phoneClose,#closeMapBtn,#mapRecenter').forEach(el=>{if(!el.dataset.abjPulse){el.classList.add('abj-guide-pulse');el.dataset.abjPulse='1';}});}
  const observer=new MutationObserver(pulse);observer.observe(document.body,{childList:true,subtree:true});
- let waited=0;const timer=setInterval(()=>{waited++;if(typeof gameStarted!=='undefined'&&gameStarted&&typeof worldReady!=='undefined'&&worldReady&&player){clearInterval(timer);if(!window.__ABJ_TUTORIAL_SHOWN){window.__ABJ_TUTORIAL_SHOWN=true;pulse();show(steps[0][0],steps[0][1]);setTimeout(()=>document.querySelectorAll('.abj-guide-pulse').forEach(el=>el.classList.remove('abj-guide-pulse')),45000);}}if(waited>900)clearInterval(timer);},1000);
+ let waited=0;const timer=setInterval(()=>{waited++;if(typeof gameStarted!=='undefined'&&gameStarted&&typeof worldReady!=='undefined'&&worldReady&&player){clearInterval(timer);const tutorialAccount=normalizeIvorianMobile(activeGameAccount||'guest'),tutorialPending=safeGet('abj-tutorial-pending:'+tutorialAccount)==='1',tutorialDone=safeGet('abj-tutorial-completed:'+tutorialAccount)==='1';if(tutorialPending&&!tutorialDone&&!window.__ABJ_TUTORIAL_SHOWN){window.__ABJ_TUTORIAL_SHOWN=true;pulse();show(steps[0][0],steps[0][1]);setTimeout(()=>document.querySelectorAll('.abj-guide-pulse').forEach(el=>el.classList.remove('abj-guide-pulse')),45000);}}if(waited>900)clearInterval(timer);},1000);
  const info=document.getElementById('info');if(info){info.style.pointerEvents='auto';info.style.cursor='help';info.addEventListener('click',()=>show('Commandes du jeu','ZQSD/WASD : marcher · Maj : courir · Espace : sauter · Souris : caméra · E : interagir · F : meubles · M : téléphone · Échap : libérer la souris.'));}
 })();
 </script>
