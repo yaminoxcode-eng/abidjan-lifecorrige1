@@ -7343,11 +7343,57 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    if(!m.version||m.version===window.ABJ_BUILD_VERSION)return;
    const key='abj-update-last-applied-'+m.version;
    if(sessionStorage.getItem(key))return;
-   sessionStorage.setItem(key,'1');
-   const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:#071321ee;color:white;display:grid;place-items:center;font:16px system-ui;text-align:center;padding:24px';
-   const panel=document.createElement('div'),title=document.createElement('h2'),version=document.createElement('p'),notes=document.createElement('p'),loading=document.createElement('p');
-   title.textContent='🚀 Mise à jour disponible';version.textContent='Abidjan Life va passer à la version '+m.version+'.';notes.textContent=m.releaseNotes||'Améliorations et corrections.';loading.textContent='Rechargement…';panel.append(title,version,notes,loading);overlay.appendChild(panel);document.body.appendChild(overlay);
-   setTimeout(()=>{if(m.clientUrl){const u=new URL(m.clientUrl);u.searchParams.set('abjVersion',m.version);location.replace(u.toString());}else location.reload();},1200);
+   if(document.getElementById('abjUpdateOverlay'))return;
+
+   const overlay=document.createElement('div');overlay.id='abjUpdateOverlay';
+   overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:linear-gradient(145deg,#06121fF5,#102e40F5);color:white;display:grid;place-items:center;font:16px system-ui;text-align:center;padding:22px;backdrop-filter:blur(8px)';
+   const panel=document.createElement('div');panel.style.cssText='width:min(460px,100%);padding:28px 22px;border:1px solid #e9c77b;border-radius:20px;background:linear-gradient(145deg,#1b394b,#0b1b29);box-shadow:0 22px 70px #000b';
+   const title=document.createElement('h2');title.textContent='🚀 Mise à jour disponible';title.style.cssText='color:#ffe0a0;margin:0 0 14px';
+   const apology=document.createElement('p');apology.textContent='Nous sommes désolés pour cette interruption. Une nouvelle mise à jour d’Abidjan Life est prête. Merci de patienter pendant son installation.';apology.style.cssText='font-size:14px;line-height:1.6;color:#dce8ef';
+   const version=document.createElement('p');version.textContent='Nouvelle version : '+m.version;version.style.cssText='font-weight:800;color:#ffe0a0';
+   const notes=document.createElement('p');notes.textContent=m.releaseNotes||'Améliorations et corrections du jeu.';notes.style.cssText='font-size:13px;color:#c4d5df;line-height:1.5';
+   const track=document.createElement('div');track.style.cssText='height:14px;border-radius:20px;background:#07121c;border:1px solid #ffffff35;overflow:hidden;margin:20px 0 8px';
+   const bar=document.createElement('div');bar.style.cssText='height:100%;width:0%;border-radius:20px;background:linear-gradient(90deg,#c28d36,#ffe09a);transition:width .18s ease';
+   track.appendChild(bar);
+   const status=document.createElement('p');status.textContent='Prêt à télécharger la mise à jour.';status.style.cssText='font-size:12px;color:#b8cbd7;min-height:18px;margin:8px 0 14px';
+   const percent=document.createElement('p');percent.textContent='0 %';percent.style.cssText='font-size:13px;font-weight:800;color:#ffe0a0;margin:0 0 16px';
+   const button=document.createElement('button');button.type='button';button.textContent='LANCER LE CHARGEMENT';button.style.cssText='width:100%;padding:14px 18px;border:0;border-radius:10px;background:#e5b85e;color:#17232c;font-weight:900;font-size:15px;cursor:pointer';
+   const help=document.createElement('p');help.textContent='Le jeu et tes sauvegardes restent en place pendant la préparation.';help.style.cssText='font-size:11px;color:#9eb4c2;margin:14px 0 0';
+   panel.append(title,apology,version,notes,track,percent,status,button,help);overlay.appendChild(panel);document.body.appendChild(overlay);
+
+   button.addEventListener('click',async()=>{
+    if(button.disabled)return;
+    button.disabled=true;button.style.opacity='.65';button.textContent='CHARGEMENT EN COURS…';
+    status.textContent='Connexion au serveur et téléchargement de la mise à jour…';
+    try{
+     if(m.clientUrl){
+      const target=new URL(m.clientUrl,location.href);target.searchParams.set('abjVersion',m.version);
+      const response=await fetch(target.toString(),{cache:'no-store'});
+      if(!response.ok)throw new Error('Téléchargement impossible (HTTP '+response.status+').');
+      const total=Number(response.headers.get('content-length'))||0;
+      if(response.body&&response.body.getReader){
+       const reader=response.body.getReader();let loaded=0;
+       while(true){const part=await reader.read();if(part.done)break;loaded+=part.value?.length||0;
+        const p=total?Math.min(99,Math.round(loaded/total*100)):Math.min(95,Math.round(loaded/(loaded+500000)*100));
+        bar.style.width=p+'%';percent.textContent=p+' %';
+        status.textContent=total?'Téléchargement de la mise à jour…':'Réception des fichiers…';
+       }
+      }else{bar.style.width='95%';percent.textContent='95 %';}
+      status.textContent='Mise à jour téléchargée. Redémarrage du jeu…';
+      bar.style.width='100%';percent.textContent='100 %';
+      sessionStorage.setItem(key,'1');
+      setTimeout(()=>location.replace(target.toString()),350);
+     }else{
+      status.textContent='Redémarrage du jeu pour appliquer la mise à jour…';
+      bar.style.width='100%';percent.textContent='100 %';sessionStorage.setItem(key,'1');
+      setTimeout(()=>location.reload(),500);
+     }
+    }catch(error){
+     console.warn('Échec du chargement de la mise à jour',error);
+     status.textContent='Le chargement a échoué. Vérifie ta connexion puis réessaie.';
+     button.disabled=false;button.style.opacity='1';button.textContent='RÉESSAYER LE CHARGEMENT';
+    }
+   });
   }catch(e){console.debug('Vérification des mises à jour indisponible',e);}
  }
  // Synchronisation adaptative : déplacements rapides, état complet moins fréquent.
