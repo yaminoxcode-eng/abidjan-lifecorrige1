@@ -2494,7 +2494,7 @@ async function openCreatorWorldMenu(){
  if(document.exitPointerLock)document.exitPointerLock();
  let panel=document.getElementById('creatorWorldPanel');
  if(!panel){panel=document.createElement('div');panel.id='creatorWorldPanel';panel.style.cssText='position:fixed;inset:0;z-index:120;background:#06121aee;display:flex;align-items:center;justify-content:center;padding:16px;color:#fff;font:14px Segoe UI,Arial';document.body.appendChild(panel);}
- panel.innerHTML='<section style="width:min(900px,96vw);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#183545,#0b1721);border:1px solid #d8b15d;border-radius:18px;padding:18px;box-shadow:0 20px 70px #000"><header style="display:flex;justify-content:space-between;align-items:center"><div><small style="color:#d8b15d;letter-spacing:2px">AF_GAMER · CONTRÔLE DU MONDE</small><h2 style="margin:5px 0">MONDE</h2></div><button id="creatorWorldClose">Fermer ✕</button></header><nav style="display:flex;gap:8px;flex-wrap:wrap"><button data-tab="world">Vue du monde</button><button data-tab="reports">Messages & erreurs</button><button data-tab="inbox">Boîte AF_GAMER</button><button data-tab="accounts">Gestion des comptes</button><button data-tab="ai">Assistant IA</button></nav><div id="creatorWorldBody" style="padding:12px 0">Chargement des données…</div></section>';
+ panel.innerHTML='<section style="width:min(900px,96vw);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#183545,#0b1721);border:1px solid #d8b15d;border-radius:18px;padding:18px;box-shadow:0 20px 70px #000"><header style="display:flex;justify-content:space-between;align-items:center"><div><small style="color:#d8b15d;letter-spacing:2px">AF_GAMER · CONTRÔLE DU MONDE</small><h2 style="margin:5px 0">MONDE</h2></div><button id="creatorWorldClose">Fermer ✕</button></header><nav style="display:flex;gap:8px;flex-wrap:wrap"><button data-tab="world">Vue du monde</button><button data-tab="reports">Messages & erreurs</button><button data-tab="inbox">Boîte AF_GAMER</button><button data-tab="deletions">Demandes de suppression</button><button data-tab="accounts">Gestion des comptes</button><button data-tab="ai">Assistant IA</button></nav><div id="creatorWorldBody" style="padding:12px 0">Chargement des données…</div></section>';
  panel.querySelector('#creatorWorldClose').onclick=()=>{if(window.ABJ_CREATOR_DASH_TIMER)clearInterval(window.ABJ_CREATOR_DASH_TIMER);panel.remove();};
  panel.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>renderCreatorWorldTab(b.dataset.tab));
  await renderCreatorWorldTab('world');
@@ -2525,6 +2525,18 @@ async function renderCreatorWorldTab(tab){
    }catch(e){box.textContent=e.message||'Impossible de charger la boîte.';}
   }
   await loadInbox();return;
+ }
+ if(tab==='deletions'){
+  body.innerHTML='<h3>🗑️ Demandes de suppression</h3><p>Les demandes sont conservées ici jusqu’à leur traitement. Pour supprimer le compte, ouvre ensuite Gestion des comptes et confirme le numéro.</p><div id="creatorDeletionRequests">Chargement…</div>';
+  const box=document.getElementById('creatorDeletionRequests');
+  try{
+   const r=await fetch(creatorApi()+'/api/creator/afgamer-inbox',{headers:{Authorization:'Bearer '+creatorToken()}}),d=await r.json();
+   if(!r.ok)throw new Error(d.error||'Demandes indisponibles.');
+   const items=(d.items||[]).filter(x=>x.subject==='SUPPRESSION DE COMPTE');
+   box.innerHTML=items.map(x=>'<article style="padding:13px;margin:9px 0;background:#091a25;border-left:3px solid #d66b75;border-radius:9px"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>'+escapeHTML(x.player||'Citoyen')+'</b><small>'+escapeHTML(new Date(x.createdAt).toLocaleString('fr-FR'))+'</small></div><p><b>Numéro :</b> '+escapeHTML(x.phone||'non disponible')+'</p><p style="white-space:pre-wrap">'+escapeHTML(x.message)+'</p><p><b>État :</b> '+escapeHTML(x.status||'nouveau')+'</p><button data-open-accounts>Ouvrir la gestion des comptes</button></article>').join('')||'Aucune demande de suppression en attente.';
+   box.querySelectorAll('[data-open-accounts]').forEach(b=>b.onclick=()=>renderCreatorWorldTab('accounts'));
+  }catch(e){box.textContent=e.message||'Impossible de charger les demandes.';}
+  return;
  }
  if(tab==='accounts'){
   body.innerHTML='<h3>👥 Gestion des comptes</h3><p>Liste des comptes enregistrés. Les mots de passe et leurs empreintes ne sont jamais affichés ici.</p><div id="creatorAccountsList">Chargement…</div>';
