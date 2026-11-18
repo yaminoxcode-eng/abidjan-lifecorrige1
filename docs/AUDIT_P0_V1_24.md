@@ -73,3 +73,40 @@ Ces valeurs ne sont pas cohérentes si aucune variable de déploiement ne les re
 
 ## Limites de cet audit
 Cet audit est une inspection statique des fichiers GitHub et des chemins de code. Il ne prouve pas la configuration réelle des variables d’environnement, l’état de la base Supabase, le comportement du service Render ni le résultat d’une session de jeu dans un navigateur.
+
+
+## Mise à jour de vérification — 18 novembre 2026
+### Supabase : connexion au projet confirmée
+Le projet Supabase **Abidjan life** (`aczdojrkgrynvlzshbyw`) est accessible et son état est `ACTIVE_HEALTHY`. Le schéma public contient les tables `game_accounts`, `creator_reports`, `player_profiles`, `player_saves` et `afgamer_inbox`. La base contient déjà des comptes et des signalements ; aucune donnée de compte n’a été lue ou modifiée.
+
+### Fonction de suppression : sécurisation effectuée et vérifiée
+La fonction `public.delete_game_account_data(text)` existait et supprime les enregistrements associés au numéro dans les tables de profils, sauvegardes, comptes, signalements et boîte de réception. Une migration a été appliquée pour limiter son exécution au rôle backend `service_role`.
+
+Résultat de vérification après migration :
+- `service_role` peut exécuter la fonction : **oui** ;
+- `anon` peut l’exécuter : **non** ;
+- `authenticated` peut l’exécuter : **non** ;
+- aucune politique d’écriture publique n’a été détectée sur `game_accounts` et `creator_reports`.
+
+Migration : `secure_account_deletion_rpc`. Cette opération a modifié les permissions SQL, pas les données des joueurs.
+
+### Render : non vérifié depuis cette session
+Aucun connecteur Render ni accès aux variables d’environnement du service n’est disponible dans cet espace. Les URLs `/`, `/health` et `/api/updates/latest` n’ont pas pu être consultées via l’outil de navigation. Il est donc impossible de confirmer ici :
+- que `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` sont configurées dans le service Render ;
+- que `GAME_VERSION`, `MIN_GAME_VERSION` et `CLIENT_URL` ont les valeurs attendues ;
+- que le serveur actuellement déployé utilise cette même base Supabase.
+
+**Aucune clé secrète n’a été demandée, copiée ou exposée.** Ne jamais coller la clé `service_role` dans GitHub ou dans le code client.
+
+### Version client/serveur : correction différée volontairement
+Le fichier client conserve le titre V1.24 et une valeur de repli `ABJ_BUILD_VERSION=1.0.1`, tandis que le serveur utilise `GAME_VERSION=1.26.0` comme valeur de repli. Comme la valeur réellement définie dans Render n’est pas accessible, modifier arbitrairement l’un de ces numéros risquerait de provoquer une mise à jour forcée incorrecte ou d’étiqueter faussement le client. Aucun numéro de version n’a donc été changé. La correction doit être faite après lecture des variables Render et confirmation du client réellement déployé.
+
+### État réel après cette passe
+- Supabase actif : **confirmé**.
+- Tables de persistance présentes : **confirmé**.
+- RPC de suppression réservée au backend : **corrigé et vérifié**.
+- Variables Supabase du service Render : **à vérifier dans Render**.
+- Manifeste de mise à jour et URL cible en production : **à vérifier**.
+- Parcours navigateur (PC/iPhone), inscription, sauvegarde, connexion et suppression d’un compte de test : **non exécutés**.
+- Code du jeu modifié : **non**.
+- Déploiement déclenché : **non**.
