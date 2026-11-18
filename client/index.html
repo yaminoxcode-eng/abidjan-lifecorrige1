@@ -1815,10 +1815,46 @@ function geoToWorld(lat, lon) {
   return { x, z };
 }
 
+
+/* ABJ Performance V1 — cache local des données OSM (aucun contenu du monde supprimé). */
+const ABJ_OSM_CACHE_DB='abidjan-life-world-cache';
+function abjOpenOSMCache(){
+ return new Promise((resolve,reject)=>{
+  if(!('indexedDB' in window)){reject(new Error('IndexedDB indisponible'));return;}
+  const req=indexedDB.open(ABJ_OSM_CACHE_DB,1);
+  req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains('snapshots'))db.createObjectStore('snapshots');};
+  req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('Ouverture cache impossible'));
+ });
+}
+async function abjReadOSMCache(){
+ const db=await abjOpenOSMCache();
+ try{return await new Promise((resolve,reject)=>{
+  const tx=db.transaction('snapshots','readonly'),req=tx.objectStore('snapshots').get('abidjan-district-v1');
+  req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error||new Error('Lecture cache impossible'));
+ });}finally{db.close();}
+}
+async function abjWriteOSMCache(data){
+ const db=await abjOpenOSMCache();
+ try{await new Promise((resolve,reject)=>{
+  const tx=db.transaction('snapshots','readwrite');
+  tx.objectStore('snapshots').put({savedAt:Date.now(),data},'abidjan-district-v1');
+  tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Écriture cache impossible'));tx.onabort=()=>reject(tx.error||new Error('Cache annulé'));
+ });}finally{db.close();}
+}
+
 async function loadAbidjanOSM() {
   const b = ABIDJAN_BBOX;
   const query = `[out:json][timeout:90];(way[highway](${b.south},${b.west},${b.north},${b.east});way[building](${b.south},${b.west},${b.north},${b.east});way[natural=water](${b.south},${b.west},${b.north},${b.east});way[leisure=park](${b.south},${b.west},${b.north},${b.east});node[shop](${b.south},${b.west},${b.north},${b.east});node[amenity](${b.south},${b.west},${b.north},${b.east});node[office](${b.south},${b.west},${b.north},${b.east});node[tourism](${b.south},${b.west},${b.north},${b.east});node[public_transport](${b.south},${b.west},${b.north},${b.east});node[highway=bus_stop](${b.south},${b.west},${b.north},${b.east});relation[route=bus](${b.south},${b.west},${b.north},${b.east}););out body;>;out skel qt;`;
   let data = null;
+  let loadedFromCache = false;
+  // Une copie locale récente évite de retélécharger toute la carte des 13 communes à chaque connexion.
+  try{
+    const cached=await abjReadOSMCache();
+    if(cached&&cached.data&&Array.isArray(cached.data.elements)&&Date.now()-Number(cached.savedAt||0)<21*24*60*60*1000){
+      data=cached.data;loadedFromCache=true;
+      const status=document.getElementById('mapStatus');if(status)status.textContent='Carte d’Abidjan restaurée depuis le cache local…';
+    }
+  }catch(cacheError){console.info('Cache cartographique local indisponible, téléchargement normal.',cacheError);}
   // L'ancien instantané cartographique était trop restreint : on récupère désormais les routes et bâtiments sur l'emprise élargie des 13 communes.
   const endpoints = ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
   if (!data) for (const endpoint of endpoints) {
@@ -1834,6 +1870,7 @@ async function loadAbidjanOSM() {
   }
   if(!data){try{const backup=await fetch('https://d2ol7oe51mr4n9.cloudfront.net/user_3LVcgmLnYyIgIO5wyenMeyU1qx6/750912a1-208b-4fca-b488-81d5ed214b6e.gz',{cache:'force-cache'});if(backup.ok&&typeof DecompressionStream!=='undefined')data=await new Response(backup.body.pipeThrough(new DecompressionStream('gzip'))).json();}catch(e){console.warn('Carte locale de secours indisponible',e);}}
   if (!data || !data.elements) throw new Error('Impossible de récupérer les données cartographiques');
+  if(!loadedFromCache){abjWriteOSMCache(data).catch(e=>console.info('Mise en cache OSM différée ou indisponible.',e));}
   if (!data.elements.some(e => e.type === 'way' && e.tags && (e.tags.highway || e.tags.building))) throw new Error('Les données reçues ne contiennent ni routes ni bâtiments');
   const nodes = new Map(); data.elements.filter(e => e.type === 'node').forEach(n => nodes.set(n.id, geoToWorld(n.lat,n.lon)));
   const ways = data.elements.filter(e => e.type === 'way');
@@ -8208,6 +8245,55 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   });
   return it;
  };
+})();
+</script>
+
+
+<script>
+/* ABJ Airport Staff V1 — personnel animé du terminal et de la tour, sans toucher aux PNJ de la ville. */
+(function(){
+ if(window.__ABJ_AIRPORT_STAFF_PATCH)return;window.__ABJ_AIRPORT_STAFF_PATCH=true;
+ const originalCreateAirport=createAbidjanAirport;
+ window.__ABJ_AIRPORT_STAFF=[];
+ function addStaff(parent,role,color,x,y,z,route){
+  if(!parent||typeof createCharacter!=='function')return;
+  const actor=createCharacter({gender:role==='Hôtesse'?'femme':'homme',skin:0x80553c,hair:role==='Hôtesse'?0x17120f:0x241a16,shirt:color,pants:role==='Hôtesse'?0x202b46:0x202b32,bodyType:'standard',hairstyle:role==='Hôtesse'?'tresses':'court',outfit:'chic'});
+  actor.position.set(x,y,z);actor.scale.setScalar(role==='Contrôleur tour'?.82:.88);parent.add(actor);
+  actor.userData.airportStaff=true;actor.userData.airportRole=role;
+  window.__ABJ_AIRPORT_STAFF.push({actor,route:route&&route.length?route:[{x,y,z}],index:0,wait:0,speed:role==='Sécurité'?1.05:1.35});
+ }
+ createAbidjanAirport=function(){
+  originalCreateAirport();
+  if(window.__ABJ_AIRPORT_STAFF.length)return;
+  const ap=window.__ABJ_AIRPORT,inside=interiors&&interiors['abj-airport-terminal'];
+  const floor=inside&&inside.floors&&inside.floors[0];
+  if(floor){
+   addStaff(floor,'Agent d’enregistrement',0x315d82,-10,0,-7,[{x:-10,y:0,z:-7},{x:-6,y:0,z:-7},{x:-6,y:0,z:-5},{x:-10,y:0,z:-5}]);
+   addStaff(floor,'Agent d’enregistrement',0x315d82,2,0,-7,[{x:2,y:0,z:-7},{x:7,y:0,z:-7},{x:7,y:0,z:-5},{x:2,y:0,z:-5}]);
+   addStaff(floor,'Sécurité',0x263d4b,-5,0,9,[{x:-5,y:0,z:9},{x:-2,y:0,z:9},{x:-2,y:0,z:6},{x:-5,y:0,z:6}]);
+   addStaff(floor,'Hôtesse',0x8c354b,5,0,5,[{x:5,y:0,z:5},{x:8,y:0,z:2},{x:5,y:0,z:-1},{x:2,y:0,z:2}]);
+   addStaff(floor,'Steward',0x315d82,-8,0,2,[{x:-8,y:0,z:2},{x:-5,y:0,z:-1},{x:-8,y:0,z:-4},{x:-11,y:0,z:-1}]);
+   addStaff(floor,'Agent d’accueil',0x9a713d,8,0,10,[{x:8,y:0,z:10},{x:10,y:0,z:7},{x:8,y:0,z:4},{x:6,y:0,z:7}]);
+  }
+  if(ap&&ap.group){
+   addStaff(ap.group,'Contrôleur tour',0x315d82,92,37,38,[{x:92,y:37,z:38},{x:94,y:37,z:38},{x:94,y:37,z:40},{x:92,y:37,z:40}]);
+   addStaff(ap.group,'Mécanicien',0x6a583d,-145,0,155,[{x:-145,y:0,z:155},{x:-135,y:0,z:155},{x:-135,y:0,z:161},{x:-145,y:0,z:161}]);
+  }
+ };
+ window.updateAirportStaff=function(dt){
+  const list=window.__ABJ_AIRPORT_STAFF;if(!list||!list.length||currentInterior&&currentInterior.id!=='abj-airport-terminal')return;
+  const stepDelta=Math.min(.05,Math.max(0,Number(dt)||0));
+  for(const item of list){
+   const a=item.actor;if(!a||!a.parent)continue;
+   const target=item.route[item.index],dx=target.x-a.position.x,dz=target.z-a.position.z,dist=Math.hypot(dx,dz);
+   if(dist<.18){item.wait+=stepDelta;if(item.wait>1.2){item.wait=0;item.index=(item.index+1)%item.route.length;}animateCharacter(a,stepDelta,false);continue;}
+   const move=Math.min(dist,item.speed*stepDelta),nx=dx/(dist||1),nz=dz/(dist||1);
+   a.position.x+=nx*move;a.position.z+=nz*move;a.rotation.y=Math.atan2(nx,nz);
+   animateCharacter(a,stepDelta,true);
+  }
+ };
+ const oldUpdateAirportFlights=updateAirportFlights;
+ updateAirportFlights=function(){oldUpdateAirportFlights();window.updateAirportStaff(1/60);};
 })();
 </script>
 
