@@ -1595,6 +1595,7 @@ function generateCity() {
     createAFGamerHQ();
     createDrivingSchools();
     createTransitDepots();
+    createFuelStationsAndRepairGarages();
     document.getElementById('mapStatus').textContent += ' · rues, bâtiments et espaces verts issus du réseau cartographique';
     if (!npcPopulationCreated) {
       // Population volontairement modérée : priorité à la stabilité et au temps de calcul.
@@ -7407,9 +7408,77 @@ function createTransitDepots(){
  });
 }
 
+
+/* Stations-service et garages mécaniques : lieux distincts et interactifs. */
+function createFuelStationsAndRepairGarages(){
+ if(!scene||window.__ABJ_AUTO_SERVICES_CREATED)return;window.__ABJ_AUTO_SERVICES_CREATED=true;
+ const base=geoToWorld(5.323,-4.02);
+ const sites=[
+  {kind:'station',name:'Station Ivoire Énergie',x:-680,z:-520,color:0xd83c32},
+  {kind:'station',name:'Station Lagune',x:720,z:-470,color:0x268c62},
+  {kind:'station',name:'Station Abidjan Nord',x:-720,z:560,color:0x2869a8},
+  {kind:'station',name:'Station du Carrefour',x:700,z:620,color:0xe2ad35},
+  {kind:'garage',name:'Garage mécanique du Plateau',x:-260,z:760,color:0x537f91},
+  {kind:'garage',name:'Garage Auto Cocody',x:270,z:-760,color:0x9b673f},
+  {kind:'garage',name:'Garage Express Yopougon',x:-850,z:60,color:0x6e7f4b},
+  {kind:'garage',name:'Garage des Deux-Plateaux',x:850,z:80,color:0x795a9a}
+ ];
+ sites.forEach((site,index)=>{
+  const x=base.x+site.x,z=base.z+site.z;
+  if(isOnRoad(x,z,14)||isInsideAnyObstacle(x,z,5))return;
+  const g=new THREE.Group();
+  const concrete=new THREE.MeshStandardMaterial({color:0xc3c0b5,roughness:.95});
+  const accent=new THREE.MeshStandardMaterial({color:site.color,roughness:.7});
+  const dark=new THREE.MeshStandardMaterial({color:0x26343a,roughness:.85});
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(42,.18,30),concrete);floor.position.y=.08;g.add(floor);
+  if(site.kind==='station'){
+   const canopy=new THREE.Mesh(new THREE.BoxGeometry(25,.8,13),accent);canopy.position.set(0,5,0);g.add(canopy);
+   for(const px of [-11,11])for(const pz of [-5,5]){const p=new THREE.Mesh(new THREE.BoxGeometry(.65,5,.65),concrete);p.position.set(px,2.5,pz);g.add(p);}
+   for(let n=0;n<3;n++){
+    const pump=new THREE.Group();const basePump=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.7,1.1),dark);basePump.position.y=.85;pump.add(basePump);
+    const top=new THREE.Mesh(new THREE.BoxGeometry(1.25,.5,.15),new THREE.MeshStandardMaterial({color:0xe9e8dc,emissive:0x202020}));top.position.set(0,1.4,.57);pump.add(top);
+    const hose=new THREE.Mesh(new THREE.TorusGeometry(.32,.045,6,12,Math.PI),dark);hose.rotation.z=Math.PI/2;hose.position.set(.72,.85,0);pump.add(hose);
+    pump.position.set(-7+n*7,.18,0);g.add(pump);
+   }
+  }else{
+   const roof=new THREE.Mesh(new THREE.BoxGeometry(23,.7,12),dark);roof.position.set(0,4.7,0);g.add(roof);
+   for(const px of [-10,10])for(const pz of [-5,5]){const p=new THREE.Mesh(new THREE.BoxGeometry(.7,4.5,.7),accent);p.position.set(px,2.25,pz);g.add(p);}
+   const lift=new THREE.Mesh(new THREE.BoxGeometry(5,.35,7),accent);lift.position.set(0,.5,0);g.add(lift);
+   const tool=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.2,.8),dark);tool.position.set(-14,.7,-8);g.add(tool);
+  }
+  const signCanvas=document.createElement('canvas');signCanvas.width=640;signCanvas.height=150;const ctx=signCanvas.getContext('2d');
+  ctx.fillStyle='#172b35';ctx.fillRect(0,0,640,150);ctx.fillStyle='#fff0c8';ctx.font='bold 38px Arial';ctx.textAlign='center';ctx.fillText(site.name.toUpperCase(),320,92);
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(19,4.4),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signCanvas),side:THREE.DoubleSide}));sign.position.set(0,3.2,15.2);g.add(sign);
+  g.position.set(x,terrainHeight(x,z),z);scene.add(g);
+  poi.push({x,z,type:site.kind==='station'?'station-service':'garage-mecanique',nom:site.name,data:{service:site.kind,index,description:site.kind==='station'?'Faire le plein et contrôler le carburant':'Diagnostiquer et réparer les pannes des véhicules personnels'}});
+ });
+ console.info('Services automobiles créés :',poi.filter(p=>p.type==='station-service'||p.type==='garage-mecanique').length);
+}
+
 const __abjOldCityInteract=interactWithCityLife;
 interactWithCityLife=function(){
- if(player&&!currentInterior){const school=poi.filter(p=>p.type==='auto-ecole').sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];if(school&&Math.hypot(school.x-player.position.x,school.z-player.position.z)<20){openPhone();openPhoneApp('autoecole');return true;}}
+ if(player&&!currentInterior){
+  const service=poi.filter(p=>p.type==='station-service'||p.type==='garage-mecanique').sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];
+  if(service&&Math.hypot(service.x-player.position.x,service.z-player.position.z)<24){
+   if(!drivingVehicle){showMessage('Approche ton véhicule personnel de '+service.nom+' puis interagis à nouveau.');return true;}
+   const rec=abjV19().ownedVehicles.find(v=>v.id===drivingVehicle.userData.ownedId);if(!rec){showMessage('Ce lieu ne peut intervenir que sur ton véhicule personnel.');return true;}
+   if(service.type==='station-service'){
+    const fuel=Number.isFinite(rec.fuel)?rec.fuel:50,needed=Math.max(0,50-fuel);if(needed<.5){showMessage('⛽ Le réservoir est déjà plein.');return true;}
+    const litres=Math.min(needed,25),price=Math.ceil(litres*900);
+    if(!confirm(service.nom+'\nAjouter '+litres.toFixed(1)+' L de carburant pour '+price.toLocaleString('fr-FR')+' FCFA ?'))return true;
+    if(!abjChargeForApp(price,'Carburant')){showMessage('Solde insuffisant pour faire le plein.');return true;}
+    rec.fuel=Math.min(50,fuel+litres);saveLifeProgress(false);showMessage('⛽ Plein effectué : '+rec.fuel.toFixed(1)+' / 50 L.');return true;
+   }
+   const condition=Number.isFinite(rec.condition)?rec.condition:100;
+   if(condition>=99&&!rec.breakdown){showMessage('🔧 Le mécanicien contrôle ton véhicule : aucun problème détecté.');return true;}
+   const price=Math.max(2500,Math.ceil((100-condition)*650)+(rec.breakdown?12000:0));
+   if(!confirm(service.nom+'\nDiagnostic et réparation complète : '+price.toLocaleString('fr-FR')+' FCFA ?'))return true;
+   if(!abjChargeForApp(price,'Réparation automobile')){showMessage('Solde insuffisant pour la réparation.');return true;}
+   rec.condition=100;rec.breakdown=false;rec.fuel=Math.max(0,Number(rec.fuel)||0);drivingVehicle.userData.breakdown=false;
+   saveLifeProgress(false);showMessage('🛠️ Réparation terminée. Ton véhicule est de nouveau opérationnel.');return true;
+  }
+  const school=poi.filter(p=>p.type==='auto-ecole').sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];if(school&&Math.hypot(school.x-player.position.x,school.z-player.position.z)<20){openPhone();openPhoneApp('autoecole');return true;}
+ }
  return __abjOldCityInteract();
 };
 
@@ -7449,7 +7518,7 @@ function renderMyVApp(){
   if(!confirm('Acheter '+v.brand+' '+v.model+' pour '+v.price.toLocaleString('fr-FR')+' FCFA ?'))return;
   if(!abjChargeForApp(v.price,'MY V')){status.textContent=abjWaveInstalled()?'Solde WaveABJ insuffisant.':'Solde espèces insuffisant.';return;}
   const key='MYV-'+Math.random().toString(36).slice(2,8).toUpperCase();
-  abjV19().ownedVehicles.push({id:v.id+'-'+Date.now(),catalogId:v.id,brand:v.brand,model:v.model,year:v.year,type:v.type,price:v.price,key,documents:['Facture d’achat','Certificat de cession'],papers:{carte_grise:null,assurance:null,visite_technique:null},purchasedAt:new Date().toISOString()});
+  abjV19().ownedVehicles.push({id:v.id+'-'+Date.now(),catalogId:v.id,brand:v.brand,model:v.model,year:v.year,type:v.type,price:v.price,key,documents:['Facture d’achat','Certificat de cession'],papers:{carte_grise:null,assurance:null,visite_technique:null},fuel:50,condition:100,distance:0,breakdown:false,purchasedAt:new Date().toISOString()});
   saveLifeProgress(false);renderMyVApp();const x=document.getElementById('myvStatus');if(x)x.textContent='Achat confirmé : facture, certificat de cession et clé enregistrés dans ton garage.';
  });
  c.querySelectorAll('[data-paper]').forEach(b=>b.onclick=()=>{
@@ -7488,8 +7557,26 @@ function exitOwnedVehicle(){
 }
 const __abjOldUpdatePlayer=updatePlayer;
 updatePlayer=function(delta){
- if(drivingVehicle){const was=keys['shift'];keys['shift']=true;__abjOldUpdatePlayer(delta);keys['shift']=was;drivingVehicle.position.set(player.position.x,terrainHeight(player.position.x,player.position.z)+.04,player.position.z);drivingVehicle.rotation.y=player.rotation.y;drivingVehicle.userData.wheels?.forEach(w=>{w.rotation.x+=delta*8;});}
- else __abjOldUpdatePlayer(delta);
+ if(drivingVehicle){
+  const rec=abjV19().ownedVehicles.find(v=>v.id===drivingVehicle.userData.ownedId);
+  if(!rec){exitOwnedVehicle();return;}
+  const before=drivingVehicle.position.clone();
+  const fuel=Number.isFinite(rec.fuel)?rec.fuel:50,condition=Number.isFinite(rec.condition)?rec.condition:100;
+  if(fuel<=0||rec.breakdown){keys['z']=keys['w']=keys['q']=keys['a']=keys['s']=keys['d']=keys['arrowup']=keys['arrowdown']=keys['arrowleft']=keys['arrowright']=keys['shift']=false;}
+  const was=keys['shift'];keys['shift']=true;__abjOldUpdatePlayer(delta);keys['shift']=was;
+  const distance=before.distanceTo(player.position);
+  if(distance>.001){
+   rec.fuel=Math.max(0,fuel-distance*.012);
+   rec.condition=Math.max(0,condition-distance*.0015);
+   rec.distance=(Number(rec.distance)||0)+distance;
+   if(rec.condition<35&&!rec.breakdown&&Math.random()<delta*.018){rec.breakdown=true;showMessage('⚠️ Panne mécanique ! Arrête-toi et rejoins un garage pour réparer ton véhicule.');}
+   if(rec.fuel<=0&&fuel>0)showMessage('⛽ Panne sèche ! Le moteur est à l’arrêt. Rejoins une station-service.');
+   if(rec.breakdown)drivingVehicle.userData.breakdown=true;
+   if(Math.floor((Number(rec.distance)||0)/250)!==Math.floor(((Number(rec.distance)||0)-distance)/250))saveLifeProgress(false);
+  }
+  drivingVehicle.position.set(player.position.x,terrainHeight(player.position.x,player.position.z)+.04,player.position.z);drivingVehicle.rotation.y=player.rotation.y;
+  drivingVehicle.userData.wheels?.forEach(w=>{w.rotation.x+=delta*8;});
+ }else __abjOldUpdatePlayer(delta);
 };
 window.addEventListener('keydown',function(e){
  if(String(e.key).toLowerCase()!=='e'||!worldReady||!player||dialogOpen||panelOpen||mapOpen||phoneOpen)return;
