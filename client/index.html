@@ -1605,10 +1605,38 @@ function generateCity() {
       createNPCs(mobilePerformanceMode?90:190);
       npcPopulationCreated = true;
     }
-    createAbidjanTraffic(mobilePerformanceMode?80:180);
-    buildUrbanTrafficSignals();
+    // Démarrage rapide : un premier groupe de véhicules suffit pour ouvrir le monde.
+    // Les autres arrivent par petits lots afin de laisser le navigateur rafraîchir l'écran
+    // et éviter que la barre de chargement reste figée à 93 % pendant une longue boucle.
+    const trafficTarget = mobilePerformanceMode ? 80 : 180;
+    const firstTrafficBatch = Math.min(20, trafficTarget);
+    createAbidjanTraffic(firstTrafficBatch);
     worldReady = true;
     startPlayerAtHome();
+
+    let trafficRemaining = trafficTarget - firstTrafficBatch;
+    const addTrafficBatch = () => {
+      if (trafficRemaining > 0) {
+        const batch = Math.min(20, trafficRemaining);
+        trafficRemaining -= batch;
+        try {
+          createAbidjanTraffic(batch);
+        } catch (trafficError) {
+          console.warn('Création différée du trafic interrompue ; le monde reste jouable.', trafficError);
+          trafficRemaining = 0;
+        }
+        if (trafficRemaining > 0) {
+          requestAnimationFrame(addTrafficBatch);
+          return;
+        }
+      }
+      // Les feux et panneaux sont ajoutés après l'entrée du joueur dans le monde.
+      requestAnimationFrame(() => {
+        try { buildUrbanTrafficSignals(); }
+        catch (signalError) { console.warn('Habillage différé des carrefours indisponible.', signalError); }
+      });
+    };
+    requestAnimationFrame(addTrafficBatch);
   }).catch(err => {
     console.warn('Données OSM indisponibles, chargement du quartier de secours', err);
     document.getElementById('mapStatus').textContent = 'Carte OSM indisponible : circulation désactivée jusqu’au chargement des vraies routes.';
