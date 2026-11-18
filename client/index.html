@@ -6961,6 +6961,7 @@ function v16ValidateTrafficRoutes(){
  {id:'afgamer',name:'AF GAMER CI',emoji:'🎮',category:'Outils',desc:'Contacter le studio et envoyer des suggestions.'},
  {id:'google',name:'Recherche ABJ',emoji:'🔎',category:'Outils',desc:'Rechercher des lieux et informations dans la ville.'}
 ];
+ window.ABJ_OPEN_PROPERTY_MARKET=function(listingId){const item=(plotListings.find(p=>p.id===listingId)?'land':'rent');openPhone();openPhoneApp('immoabj');renderProjectsV19(item);};
  function addInstalledIcon(app){const host=document.getElementById('phoneApps');if(!host||host.querySelector('[data-app="'+app.id+'"]'))return;let grid=host.querySelector('.phoneAppsPage:last-child');if(!grid||grid.querySelectorAll('.phoneApp').length>=9){grid=document.createElement('div');grid.className='phoneAppsPage';host.appendChild(grid);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=app.id;b.innerHTML='<span>'+app.emoji+'</span>'+app.name;b.onclick=()=>openPhoneApp(app.id);grid.appendChild(b);}
  function renderAppStore(){
  const c=$('phoneAppContent');if(!c)return;
@@ -7649,7 +7650,7 @@ const __abjOldCityInteract=interactWithCityLife;
 interactWithCityLife=function(){
  if(player&&!currentInterior){
   const parcel=poi.filter(p=>p.type==='property-lot').sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];
-  if(parcel&&Math.hypot(parcel.x-player.position.x,parcel.z-player.position.z)<16){openPhone();openPhoneApp('immoabj');showMessage('🏘️ '+parcel.nom+' · Consulte Immo ABJ pour visiter et effectuer les démarches.');return true;}
+  if(parcel&&Math.hypot(parcel.x-player.position.x,parcel.z-player.position.z)<16){if(window.ABJ_OPEN_PROPERTY_MARKET)window.ABJ_OPEN_PROPERTY_MARKET(parcel.data.listingId);else{openPhone();openPhoneApp('immoabj');}showMessage('🏘️ '+parcel.nom+' · Tu consultes maintenant cette catégorie dans Immo ABJ.');return true;}
   const service=poi.filter(p=>p.type==='station-service'||p.type==='garage-mecanique').sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];
   if(service&&Math.hypot(service.x-player.position.x,service.z-player.position.z)<24){
    const targetMesh=drivingVehicle||ownedVehicleMeshes.filter(v=>v.visible&&Math.hypot(v.position.x-service.x,v.position.z-service.z)<18).sort((a,b)=>Math.hypot(a.position.x-service.x,a.position.z-service.z)-Math.hypot(b.position.x-service.x,b.position.z-service.z))[0];
