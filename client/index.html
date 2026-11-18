@@ -1025,6 +1025,8 @@ async function activateGameAccount(phone){
   // Sauvegarde existante : reprendre la partie sans repasser par le créateur.
   let hasSave=false;
   try{hasSave=!!safeGet(saveKey);}catch(e){hasSave=false;}
+  window.__ABJ_NEW_ACCOUNT_SESSION=!hasSave;
+  initialHomeEntered=false;
   if(hasSave){
     loadLifeProgress();
     if(isCreatorAccount(canonical)){applyCreatorPrivileges();saveLifeProgress(false);}
@@ -4034,8 +4036,9 @@ function startPlayerAtHome(){
   const accountKey=normalizeIvorianMobile(activeGameAccount||'guest');
   let homeHash=2166136261;
   for(let i=0;i<accountKey.length;i++)homeHash=Math.imul(homeHash^accountKey.charCodeAt(i),16777619);
-  const preferredDoorId=lifeState.housing&&lifeState.housing.lease&&lifeState.housing.lease.doorId;
-  const nearest=homes.find(d=>d.id===preferredDoorId)||homes[(homeHash>>>0)%homes.length];
+  const savedLeaseId=!window.__ABJ_NEW_ACCOUNT_SESSION&&lifeState.housing&&lifeState.housing.lease&&lifeState.housing.lease.doorId;
+  const nearest=homes.find(d=>d.id===savedLeaseId)||homes[(homeHash>>>0)%homes.length];
+  if(window.__ABJ_NEW_ACCOUNT_SESSION){lifeState.housing=Object.assign({},lifeState.housing||{},{ownedDoorId:null,lease:null});}
   const nx=nearest.x+nearest.normal.x*3.6, nz=nearest.z+nearest.normal.z*3.6;
   player.position.set(nx,terrainHeight(nx,nz)+.02,nz);
   camera.position.set(nx+6,player.position.y+4.2,nz+8);
@@ -4044,7 +4047,7 @@ function startPlayerAtHome(){
   // Marquer comme logement du joueur si aucun n'est encore lié
   try{
     lifeState.housing=lifeState.housing||{ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1};
-    if(!lifeState.housing.ownedDoorId&&!lifeState.housing.lease){
+    if(window.__ABJ_NEW_ACCOUNT_SESSION||(!lifeState.housing.ownedDoorId&&!lifeState.housing.lease)){
       lifeState.housing.lease={doorId:(interiors[nearest.id]&&interiors[nearest.id].apartments&&interiors[nearest.id].apartments[0]?interiors[nearest.id].apartments[0].doorId:nearest.id),rent:2500,deposit:5000,startedDay:lifeState.housing.gameDay||1};
     }
   }catch(e){}
