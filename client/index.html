@@ -7460,8 +7460,9 @@ interactWithCityLife=function(){
  if(player&&!currentInterior){
   const service=poi.filter(p=>p.type==='station-service'||p.type==='garage-mecanique').sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];
   if(service&&Math.hypot(service.x-player.position.x,service.z-player.position.z)<24){
-   if(!drivingVehicle){showMessage('Approche ton véhicule personnel de '+service.nom+' puis interagis à nouveau.');return true;}
-   const rec=abjV19().ownedVehicles.find(v=>v.id===drivingVehicle.userData.ownedId);if(!rec){showMessage('Ce lieu ne peut intervenir que sur ton véhicule personnel.');return true;}
+   const targetMesh=drivingVehicle||ownedVehicleMeshes.filter(v=>v.visible&&Math.hypot(v.position.x-service.x,v.position.z-service.z)<18).sort((a,b)=>Math.hypot(a.position.x-service.x,a.position.z-service.z)-Math.hypot(b.position.x-service.x,b.position.z-service.z))[0];
+   if(!targetMesh){showMessage('Amène ton véhicule personnel près de '+service.nom+', descends et approche-toi du comptoir de service.');return true;}
+   const rec=abjV19().ownedVehicles.find(v=>v.id===targetMesh.userData.ownedId);if(!rec){showMessage('Ce lieu ne peut intervenir que sur ton véhicule personnel.');return true;}
    if(service.type==='station-service'){
     const fuel=Number.isFinite(rec.fuel)?rec.fuel:50,needed=Math.max(0,50-fuel);if(needed<.5){showMessage('⛽ Le réservoir est déjà plein.');return true;}
     const litres=Math.min(needed,25),price=Math.ceil(litres*900);
@@ -7474,7 +7475,7 @@ interactWithCityLife=function(){
    const price=Math.max(2500,Math.ceil((100-condition)*650)+(rec.breakdown?12000:0));
    if(!confirm(service.nom+'\nDiagnostic et réparation complète : '+price.toLocaleString('fr-FR')+' FCFA ?'))return true;
    if(!abjChargeForApp(price,'Réparation automobile')){showMessage('Solde insuffisant pour la réparation.');return true;}
-   rec.condition=100;rec.breakdown=false;rec.fuel=Math.max(0,Number(rec.fuel)||0);drivingVehicle.userData.breakdown=false;
+   rec.condition=100;rec.breakdown=false;rec.fuel=Math.max(0,Number(rec.fuel)||0);targetMesh.userData.breakdown=false;
    saveLifeProgress(false);showMessage('🛠️ Réparation terminée. Ton véhicule est de nouveau opérationnel.');return true;
   }
   const school=poi.filter(p=>p.type==='auto-ecole').sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];if(school&&Math.hypot(school.x-player.position.x,school.z-player.position.z)<20){openPhone();openPhoneApp('autoecole');return true;}
