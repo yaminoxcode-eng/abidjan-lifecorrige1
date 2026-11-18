@@ -4385,8 +4385,8 @@ function updateLifeSimulation(delta){
   if(lifeState.cheats&&lifeState.cheats.social)lifeState.social=100;
   if(lifeState.cheats&&lifeState.cheats.health)lifeState.health=100;
   clampMoney();
-  lifeState.minute+=delta*1.5; // 16 minutes réelles par journée de 24 h
-  updateAirportFlights(); (8 min jour, 8 min nuit)
+  lifeState.minute+=delta*1.5; // 16 minutes réelles par journée de 24 h (8 min jour, 8 min nuit)
+  updateAirportFlights();
   while(lifeState.minute>=60){lifeState.minute-=60;const previousHour=lifeState.hour;lifeState.hour=(lifeState.hour+1)%24;if(previousHour===23){lifeState.housing=lifeState.housing||{ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1};lifeState.housing.gameDay=(lifeState.housing.gameDay||1)+1;processHousingBilling();}}
   const pct=(v)=>Math.round(Math.max(0,Math.min(100,v)))+'%';
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.style.width=pct(v);};
