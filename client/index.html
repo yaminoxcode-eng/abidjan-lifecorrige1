@@ -1597,6 +1597,7 @@ function generateCity() {
     createDrivingSchools();
     createTransitDepots();
     createFuelStationsAndRepairGarages();
+    createAbidjanAirport();
     createLandAndRentalParcels();
     document.getElementById('mapStatus').textContent += ' · rues, bâtiments et espaces verts issus du réseau cartographique';
     if (!npcPopulationCreated) {
@@ -1616,6 +1617,7 @@ function generateCity() {
     createAFGamerHQ();
     createDrivingSchools();
     createTransitDepots();
+    createAbidjanAirport();
     createLandAndRentalParcels();
     worldReady = true;startPlayerAtHome();
     if(mapOpen) drawBigMap();
@@ -4383,7 +4385,8 @@ function updateLifeSimulation(delta){
   if(lifeState.cheats&&lifeState.cheats.social)lifeState.social=100;
   if(lifeState.cheats&&lifeState.cheats.health)lifeState.health=100;
   clampMoney();
-  lifeState.minute+=delta*1.5; // 16 minutes réelles par journée de 24 h (8 min jour, 8 min nuit)
+  lifeState.minute+=delta*1.5; // 16 minutes réelles par journée de 24 h
+  updateAirportFlights(); (8 min jour, 8 min nuit)
   while(lifeState.minute>=60){lifeState.minute-=60;const previousHour=lifeState.hour;lifeState.hour=(lifeState.hour+1)%24;if(previousHour===23){lifeState.housing=lifeState.housing||{ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1};lifeState.housing.gameDay=(lifeState.housing.gameDay||1)+1;processHousingBilling();}}
   const pct=(v)=>Math.round(Math.max(0,Math.min(100,v)))+'%';
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.style.width=pct(v);};
@@ -5349,6 +5352,7 @@ function openPhoneApp(app){
   if(app==='camera'){closePhone();openGameCamera();return;}
   if(app==='gallery'){renderGameGallery();}
   if(app==='transport'){apps.style.display='none';content.style.display='block';renderTransportApp();return;}
+  if(app==='voyageabj'){apps.style.display='none';content.style.display='block';renderAirTravelApp();return;}
   if(app==='yango'){apps.style.display='none';content.style.display='block';renderCourseGoApp();return;}
   if(app==='mairie'){apps.style.display='none';content.style.display='block';renderMairieApp();return;}
   if(app==='sante'){apps.style.display='none';content.style.display='block';renderHealthApp();return;}
@@ -6937,6 +6941,7 @@ function v16ValidateTrafficRoutes(){
  {id:'transport',name:'Transports publics',emoji:'🚌',category:'Mobilité',desc:'Consulter les arrêts, gares, gbakas et lignes de bus.'},
  {id:'myv',name:'MY V',emoji:'🚘',category:'Mobilité',desc:'Acheter et gérer tes voitures, motos et leurs documents.'},
  {id:'autoecole',name:'Auto-école',emoji:'🪪',category:'Mobilité',desc:'Suivre les cours et préparer ton permis de conduire.'},
+ {id:'voyageabj',name:'Voyage ABJ',emoji:'✈️',category:'Voyages',desc:'Consulter les horaires de vols, préparer tes documents et organiser un voyage.'},
  {id:'wave',name:'Wave',emoji:'💸',category:'Finances',desc:'Consulter ton solde WaveABJ et effectuer des paiements du jeu.'},
  {id:'banque',name:'Banque ABJ',emoji:'🏦',category:'Finances',desc:'Consulter ton compte, tes opérations et tes transferts.'},
  {id:'proemploi',name:'Pro Emploi',emoji:'🧰',category:'Emploi & carrière',desc:'Chercher un emploi, suivre tes contrats et tes missions.'},
@@ -7441,6 +7446,140 @@ function createDrivingSchools(){
   poi.push({x,z,type:'auto-ecole',nom:'Auto-école '+q.name,data:{district:q.name,description:'Centre de formation à la conduite et préparation au permis'}});
  });
 }
+
+/* Aéroport international Félix-Houphouët-Boigny : terminal, piste, intérieur et vols simulés. */
+function createAbidjanAirport(){
+ if(!scene||window.__ABJ_AIRPORT_CREATED)return;window.__ABJ_AIRPORT_CREATED=true;
+ const center=geoToWorld(5.261,-3.926),x=center.x,z=center.z;
+ const g=new THREE.Group();
+ const mat=(color,roughness=.75,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
+ const concrete=mat(0xb9b8b1,.95),asphalt=mat(0x343b40,.98),wall=mat(0xe5e0d4),roof=mat(0x647780,.7,.25),glass=new THREE.MeshStandardMaterial({color:0x65a6bb,roughness:.2,metalness:.12,transparent:true,opacity:.72}),dark=mat(0x25333b),yellow=mat(0xf1c65a),white=mat(0xf4f1e7);
+ const box=(parent,w,h,d,m,px,py,pz)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(px,py,pz);parent.add(o);return o;};
+ const cyl=(parent,r1,r2,h,m,px,py,pz,seg=10)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,seg),m);o.position.set(px,py,pz);parent.add(o);return o;};
+ // Parvis d'accueil, parking et voies de dépose-minute.
+ box(g,420,.22,260,concrete,0,.02,150);
+ box(g,360,.12,34,asphalt,0,.2,255);
+ for(let n=-8;n<=8;n++)box(g,.16,.025,18,white,n*10,.28,255);
+ for(let n=-5;n<=5;n++){box(g,2.5,.08,12,dark,n*28,.28,210);box(g,2.2,.05,10,yellow,n*28,.34,210);}
+ // Terminal principal : halls vitrés, ailes latérales, toiture et auvent de dépose.
+ box(g,150,18,42,wall,0,9,70);
+ box(g,144,1.1,46,roof,0,18.4,70);
+ box(g,130,12,.55,glass,0,9,48.7);
+ box(g,130,12,.55,glass,0,9,91.3);
+ for(let px=-60;px<=60;px+=20){box(g,.7,14,.9,white,px,9,48.1);box(g,.7,14,.9,white,px,9,91.9);}
+ box(g,40,5,9,dark,0,15,46);
+ // Panneau monumental.
+ const signCanvas=document.createElement('canvas');signCanvas.width=1024;signCanvas.height=256;const sc=signCanvas.getContext('2d');sc.fillStyle='#102d3a';sc.fillRect(0,0,1024,256);sc.strokeStyle='#d7b65f';sc.lineWidth=9;sc.strokeRect(12,12,1000,232);sc.fillStyle='#fff2cf';sc.textAlign='center';sc.font='bold 62px Arial';sc.fillText('AÉROPORT INTERNATIONAL',512,100);sc.font='bold 43px Arial';sc.fillText('FÉLIX-HOUPHOUËT-BOIGNY · ABIDJAN',512,174);
+ const sign=new THREE.Mesh(new THREE.PlaneGeometry(47,11.75),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signCanvas),side:THREE.DoubleSide}));sign.position.set(0,23,47.8);g.add(sign);
+ // Tour de contrôle vitrée.
+ box(g,12,34,12,wall,92,17,38);box(g,17,5,17,glass,92,34,38);box(g,18,1,18,dark,92,37,38);box(g,10,3,10,roof,92,40,38);
+ // Passerelles d'embarquement stylisées et portes avion.
+ for(let n=0;n<3;n++){const px=-42+n*42;box(g,17,1.2,5,roof,px,8,32);box(g,4,5,5,glass,px+7,6,32);box(g,2,.4,6,yellow,px+15,8,32);}
+ // Piste principale et taxiway, éloignées du terminal.
+ box(g,1900,.3,110,asphalt,0,.0,-300);
+ box(g,1820,.05,2.2,white,0,.19,-300);
+ for(let px=-850;px<=850;px+=85){box(g,28,.04,1.1,white,px,.2,-300);}
+ box(g,1100,.25,28,asphalt,0,.0,-205);
+ for(let px=-520;px<=520;px+=80){box(g,24,.035,.8,yellow,px,.16,-205);}
+ // Bords et feux de piste.
+ for(const side of [-1,1])for(let px=-900;px<=900;px+=60){const lamp=new THREE.Mesh(new THREE.SphereGeometry(1.35,7,6),new THREE.MeshBasicMaterial({color:0xc8f0ff}));lamp.position.set(px,.9,-300+side*55);g.add(lamp);}
+ for(let px=-850;px<=850;px+=100){const light=new THREE.Mesh(new THREE.SphereGeometry(1.1,7,6),new THREE.MeshBasicMaterial({color:0xffd37a}));light.position.set(px,.8,-205);g.add(light);}
+ // Hangar de maintenance et zone de fret.
+ box(g,70,15,42,wall,-145,7.5,155);box(g,72,1,44,roof,-145,15.5,155);box(g,24,11,.5,dark,-145,5.5,133);
+ for(let n=0;n<4;n++)box(g,8,5,5,yellow,-175+n*20,2.5,185);
+ // Véhicules de piste : navette et camion de piste.
+ box(g,13,3.8,5,mat(0xe4c94e),-55,2.1,123);box(g,8,1.8,5.2,glass,-55,4.7,123);
+ box(g,10,3.2,4,mat(0xd6e0e2),52,1.8,120);box(g,5,1.2,4.2,glass,52,3.9,120);
+ g.position.set(x,terrainHeight(x,z),z);scene.add(g);
+ addObstacle(x,z+70,78,24,11);addObstacle(x-145,z+155,38,24,10);
+ // Hall intérieur, accessible par la porte principale.
+ const id='abj-airport-terminal';
+ interiors[id]=generateInterior(id,44,27,1,0xe5e0d4,'plateau');
+ const room=interiors[id],floor=room&&room.floors&&room.floors[0];
+ if(floor){
+  const fm=mat(0xc7c6bd),counter=mat(0x263d4b),seat=mat(0x344d5b),gold=mat(0xd6b15d);
+  const add=(geo,m,px,py,pz)=>{const o=new THREE.Mesh(geo,m);o.position.set(px,py,pz);floor.add(o);return o;};
+  // Comptoirs d'enregistrement et bornes automatiques.
+  for(let n=0;n<4;n++){add(new THREE.BoxGeometry(6,1.3,1.8),counter,-15+n*10,1.05,-7);add(new THREE.BoxGeometry(2.8,1.2,.12),glass,-15+n*10,2.2,-7.9);add(new THREE.BoxGeometry(1.8,.8,.8),dark,-15+n*10,2.7,-7);}
+  // Rangées de sièges d'attente.
+  for(let row=0;row<3;row++)for(let col=0;col<6;col++){const xx=-17+col*6,zz=-1+row*4;add(new THREE.BoxGeometry(2.2,.5,1.8),seat,xx,1,zz);add(new THREE.BoxGeometry(2.2,1.5,.35),seat,xx,1.9,zz-.72);}
+  // Portiques de sécurité et guichets d'information.
+  for(let n=0;n<2;n++){add(new THREE.BoxGeometry(2.6,4,.25),gold,-8+n*16,2,9);add(new THREE.BoxGeometry(2.1,.3,2.4),dark,-8+n*16,3.7,9);}
+  add(new THREE.BoxGeometry(9,1.2,2),counter,16,1.1,10);
+  const boardCanvas=document.createElement('canvas');boardCanvas.width=768;boardCanvas.height=300;const bc=boardCanvas.getContext('2d');bc.fillStyle='#102a39';bc.fillRect(0,0,768,300);bc.fillStyle='#f3d27e';bc.font='bold 46px Arial';bc.fillText('DÉPARTS / ARRIVÉES',34,72);bc.fillStyle='#fff';bc.font='30px Arial';bc.fillText('ENREGISTREMENT · CONTRÔLE · EMBARQUEMENT',34,140);bc.fillText('VOLS SIMULÉS — HORAIRES DU JEU',34,205);
+  const board=new THREE.Mesh(new THREE.PlaneGeometry(17,6.6),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(boardCanvas),side:THREE.DoubleSide}));board.position.set(0,5.5,-12.8);floor.add(board);
+ }
+ doors.push({x:x,z:z+94,id,rot:0,normal:new THREE.Vector3(0,0,1),home:false,buildingType:'airport',buildingName:'Aéroport international Félix-Houphouët-Boigny',commune:'Port-Bouët'});
+ poi.push({x:x,z:z+110,type:'airport-terminal',nom:'Aéroport international Félix-Houphouët-Boigny',data:{service:'airport'}});
+ poi.push({x:x+12,z:z+84,type:'airport-checkin',nom:'Comptoirs d’enregistrement',data:{service:'airport'}});
+ poi.push({x:x-12,z:z+84,type:'airport-gate',nom:'Porte d’embarquement',data:{service:'airport'}});
+ // Avions de ligne modélisés : fuselage, cockpit, ailes, empennage et réacteurs.
+ function makeAirliner(livery){
+  const plane=new THREE.Group(),body=mat(0xf0eee7,.38,.15),wing=mat(0xd6dde0,.42,.2),accent=mat(livery,.4,.15),windowMat=mat(0x263e55,.24,.35),engine=mat(0x65727a,.35,.55);
+  const fus=new THREE.Mesh(new THREE.CylinderGeometry(4.1,4.1,76,16),body);fus.rotation.z=Math.PI/2;plane.add(fus);
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(4.1,15,16),body);nose.rotation.z=-Math.PI/2;nose.position.x=45;plane.add(nose);
+  const tail=new THREE.Mesh(new THREE.ConeGeometry(4.1,12,16),body);tail.rotation.z=Math.PI/2;tail.position.x=-44;plane.add(tail);
+  const wings=new THREE.Mesh(new THREE.BoxGeometry(18,1.1,62),wing);wings.position.set(-2,0,0);plane.add(wings);
+  const rearWing=new THREE.Mesh(new THREE.BoxGeometry(10,.8,26),wing);rearWing.position.set(-35,2,0);plane.add(rearWing);
+  const fin=new THREE.Mesh(new THREE.BoxGeometry(13,13,1.2),accent);fin.position.set(-35,8,0);plane.add(fin);
+  for(const side of [-1,1]){const motor=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,13,12),engine);motor.rotation.x=Math.PI/2;motor.position.set(0,-3,side*17);plane.add(motor);}
+  for(let n=0;n<13;n++){const w=new THREE.Mesh(new THREE.BoxGeometry(1.5,1.1,.18),windowMat);w.position.set(-25+n*4,2.4,-4.13);plane.add(w);const w2=w.clone();w2.position.z=4.13;plane.add(w2);}
+  const stripe=new THREE.Mesh(new THREE.BoxGeometry(48,.55,8.25),accent);stripe.position.set(-2,1.3,0);plane.add(stripe);
+  return plane;
+ }
+ const planes=[makeAirliner(0xd73b36),makeAirliner(0x2875a7)];
+ planes.forEach(p=>{p.visible=false;scene.add(p);});
+ window.__ABJ_AIRPORT={x,z,planes,flights:[
+  {id:'CI201',airline:'Air Côte d’Ivoire',destination:'Bouaké',time:'06:30',minute:390,kind:'departure',fare:42000},
+  {id:'CI214',airline:'Air Côte d’Ivoire',destination:'San-Pédro',time:'09:45',minute:585,kind:'departure',fare:38000},
+  {id:'CI305',airline:'Air Côte d’Ivoire',destination:'Korhogo',time:'13:20',minute:800,kind:'departure',fare:46000},
+  {id:'CI411',airline:'Air Côte d’Ivoire',destination:'Man',time:'17:40',minute:1060,kind:'departure',fare:44000},
+  {id:'CI522',airline:'Air Côte d’Ivoire',destination:'Abengourou',time:'21:15',minute:1275,kind:'departure',fare:40000},
+  {id:'CI101',airline:'Air Côte d’Ivoire',destination:'Abidjan',time:'07:20',minute:440,kind:'arrival',fare:0},
+  {id:'CI118',airline:'Air Côte d’Ivoire',destination:'Abidjan',time:'15:10',minute:910,kind:'arrival',fare:0}
+ ]};
+ console.info('Aéroport d’Abidjan construit : terminal, hall, piste, tour et avions de ligne.');
+}
+function updateAirportFlights(){
+ const ap=window.__ABJ_AIRPORT;if(!ap||!lifeState)return;
+ const now=(Number(lifeState.hour)||0)*60+(Number(lifeState.minute)||0);
+ ap.planes.forEach((plane,index)=>{
+  const flight=ap.flights.filter(f=>f.kind===(index===0?'departure':'arrival')).map(f=>({...f,delta:((now-f.minute+1440)%1440)})).filter(f=>f.delta<34).sort((a,b)=>a.delta-b.delta)[0];
+  if(!flight){plane.visible=false;return;}
+  plane.visible=true;
+  const t=flight.delta/34,dir=flight.kind==='departure'?1:-1;
+  const start=flight.kind==='departure'?-1050:1050,end=flight.kind==='departure'?1150:-1150;
+  const px=start+(end-start)*t,alt=flight.kind==='departure'?Math.max(8,Math.sin(t*Math.PI*.5)*170):Math.max(8,Math.sin((1-t)*Math.PI*.5)*170);
+  plane.position.set(ap.x+px,terrainHeight(ap.x+px,ap.z-300)+alt,ap.z-300+(flight.kind==='departure'?0:Math.sin(t*Math.PI)*170));
+  plane.rotation.set(0,flight.kind==='departure'?0:Math.PI,flight.kind==='departure'?Math.min(.12,t*.18):Math.max(-.12,-(1-t)*.18));
+ });
+}
+function renderAirTravelApp(){
+ const content=document.getElementById('phoneAppContent');if(!content)return;
+ const docs=lifeState.documents||{},hasPassport=!!docs.passport,hasCni=!!docs.cni,ap=window.__ABJ_AIRPORT;
+ const flights=ap?ap.flights.filter(f=>f.kind==='departure'):[];
+ const rows=flights.map(f=>'<article style="padding:10px;margin:8px 0;border:1px solid #ffffff30;border-radius:10px;background:#ffffff0d"><div style="display:flex;justify-content:space-between;gap:8px"><b>✈️ '+f.id+' · '+f.airline+'</b><b>'+f.time+'</b></div><div>Destination : '+f.destination+'</div><div style="font-size:11px;color:#c8d7e3">Tarif simulé : '+f.fare.toLocaleString('fr-FR')+' FCFA · '+(hasPassport&&hasCni?'Dossier de voyage prêt':'Documents requis : passeport et CNI')+'</div><button data-flight="'+f.id+'">Préparer ce voyage</button></article>').join('');
+ content.innerHTML='<button id="phoneBack">← Applications</button><h3>✈️ Voyage ABJ</h3><p style="font-size:12px;color:#c8d7e3">Horaires simulés synchronisés avec l’horloge du jeu. Les avions sont visibles au-dessus de la ville pendant leurs phases de départ et d’arrivée.</p><div class="v19card"><b>Documents nécessaires</b><p>1. Extrait d’acte de naissance<br>2. Carte nationale d’identité (CNI)<br>3. Passeport ivoirien valide</p><p style="color:'+(hasCni&&hasPassport?'#8ce0a4':'#ffd28a')+'">'+(hasCni&&hasPassport?'✓ Ton dossier de voyage est prêt.':'Dossier incomplet : rends-toi à la Mairie ABJ pour obtenir les documents manquants.')+'</p></div><h4>Tableau des départs — Abidjan</h4>'+rows+'<p style="font-size:11px;color:#ffd28a">⚠️ Les villes extérieures à Abidjan ne sont pas encore accessibles. Tu peux consulter les vols et préparer ton dossier, mais aucun billet ne sera débité tant que les destinations ne seront pas ouvertes.</p>';
+ content.querySelector('#phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
+ content.querySelectorAll('[data-flight]').forEach(b=>b.onclick=()=>{const f=flights.find(x=>x.id===b.dataset.flight);if(!f)return;lifeState.airTravel=lifeState.airTravel||{};lifeState.airTravel.pendingFlight=f.id;saveLifeProgress(false);showMessage(hasCni&&hasPassport?'✈️ Pré-réservation '+f.id+' enregistrée. Présente-toi à l’aéroport : les destinations extérieures ne sont pas encore ouvertes.':'Pour voyager, obtiens d’abord ta CNI et ton passeport à la mairie.');});
+}
+function interactWithAirport(){
+ const ap=window.__ABJ_AIRPORT;if(!ap||!player)return false;
+ const p=poi.filter(x=>['airport-terminal','airport-checkin','airport-gate'].includes(x.type)).sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];
+ if(!p||Math.hypot(p.x-player.position.x,p.z-player.position.z)>24)return false;
+ const docs=lifeState.documents||{},ready=!!docs.cni&&!!docs.passport,travel=lifeState.airTravel||{},pending=travel.pendingFlight;
+ if(p.type==='airport-gate'){
+  if(!ready){showMessage('🛂 Embarquement refusé : présente ta CNI et ton passeport valides. Rends-toi à la Mairie ABJ.');return true;}
+  if(!pending){showMessage('✈️ Dossier contrôlé. Choisis d’abord un vol dans l’application Voyage ABJ.');return true;}
+  showMessage('✈️ Documents contrôlés et pré-réservation '+pending+' reconnue. Les destinations hors d’Abidjan ne sont pas encore disponibles. Aucun billet n’a été débité.');return true;
+ }
+ if(p.type==='airport-checkin'){
+  if(!ready){showMessage('🧾 Enregistrement impossible : il faut une CNI et un passeport.');return true;}
+  showMessage(pending?'🧳 Pré-enregistrement '+pending+' confirmé. Passe à la porte d’embarquement pour le contrôle final.':'🧳 Tes documents sont conformes. Sélectionne un vol dans Voyage ABJ pour continuer.');return true;
+ }
+ showMessage('🏢 Bienvenue à l’Aéroport international Félix-Houphouët-Boigny. Entre dans le terminal ou consulte Voyage ABJ sur ton téléphone.');return true;
+}
+
 function createTransitDepots(){
  if(!scene||window.__ABJ_DEPOTS_CREATED)return;window.__ABJ_DEPOTS_CREATED=true;
  const base=geoToWorld(5.323,-4.02);
@@ -7648,6 +7787,7 @@ function createFuelStationsAndRepairGarages(){
 }
 const __abjOldCityInteract=interactWithCityLife;
 interactWithCityLife=function(){
+ if(player&&!currentInterior&&interactWithAirport())return true;
  if(player&&!currentInterior){
   const parcel=poi.filter(p=>p.type==='property-lot').sort((a,b)=>Math.hypot(a.x-player.position.x,a.z-player.position.z)-Math.hypot(b.x-player.position.x,b.z-player.position.z))[0];
   if(parcel&&Math.hypot(parcel.x-player.position.x,parcel.z-player.position.z)<16){if(window.ABJ_OPEN_PROPERTY_MARKET)window.ABJ_OPEN_PROPERTY_MARKET(parcel.data.listingId);else{openPhone();openPhoneApp('immoabj');}showMessage('🏘️ '+parcel.nom+' · Tu consultes maintenant cette catégorie dans Immo ABJ.');return true;}
