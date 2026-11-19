@@ -2037,7 +2037,7 @@ function buildOSMRoads(ways, nodes) {
     const aa={x:a.x-ux*extend,z:a.z-uz*extend},bb={x:b.x+ux*extend,z:b.z+uz*extend};
     const nx=-dz/len*w/2,nz=dx/len*w/2,k=vertices.length/3;
     const p1={x:aa.x+nx,z:aa.z+nz},p2={x:aa.x-nx,z:aa.z-nz},p3={x:bb.x-nx,z:bb.z-nz},p4={x:bb.x+nx,z:bb.z+nz};
-    const lift=Math.max(Number(y)||0,.48);vertices.push(p1.x,terrainHeight(p1.x,p1.z)+lift,p1.z,p2.x,terrainHeight(p2.x,p2.z)+lift,p2.z,p3.x,terrainHeight(p3.x,p3.z)+lift,p3.z,p4.x,terrainHeight(p4.x,p4.z)+lift,p4.z);
+    const lift=Math.max(Number(y)||0,.025);vertices.push(p1.x,terrainHeight(p1.x,p1.z)+lift,p1.z,p2.x,terrainHeight(p2.x,p2.z)+lift,p2.z,p3.x,terrainHeight(p3.x,p3.z)+lift,p3.z,p4.x,terrainHeight(p4.x,p4.z)+lift,p4.z);
     indices.push(k,k+1,k+2,k,k+2,k+3);
   }
   function addWalkQuad(a,b,w,y){
@@ -2045,10 +2045,10 @@ function buildOSMRoads(ways, nodes) {
     const ext=Math.min(1.2,len*.08),ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext};
     const nx=-dz/len*w/2,nz=dx/len*w/2,k=walkVertices.length/3;
     const p1={x:aa.x+nx,z:aa.z+nz},p2={x:aa.x-nx,z:aa.z-nz},p3={x:bb.x-nx,z:bb.z-nz},p4={x:bb.x+nx,z:bb.z+nz};
-    const lift=Math.max(Number(y)||0,.50);walkVertices.push(p1.x,terrainHeight(p1.x,p1.z)+lift,p1.z,p2.x,terrainHeight(p2.x,p2.z)+lift,p2.z,p3.x,terrainHeight(p3.x,p3.z)+lift,p3.z,p4.x,terrainHeight(p4.x,p4.z)+lift,p4.z);
+    const lift=Math.max(Number(y)||0,.025);walkVertices.push(p1.x,terrainHeight(p1.x,p1.z)+lift,p1.z,p2.x,terrainHeight(p2.x,p2.z)+lift,p2.z,p3.x,terrainHeight(p3.x,p3.z)+lift,p3.z,p4.x,terrainHeight(p4.x,p4.z)+lift,p4.z);
     walkIndices.push(k,k+1,k+2,k,k+2,k+3);
   }
-  function addStripTo(a,b,w,y,verts,inds){const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<1)return;const nx=-dz/len*w/2,nz=dx/len*w/2,ext=Math.min(.8,len*.04),ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext},k=verts.length/3;const p=[{x:aa.x+nx,z:aa.z+nz},{x:aa.x-nx,z:aa.z-nz},{x:bb.x-nx,z:bb.z-nz},{x:bb.x+nx,z:bb.z+nz}];const lift=Math.max(Number(y)||0,.56);p.forEach(q=>verts.push(q.x,terrainHeight(q.x,q.z)+lift,q.z));inds.push(k,k+1,k+2,k,k+2,k+3);}
+  function addStripTo(a,b,w,y,verts,inds){const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<1)return;const nx=-dz/len*w/2,nz=dx/len*w/2,ext=Math.min(.8,len*.04),ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext},k=verts.length/3;const p=[{x:aa.x+nx,z:aa.z+nz},{x:aa.x-nx,z:aa.z-nz},{x:bb.x-nx,z:bb.z-nz},{x:bb.x+nx,z:bb.z+nz}];const lift=Math.max(Number(y)||0,.06);p.forEach(q=>verts.push(q.x,terrainHeight(q.x,q.z)+lift,q.z));inds.push(k,k+1,k+2,k,k+2,k+3);}
   ways.forEach(w=>{
     const tag=w.tags.highway;if(ignored.has(tag))return;
     const raw=w.nodes.map(id=>nodes.get(id)).filter(Boolean);if(raw.length<2)return;
@@ -2073,14 +2073,14 @@ function buildOSMRoads(ways, nodes) {
     const pts=simplifyRoadPoints(raw,tolerance);
     for(let i=1;i<pts.length;i++){
       const a=pts[i-1],b=pts[i],len=Math.hypot(b.x-a.x,b.z-a.z);if(len<.5)continue;
-      addQuad(a,b,width,.13);
+      addQuad(a,b,width,.025);
       if(['primary','secondary','tertiary','residential','living_street','unclassified'].includes(tag)){
         const nx=-(b.z-a.z)/len,nz=(b.x-a.x)/len,sidewalkWidth=(tag==='primary'||tag==='secondary')?3.1:2.55,side=width/2+sidewalkWidth/2+.12;
         const l1={x:a.x+nx*side,z:a.z+nz*side},l2={x:b.x+nx*side,z:b.z+nz*side};
         const r1={x:a.x-nx*side,z:a.z-nz*side},r2={x:b.x-nx*side,z:b.z-nz*side};
-        addWalkQuad(l1,l2,sidewalkWidth,.205);addWalkQuad(r1,r2,sidewalkWidth,.205);
-        addStripTo({x:a.x+nx*(width/2+.13),z:a.z+nz*(width/2+.13)},{x:b.x+nx*(width/2+.13),z:b.z+nz*(width/2+.13)},.28,.235,curbVertices,curbIndices);
-        addStripTo({x:a.x-nx*(width/2+.13),z:a.z-nz*(width/2+.13)},{x:b.x-nx*(width/2+.13),z:b.z-nz*(width/2+.13)},.28,.235,curbVertices,curbIndices);
+        addWalkQuad(l1,l2,sidewalkWidth,.025);addWalkQuad(r1,r2,sidewalkWidth,.025);
+        addStripTo({x:a.x+nx*(width/2+.13),z:a.z+nz*(width/2+.13)},{x:b.x+nx*(width/2+.13),z:b.z+nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
+        addStripTo({x:a.x-nx*(width/2+.13),z:a.z-nz*(width/2+.13)},{x:b.x-nx*(width/2+.13),z:b.z-nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
         if(['primary','secondary','tertiary'].includes(tag)&&len>24){const dash=5,space=13,ux=(b.x-a.x)/len,uz=(b.z-a.z)/len;for(let at=8;at<len-3;at+=space){const p0={x:a.x+ux*at,z:a.z+uz*at},p1={x:a.x+ux*Math.min(len,at+dash),z:a.z+uz*Math.min(len,at+dash)};addStripTo(p0,p1,.16,.205,markVertices,markIndices);}}
         pedestrianNodes.push(l1,l2,r1,r2);
       }
@@ -2120,12 +2120,12 @@ function decorateOSMStreets(){
       const a={x:r.a.x+nx*off*side,z:r.a.z+nz*off*side},b={x:r.b.x+nx*off*side,z:r.b.z+nz*off*side};
       const c={x:r.b.x+nx*(off+sidewalkWidth)*side,z:r.b.z+nz*(off+sidewalkWidth)*side};
       const d={x:r.a.x+nx*(off+sidewalkWidth)*side,z:r.a.z+nz*(off+sidewalkWidth)*side};
-      quad(sidewalkV,sidewalkI,a,b,c,d,.16);
+      quad(sidewalkV,sidewalkI,a,b,c,d,.025);
     }
     // Ligne centrale discontinue sur les grands axes uniquement.
     if(['motorway','trunk','primary','secondary','tertiary'].includes(r.type)&&r.width>=6){
       const dashCount=Math.min(8,Math.floor(len/18));
-      for(let j=0;j<dashCount;j++){const t=(j+.5)/dashCount,half=Math.min(3.2,len/(dashCount*3));const cx=r.a.x+dx*t,cz=r.a.z+dz*t;const a={x:cx+nx*.09,z:cz+nz*.09},b={x:cx-nx*.09,z:cz-nz*.09},c={x:cx-nx*.09+dx/len*half,z:cz-nz*.09+dz/len*half},d={x:cx+nx*.09+dx/len*half,z:cz+nz*.09+dz/len*half};quad(lineV,lineI,a,b,c,d,.205);}
+      for(let j=0;j<dashCount;j++){const t=(j+.5)/dashCount,half=Math.min(3.2,len/(dashCount*3));const cx=r.a.x+dx*t,cz=r.a.z+dz*t;const a={x:cx+nx*.09,z:cz+nz*.09},b={x:cx-nx*.09,z:cz-nz*.09},c={x:cx-nx*.09+dx/len*half,z:cz-nz*.09+dz/len*half},d={x:cx+nx*.09+dx/len*half,z:cz+nz*.09+dz/len*half};quad(lineV,lineI,a,b,c,d,.035);}
     }
     // Lampadaires à intervalles raisonnables le long des avenues et rues habitées.
     if(lampCount<(mobilePerformanceMode?80:230)&&['primary','secondary','tertiary','residential'].includes(r.type)){
