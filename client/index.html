@@ -8616,7 +8616,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   const sign=new THREE.Mesh(new THREE.PlaneGeometry(15,4.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signCanvas),transparent:true,side:THREE.DoubleSide}));sign.position.set(0,8.4,d/2+.3);g.add(sign);
   const canopy=new THREE.Mesh(new THREE.BoxGeometry(8,.45,3.2),new THREE.MeshStandardMaterial({color:0x7a285f,emissive:0x4b123c,emissiveIntensity:.55}));canopy.position.set(0,3.2,d/2+1.2);g.add(canopy);
   g.position.set(x,terrainHeight(x,z),z);g.rotation.y=best.yaw;scene.add(g);registerDistanceManagedBuilding(g);addObstacle(x,z,w,d,h+1);allBuildings.push({x,z,w,d,h:h+1,type:'nightclub',name:'Le Talon'});addPOI(x,z,'loisir','Le Talon',{category:'club',age:'18+'});
-  const id='talon-1',doorX=x-best.nx*10,doorZ=z-best.nz*10;
+  const id='talon-1',doorX=x+best.nx*10,doorZ=z+best.nz*10;
   const interior=generateInterior(id,w,d,1,0x303344,'maquis');interiors[id]=interior;
   const floor=interior.floors&&interior.floors[0];
   if(floor){
