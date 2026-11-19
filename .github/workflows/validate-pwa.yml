@@ -15,4 +15,6 @@ jobs:
         with:
           node-version: 20
       - name: Validate installable app and service worker
-        run: node client/tests/pwa-check.cjs
+        run: |
+          node client/tests/pwa-check.cjs
+          node client/tests/account-sync-check.cjs
