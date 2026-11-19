@@ -4448,6 +4448,7 @@ function loadLifeProgress(){
   try{
     const raw=safeGet(LIFE_SAVE_KEY); if(!raw)return;
     const saved=JSON.parse(raw);
+    if(saved.v19&&typeof saved.v19==='object'&&!Array.isArray(saved.v19)){lifeState.v19={...(lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{}),...saved.v19,installedApps:Array.isArray(saved.v19.installedApps)?[...new Set(saved.v19.installedApps.filter(x=>typeof x==='string'&&x.length<=48))].slice(0,80):[]};}
     if(saved.gameSettings&&typeof saved.gameSettings==='object')lifeState.gameSettings={graphics:['auto','performance','quality'].includes(saved.gameSettings.graphics)?saved.gameSettings.graphics:'auto',cameraSensitivity:Math.max(.5,Math.min(1.8,Number(saved.gameSettings.cameraSensitivity)||1)),showHints:saved.gameSettings.showHints!==false,controlMode:['auto','pc','touch'].includes(saved.gameSettings.controlMode)?saved.gameSettings.controlMode:'auto'};
     if(saved.worldPosition && Number.isFinite(saved.worldPosition.x) && Number.isFinite(saved.worldPosition.z)) pendingSavedWorldPosition={x:saved.worldPosition.x,z:saved.worldPosition.z,yaw:Number.isFinite(saved.worldPosition.yaw)?saved.worldPosition.yaw:0};
     if(Number.isFinite(saved.bankBalance))lifeState.bankBalance=Math.max(0,saved.bankBalance);if(Number.isFinite(saved.waveBalance))lifeState.waveBalance=Math.max(0,saved.waveBalance);if(Number.isFinite(saved.waveDailyWithdrawn))lifeState.waveDailyWithdrawn=Math.max(0,saved.waveDailyWithdrawn);if(typeof saved.waveDayKey==='string')lifeState.waveDayKey=saved.waveDayKey;if(Array.isArray(saved.waveNotifs))lifeState.waveNotifs=saved.waveNotifs.slice(0,12);if(saved.phoneSkin&&typeof saved.phoneSkin==='object'){lifeState.phoneSkin=saved.phoneSkin;try{applyPhoneSkin(lifeState.phoneSkin);}catch(e){}}['hunger','energy','social','hygiene','respect','health','money','hour','minute','workXP'].forEach(k=>{
@@ -4482,6 +4483,7 @@ function saveLifeProgress(show=true){
       hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,hygiene:lifeState.hygiene,respect:lifeState.respect,health:lifeState.health,
       money:lifeState.money,bankBalance:lifeState.bankBalance,waveBalance:lifeState.waveBalance||0,gameSettings:lifeState.gameSettings||{},waveDailyWithdrawn:lifeState.waveDailyWithdrawn,waveDayKey:lifeState.waveDayKey,waveNotifs:lifeState.waveNotifs,phoneSkin:lifeState.phoneSkin,hour:lifeState.hour,minute:lifeState.minute,documents:lifeState.documents,education:lifeState.education,cheats:lifeState.cheats,creatorTier:lifeState.creatorTier||'none',playerProfile:lifeState.playerProfile,
       job:lifeState.job,workXP:lifeState.workXP,bankTransactions:lifeState.bankTransactions,contacts:lifeState.contacts,messages:lifeState.messages,inventory:lifeState.inventory,homeDecor:lifeState.homeDecor,delivery:lifeState.delivery,creator:lifeState.creator,housing:lifeState.housing,projects:lifeState.projects||[],
+      v19:lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{},
       worldPosition:__worldPosition,
       savedAt:new Date().toISOString()
     };
