@@ -971,41 +971,7 @@ document.getElementById('togglePassword').addEventListener('click',()=>togglePas
 document.getElementById('togglePasswordConfirm').addEventListener('click',()=>togglePasswordField('accountPasswordConfirm','togglePasswordConfirm'));
 document.getElementById('toggleNewPassword').addEventListener('click',()=>togglePasswordField('accountNewPassword','toggleNewPassword'));
 document.getElementById('toggleNewPasswordConfirm').addEventListener('click',()=>togglePasswordField('accountNewPasswordConfirm','toggleNewPasswordConfirm'));
-// V1.23 — export/import de progression + snapshots de secours locaux.
-const ABJ_SAVE_SCHEMA_VERSION = 2;
-function abjCurrentSaveKey(){const p=activeGameAccount?normalizeIvorianMobile(activeGameAccount):null;return p?'abidjan-life-life-v1:'+p:LIFE_SAVE_KEY;}
-function abjExportSave(){
-  const phone=activeGameAccount?normalizeIvorianMobile(activeGameAccount):normalizeIvorianMobile(document.getElementById('accountPhone')?.value||'');
-  const key=phone?'abidjan-life-life-v1:'+phone:LIFE_SAVE_KEY;
-  const raw=safeGet(key)||safeGet(LIFE_SAVE_KEY);
-  if(!raw){showAccountStatus('Aucune progression locale à exporter.',true);return;}
-  let parsed;try{parsed=JSON.parse(raw);}catch(e){showAccountStatus('La sauvegarde locale est illisible : export annulé.',true);return;}
-  const payload={format:'abidjan-life-save',schemaVersion:ABJ_SAVE_SCHEMA_VERSION,exportedAt:new Date().toISOString(),phone:phone||null,save:parsed};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='Abidjan_Life_Sauvegarde_'+(phone?phone.replace(/\D/g,''):'locale')+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
-  showAccountStatus('Sauvegarde exportée. Garde ce fichier dans un endroit sûr.',false);
-}
-function abjImportSaveFile(file){
-  if(!file)return;const reader=new FileReader();reader.onload=()=>{
-    try{
-      const data=JSON.parse(String(reader.result||''));
-      if(!data||data.format!=='abidjan-life-save'||!data.save||typeof data.save!=='object')throw new Error('Format de sauvegarde non reconnu.');
-      const active=activeGameAccount?normalizeIvorianMobile(activeGameAccount):normalizeIvorianMobile(document.getElementById('accountPhone')?.value||'');
-      if(data.phone&&active&&normalizeIvorianMobile(data.phone)!==active)throw new Error('Cette sauvegarde appartient à un autre numéro. Connecte-toi au compte correspondant.');
-      if(!active&&!confirm('Aucun compte connecté. Importer cette sauvegarde dans la partie locale de cet appareil ?'))return;
-      const key=active?'abidjan-life-life-v1:'+active:LIFE_SAVE_KEY;
-      const current=safeGet(key);if(current){safeSet(key+':preimport:'+Date.now(),current);}
-      const clean=JSON.stringify(data.save);if(clean.length>8*1024*1024)throw new Error('Fichier trop volumineux (limite 8 Mo).');
-      safeSet(key,clean);if(active)safeSet(LIFE_SAVE_KEY,clean);
-      showAccountStatus('Sauvegarde importée. Recharge le jeu pour appliquer toute la progression.',false);
-    }catch(e){showAccountStatus('Import impossible : '+e.message,true);}
-  };reader.onerror=()=>showAccountStatus('Impossible de lire le fichier sélectionné.',true);reader.readAsText(file);
-}
-const __abjExportBtn=document.getElementById('abjExportSave'),__abjImportBtn=document.getElementById('abjImportSave'),__abjImportFile=document.getElementById('abjImportFile');
-if(__abjExportBtn)__abjExportBtn.addEventListener('click',abjExportSave);
-if(__abjImportBtn&&__abjImportFile)__abjImportBtn.addEventListener('click',()=>__abjImportFile.click());
-if(__abjImportFile)__abjImportFile.addEventListener('change',e=>{abjImportSaveFile(e.target.files&&e.target.files[0]);e.target.value='';});
-
+// Les sauvegardes sont gérées automatiquement par le compte et le stockage du jeu.
 document.getElementById('accountContinue').addEventListener('click',accountContinue);
 document.getElementById('accountForgot').addEventListener('click',openRecoverFlow);
  document.getElementById('accountSendRecoveryCode').addEventListener('click',async()=>{
