@@ -8563,7 +8563,14 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   }).catch(()=>{const box=document.getElementById('abjCallPlayers');if(box)box.textContent='Impossible de charger les joueurs.';});
  }
  const priorOpen=window.openPhoneApp;
+ const phoneRequirements={camera:['iphone','galaxy'],gallery:['iphone','galaxy'],youtube:['iphone','galaxy'],tiktok:['iphone','galaxy'],appels:['iphone','galaxy'],wave:['galaxy','iphone']};
  window.openPhoneApp=function(app){
+  const required=phoneRequirements[app];
+  if(required){
+   const id=String(lifeState.phoneSkin?.id||'default');
+   const model=id.startsWith('phone-iphone')?'iphone':id.startsWith('phone-galaxy')?'galaxy':'android';
+   if(!required.includes(model)){toast('📱 Cette application nécessite un téléphone iPhone ou Galaxy compatible. Équipe un modèle adapté depuis Boutique.');return;}
+  }
   if(app==='appels'){const apps=document.getElementById('phoneApps'),content=document.getElementById('phoneAppContent');if(apps)apps.style.display='none';if(content)content.style.display='block';renderCalls();return;}
   if(app==='recompenses'&&creatorRoleVerified)return priorOpen(app);
   return priorOpen(app);
