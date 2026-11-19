@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="apple-touch-icon" href="./icon.svg">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#092b46">
+<meta name="application-name" content="Abidjan Life">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Abidjan Life V1.24 — Ville vivante & sauvegarde renforcée</title>
@@ -300,24 +305,8 @@
     </div>
 
     <div id="accountRegisterFields" style="display:none">
-      <label for="accountEmail">Adresse e-mail de récupération (Gmail ou iCloud)</label>
-      <input id="accountEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com">
-      <label for="accountBirthDay">Jour de naissance</label>
-      <select id="accountBirthDay"></select>
-      <label for="accountBirthMonth">Mois de naissance</label>
-      <select id="accountBirthMonth">
-        <option value="">— Mois —</option>
-        <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
-        <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
-        <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
-        <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
-      </select>
-      <label for="accountParentName">Prénom de ta mère ou de ton père</label>
-      <input id="accountParentName" type="text" maxlength="40" placeholder="Prénom d’un parent" autocomplete="off">
-      <label for="accountPetName">Nom de ton animal de compagnie (ou « aucun »)</label>
-      <input id="accountPetName" type="text" maxlength="40" placeholder="Ex. Rex ou aucun" autocomplete="off">
-      <label for="accountSport">Sport préféré</label>
-      <input id="accountSport" type="text" maxlength="40" placeholder="Ex. Football, basketball…" autocomplete="off">
+      <label for="accountEmail">Adresse e-mail (facultative, pour récupérer le compte)</label>
+      <input id="accountEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com — facultatif">
       <label for="accountPasswordConfirm">Confirmer le mot de passe</label>
       <div style="display:flex;gap:6px;align-items:center">
         <input id="accountPasswordConfirm" type="password" placeholder="Retape le mot de passe" autocomplete="new-password" style="flex:1">
@@ -325,24 +314,14 @@
       </div>
     </div>
 
-    <div id="accountRecoverFields" style="display:none">
-      <p style="font-size:12px;color:#c5d8e4">Méthode 1 : réponds aux questions enregistrées lors de la création du compte. Les accents, majuscules et espaces superflus sont ignorés.</p>
-      <label for="accountRecoverParent">Prénom de ta mère ou de ton père</label>
-      <input id="accountRecoverParent" type="text" maxlength="40" autocomplete="off">
-      <label for="accountRecoverPet">Nom de ton animal de compagnie</label>
-      <input id="accountRecoverPet" type="text" maxlength="40" autocomplete="off">
-      <label for="accountRecoverSport">Sport préféré</label>
-      <input id="accountRecoverSport" type="text" maxlength="40" autocomplete="off">
-      <button type="button" id="accountOtherRecovery">Autre méthode : vérifier mon e-mail</button>
-    </div>
     <div id="accountEmailRecoverFields" style="display:none">
-      <p style="font-size:12px;color:#c5d8e4">Méthode 2 : saisis exactement l'adresse Gmail ou iCloud associée à ce compte.</p>
-      <label for="accountRecoverEmail">Adresse e-mail enregistrée</label>
+      <p style="font-size:12px;color:#c5d8e4">Saisis le numéro et l'adresse e-mail liés à ton compte. Un code sera envoyé à cette adresse si elle correspond.</p>
+      <label for="accountRecoverEmail">Adresse e-mail du compte</label>
       <input id="accountRecoverEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com">
-      <p id="accountRecoveryCodeNotice" style="font-size:11px;color:#ffe0a0"></p>
-      <label for="accountRecoveryCode">Code de vérification</label>
+      <button type="button" id="accountSendRecoveryCode">Envoyer le code de vérification</button>
+      <label for="accountRecoveryCode">Code reçu par e-mail</label>
       <input id="accountRecoveryCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Code à 6 chiffres">
-      <button type="button" id="accountSendRecoveryCode">Vérifier l'adresse et préparer un code</button>
+      <p id="accountRecoveryCodeNotice" style="font-size:11px;color:#ffe0a0"></p>
     </div>
 
     <div id="accountNewPasswordWrap" style="display:none">
@@ -361,14 +340,12 @@
     <div id="accountActions">
     <div id="accountStatus" role="status" aria-live="polite"></div>
 
-    <button class="primary" id="accountContinue" type="button">Continuer</button>
-    <button type="button" id="accountForgot">Mot de passe oublié</button>
-    <button id="accountSwitchRegister" type="button">Créer un compte</button>
-    <button id="abjExportSave" type="button">Exporter ma sauvegarde</button>
-    <button id="abjImportSave" type="button">Importer une sauvegarde</button>
-    <input id="abjImportFile" type="file" accept="application/json,.json" style="display:none">
-    <button type="button" id="accountBack" style="display:none">Retour</button>
-    <p style="font-size:10px;color:#a9bbc5;width:100%;margin:6px 0 0">Mode local : export/import de sauvegarde disponible. L’espace Cloud est séparé et accessible avec le bouton ci-dessus.</p>
+    <button class="primary" id="accountContinue" type="button">Se connecter</button>
+    <div class="accountSecondaryActions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button id="accountSwitchRegister" type="button" style="flex:1">Créer un nouveau compte</button>
+      <button type="button" id="accountForgot" style="flex:1">Mot de passe oublié ?</button>
+    </div>
+    <button type="button" id="accountBack" style="display:none">Retour à la connexion</button>
     </div>
   </div>
 </div>
@@ -728,7 +705,6 @@ function togglePasswordField(inputId,buttonId){
 function setAccountFieldVisibility(){
   const login=document.getElementById('accountLoginFields');
   const reg=document.getElementById('accountRegisterFields');
-  const rec=document.getElementById('accountRecoverFields');
   const emailRec=document.getElementById('accountEmailRecoverFields');
   const npw=document.getElementById('accountNewPasswordWrap');
   const cont=document.getElementById('accountContinue');
@@ -736,36 +712,27 @@ function setAccountFieldVisibility(){
   const switchReg=document.getElementById('accountSwitchRegister');
   const back=document.getElementById('accountBack');
   const passLabel=document.querySelector('label[for="accountPassword"]');
-  if(login) login.style.display=(accountFlow==='login'||accountFlow==='register')?'block':'none';
-  if(reg) reg.style.display=accountFlow==='register'?'block':'none';
-  if(rec) rec.style.display=accountFlow==='recover'?'block':'none';
-  if(emailRec) emailRec.style.display=accountFlow==='recoverEmail'?'block':'none';
-  if(npw) npw.style.display=accountFlow==='reset'?'block':'none';
-  // En mode recover, afficher seulement le numéro
-  const phoneInput=document.getElementById('accountPhone');
+  const recovery=accountFlow==='recoverEmail'||accountFlow==='reset';
+  if(login)login.style.display=['login','register','recoverEmail','reset'].includes(accountFlow)?'block':'none';
+  if(reg)reg.style.display=accountFlow==='register'?'block':'none';
+  if(emailRec)emailRec.style.display=recovery?'block':'none';
+  if(npw)npw.style.display=accountFlow==='reset'?'block':'none';
   const passInput=document.getElementById('accountPassword');
-  if(accountFlow==='recover'||accountFlow==='recoverEmail'||accountFlow==='reset'){
-    if(login) login.style.display='block';
-    if(passInput) passInput.style.display='none';
-    if(passLabel) passLabel.style.display='none';
-    const toggle=document.getElementById('togglePassword');
-    if(toggle) toggle.style.display='none';
-  } else {
-    if(passInput) passInput.style.display='';
-    if(passLabel) passLabel.style.display='';
-    const toggle=document.getElementById('togglePassword');
-    if(toggle) toggle.style.display='';
-  }
-  if(forgot) forgot.style.display=accountFlow==='login'?'inline-block':'none';
-  if(switchReg) switchReg.style.display=accountFlow==='login'?'inline-block':'none';
-  if(back) back.style.display=accountFlow==='login'?'none':'inline-block';
+  const toggle=document.getElementById('togglePassword');
+  if(passInput)passInput.style.display=recovery?'none':'';
+  if(passLabel)passLabel.style.display=recovery?'none':'';
+  if(toggle)toggle.style.display=recovery?'none':'';
+  if(forgot)forgot.style.display=accountFlow==='login'?'inline-block':'none';
+  if(switchReg)switchReg.style.display=accountFlow==='login'?'inline-block':'none';
+  if(back)back.style.display=accountFlow==='login'?'none':'inline-block';
+  const send=document.getElementById('accountSendRecoveryCode');
+  if(send)send.style.display=accountFlow==='recoverEmail'?'block':'none';
   if(cont){
     cont.disabled=false;
-    if(accountFlow==='login') cont.textContent='Se connecter';
-    else if(accountFlow==='register') cont.textContent='Créer mon compte';
-    else if(accountFlow==='recover') cont.textContent='Vérifier mes réponses';
-    else if(accountFlow==='recoverEmail') cont.textContent='Confirmer le code';
-    else if(accountFlow==='reset') cont.textContent='Enregistrer le nouveau mot de passe';
+    cont.style.display=accountFlow==='recoverEmail'?'none':'block';
+    if(accountFlow==='login')cont.textContent='Se connecter';
+    else if(accountFlow==='register')cont.textContent='Créer mon compte';
+    else if(accountFlow==='reset')cont.textContent='Vérifier le code et changer le mot de passe';
     else cont.textContent='Continuer';
   }
 }
@@ -794,7 +761,7 @@ function openRegisterFlow(){
   fillBirthDaySelect();
   accountFlow='register';
   document.getElementById('accountTitle').textContent='Créer un compte';
-  document.getElementById('accountIntro').textContent='Renseigne ton numéro, ton e-mail Gmail/iCloud, ton mot de passe, ta date de naissance et tes questions de sécurité. Les données restent sur cet appareil dans cette version.';
+  document.getElementById('accountIntro').textContent='Crée ton compte avec ton numéro de téléphone et ton mot de passe. L’adresse e-mail est facultative.';
   showAccountStatus('Remplis tous les champs, puis appuie sur « Créer mon compte ».', false);
   document.getElementById('accountPassword').value='';
   const conf=document.getElementById('accountPasswordConfirm'); if(conf) conf.value='';
@@ -803,17 +770,15 @@ function openRegisterFlow(){
 }
 function openRecoverFlow(){
   const phone=normalizeIvorianMobile(document.getElementById('accountPhone').value);
-  const status=document.getElementById('accountStatus');
-  if(!phone){status.textContent='Saisis d’abord un numéro mobile ivoirien valide (01, 05 ou 07).';return;}
-  if(!findGameAccount(readGameAccounts(),phone)){status.textContent='Aucun compte trouvé avec ce numéro.';return;}
+  if(!phone){showAccountStatus('Saisis d’abord ton numéro mobile ivoirien.',true);return;}
   pendingAccountPhone=phone;
-  accountFlow='recover';
+  accountFlow='recoverEmail';
   document.getElementById('accountTitle').textContent='Mot de passe oublié';
-  document.getElementById('accountIntro').textContent='Réponds aux questions de sécurité liées à ce numéro pour pouvoir changer ton mot de passe.';
-  document.getElementById('accountStatus').textContent='';
-  document.getElementById('accountRecoverParent').value='';
-  document.getElementById('accountRecoverPet').value='';
-  document.getElementById('accountRecoverSport').value='';
+  document.getElementById('accountIntro').textContent='Vérifie ton identité avec le numéro et l’adresse e-mail enregistrés.';
+  document.getElementById('accountRecoverEmail').value='';
+  document.getElementById('accountRecoveryCode').value='';
+  document.getElementById('accountRecoveryCodeNotice').textContent='';
+  showAccountStatus('Un code sera envoyé à ton adresse si elle correspond au compte.',false);
   setAccountFieldVisibility();
 }
 function showAccountStatus(msg, isError){
@@ -866,56 +831,28 @@ async function accountContinue(){
   }
 
   if(accountFlow==='register'){
-    if(findGameAccount(accounts,phone)){
-      showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».', true);
-      return;
-    }
-    if(pass.length<8){showAccountStatus('Choisis un mot de passe d’au moins 8 caractères.', true);return;}
+    if(findGameAccount(accounts,phone)){showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».',true);return;}
+    if(pass.length<8){showAccountStatus('Choisis un mot de passe d’au moins 8 caractères.',true);return;}
     const email=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showAccountStatus('Saisis une adresse Gmail ou iCloud valide pour la récupération.', true);return;}
-    const emailTaken=Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone && String(a&&a.email||'').trim().toLowerCase()===email);
-    if(emailTaken){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.', true);return;}
+    if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showAccountStatus('Adresse e-mail invalide. Tu peux aussi laisser ce champ vide.',true);return;}
+    const emailTaken=email && Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone && String(a&&a.email||'').trim().toLowerCase()===email);
+    if(emailTaken){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.',true);return;}
     const confirm=document.getElementById('accountPasswordConfirm').value;
-    if(pass!==confirm){showAccountStatus('Les deux mots de passe ne correspondent pas.', true);return;}
-    const day=Number(document.getElementById('accountBirthDay').value);
-    const month=Number(document.getElementById('accountBirthMonth').value);
-    if(!day||!month||day<1||day>31||month<1||month>12){
-      showAccountStatus('Indique ton jour et ton mois de naissance.', true);
-      return;
-    }
-    const parent=document.getElementById('accountParentName').value.trim();
-    const pet=document.getElementById('accountPetName').value.trim();
-    const sport=document.getElementById('accountSport').value.trim();
-    if(parent.length<2||pet.length<1||sport.length<2){
-      showAccountStatus('Remplis les trois questions de sécurité (parent, animal, sport).', true);
-      return;
-    }
-    const security={birthDay:day,birthMonth:month,parentName:normalizeSecurityAnswer(parent),petName:normalizeSecurityAnswer(pet),sport:normalizeSecurityAnswer(sport)};
+    if(pass!==confirm){showAccountStatus('Les deux mots de passe ne correspondent pas.',true);return;}
     const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
     let response,data;
     try{
-      response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email,birthDay:day,birthMonth:month,security})});
+      response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
       data=await response.json().catch(()=>({}));
     }catch(registrationError){
-      // La connexion peut être coupée après l'enregistrement côté serveur.
-      // Vérifier le compte avant de demander à la personne de recommencer.
       console.warn('Réponse de création de compte interrompue, vérification de la session…',registrationError);
-      try{
-        response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});
-        data=await response.json().catch(()=>({}));
-      }catch(verificationError){
-        console.error('Vérification du compte après interruption impossible:',verificationError);
-        showAccountStatus('La connexion au serveur a été interrompue. Ton compte n’a pas été confirmé : ne recommence pas immédiatement la création. Réessaie de te connecter avec les mêmes identifiants.',true);
-        return;
-      }
+      try{response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});data=await response.json().catch(()=>({}));}
+      catch(verificationError){console.error('Connexion après création interrompue:',verificationError);showAccountStatus('Connexion interrompue. Réessaie de te connecter avec les mêmes identifiants.',true);return;}
     }
     if(!response.ok){showAccountStatus(data.error||'Création du compte impossible sur le serveur.',true);return;}
     if(!data||!data.token){showAccountStatus('Le serveur n’a pas confirmé la session. Essaie de te connecter avec les mêmes identifiants.',true);return;}
-    accounts[phone]={email,passwordHash:await passwordDigest(pass),createdAt:new Date().toISOString(),isCreator:false,security};
-    writeGameAccounts(accounts);
-    safeSet('abj-online-token:'+phone,data.token);
-    await activateGameAccount(phone);
-    return;
+    accounts[phone]={email:email||'',passwordHash:await passwordDigest(pass),createdAt:new Date().toISOString(),isCreator:false,security:{}};
+    writeGameAccounts(accounts);safeSet('abj-online-token:'+phone,data.token);await activateGameAccount(phone);return;
   }
 
   if(accountFlow==='recover'){
@@ -947,49 +884,25 @@ async function accountContinue(){
     return;
   }
 
-  if(accountFlow==='recoverEmail'){
-    const code=String(document.getElementById('accountRecoveryCode').value||'').replace(/\D/g,'');
-    if(!pendingRecoveryCode||Date.now()>pendingRecoveryExpiry){showAccountStatus('Le code a expiré. Prépare un nouveau code.',true);return;}
-    if(++pendingRecoveryAttempts>5){pendingRecoveryCode='';showAccountStatus('Trop de tentatives. Recommence la vérification par e-mail.',true);return;}
-    if(code!==pendingRecoveryCode){showAccountStatus('Code incorrect. Vérifie les 6 chiffres saisis.',true);return;}
-    const account=findGameAccount(accounts,pendingAccountPhone);
-    if(!account||String(account.email||'').trim().toLowerCase()!==String(document.getElementById('accountRecoverEmail').value||'').trim().toLowerCase()){
-      showAccountStatus('Le compte ou l’adresse e-mail ne correspond plus. Recommence.',true);return;
-    }
-    pendingRecoveryCode='';
-    accountFlow='reset';
-    document.getElementById('accountTitle').textContent='Nouveau mot de passe';
-    document.getElementById('accountIntro').textContent='Adresse et code vérifiés sur cet appareil. Choisis un nouveau mot de passe.';
-    document.getElementById('accountNewPassword').value='';
-    document.getElementById('accountNewPasswordConfirm').value='';
-    showAccountStatus('Vérification réussie. Définis ton nouveau mot de passe.',false);
-    setAccountFieldVisibility();
-    return;
-  }
 
   if(accountFlow==='reset'){
     const np=document.getElementById('accountNewPassword').value;
     const npc=document.getElementById('accountNewPasswordConfirm').value;
-    if(np.length<8){showAccountStatus('Le nouveau mot de passe doit contenir au moins 8 caractères.', true);return;}
-    if(np!==npc){showAccountStatus('Les deux mots de passe ne correspondent pas.', true);return;}
-    const account=findGameAccount(accounts,pendingAccountPhone);
-    if(!account){showAccountStatus('Compte introuvable. Recommence la procédure.', true);return;}
-    account.passwordHash=await passwordDigest(np);
-    accounts[pendingAccountPhone]=account;
-    // Si la clé stockée n’était pas la forme canonique, synchroniser
-    for(const key of Object.keys(accounts)){
-      if(normalizeIvorianMobile(key)===pendingAccountPhone && key!==pendingAccountPhone){
-        accounts[pendingAccountPhone]=accounts[key];
-        accounts[pendingAccountPhone].passwordHash=account.passwordHash;
-        delete accounts[key];
-      }
-    }
-    writeGameAccounts(accounts);
-    showAccountStatus('Mot de passe mis à jour. Connecte-toi avec ton numéro et le nouveau mot de passe.', false);
-    document.getElementById('accountPassword').value='';
-    openAccountGate();
-    document.getElementById('accountPhone').value=pendingAccountPhone;
-    showAccountStatus('Mot de passe changé. Entre ton nouveau mot de passe pour continuer.', false);
+    const email=String(document.getElementById('accountRecoverEmail').value||'').trim().toLowerCase();
+    const code=String(document.getElementById('accountRecoveryCode').value||'').replace(/\D/g,'');
+    if(np.length<8){showAccountStatus('Le nouveau mot de passe doit contenir au moins 8 caractères.',true);return;}
+    if(np!==npc){showAccountStatus('Les deux mots de passe ne correspondent pas.',true);return;}
+    if(!email||code.length!==6){showAccountStatus('Saisis l’adresse e-mail et le code à 6 chiffres.',true);return;}
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+    const response=await fetch(api+'/api/auth/reset-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:pendingAccountPhone,email,code,password:np})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok){showAccountStatus(data.error||'La récupération a échoué.',true);return;}
+    const login=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:pendingAccountPhone,password:np})});
+    const logged=await login.json().catch(()=>({}));
+    if(!login.ok||!logged.token){showAccountStatus('Mot de passe modifié. Reconnecte-toi avec tes nouveaux identifiants.',false);openAccountGate();document.getElementById('accountPhone').value=pendingAccountPhone;return;}
+    safeSet('abj-online-token:'+pendingAccountPhone,logged.token);
+    showAccountStatus('Mot de passe modifié. Connexion en cours…',false);
+    await activateGameAccount(pendingAccountPhone);
     return;
   }
   }catch(err){
@@ -1001,8 +914,7 @@ async function accountContinue(){
       contBtn.disabled=false;
       if(accountFlow==='login') contBtn.textContent='Se connecter';
       else if(accountFlow==='register') contBtn.textContent='Créer mon compte';
-      else if(accountFlow==='recover') contBtn.textContent='Vérifier mes réponses';
-      else if(accountFlow==='recoverEmail') contBtn.textContent='Confirmer le code';
+      else if(accountFlow==='recoverEmail') contBtn.style.display='none';
       else if(accountFlow==='reset') contBtn.textContent='Enregistrer le nouveau mot de passe';
       else contBtn.textContent='Continuer';
     }
@@ -1059,45 +971,28 @@ document.getElementById('togglePassword').addEventListener('click',()=>togglePas
 document.getElementById('togglePasswordConfirm').addEventListener('click',()=>togglePasswordField('accountPasswordConfirm','togglePasswordConfirm'));
 document.getElementById('toggleNewPassword').addEventListener('click',()=>togglePasswordField('accountNewPassword','toggleNewPassword'));
 document.getElementById('toggleNewPasswordConfirm').addEventListener('click',()=>togglePasswordField('accountNewPasswordConfirm','toggleNewPasswordConfirm'));
-// V1.23 — export/import de progression + snapshots de secours locaux.
-const ABJ_SAVE_SCHEMA_VERSION = 2;
-function abjCurrentSaveKey(){const p=activeGameAccount?normalizeIvorianMobile(activeGameAccount):null;return p?'abidjan-life-life-v1:'+p:LIFE_SAVE_KEY;}
-function abjExportSave(){
-  const phone=activeGameAccount?normalizeIvorianMobile(activeGameAccount):normalizeIvorianMobile(document.getElementById('accountPhone')?.value||'');
-  const key=phone?'abidjan-life-life-v1:'+phone:LIFE_SAVE_KEY;
-  const raw=safeGet(key)||safeGet(LIFE_SAVE_KEY);
-  if(!raw){showAccountStatus('Aucune progression locale à exporter.',true);return;}
-  let parsed;try{parsed=JSON.parse(raw);}catch(e){showAccountStatus('La sauvegarde locale est illisible : export annulé.',true);return;}
-  const payload={format:'abidjan-life-save',schemaVersion:ABJ_SAVE_SCHEMA_VERSION,exportedAt:new Date().toISOString(),phone:phone||null,save:parsed};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='Abidjan_Life_Sauvegarde_'+(phone?phone.replace(/\D/g,''):'locale')+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
-  showAccountStatus('Sauvegarde exportée. Garde ce fichier dans un endroit sûr.',false);
-}
-function abjImportSaveFile(file){
-  if(!file)return;const reader=new FileReader();reader.onload=()=>{
-    try{
-      const data=JSON.parse(String(reader.result||''));
-      if(!data||data.format!=='abidjan-life-save'||!data.save||typeof data.save!=='object')throw new Error('Format de sauvegarde non reconnu.');
-      const active=activeGameAccount?normalizeIvorianMobile(activeGameAccount):normalizeIvorianMobile(document.getElementById('accountPhone')?.value||'');
-      if(data.phone&&active&&normalizeIvorianMobile(data.phone)!==active)throw new Error('Cette sauvegarde appartient à un autre numéro. Connecte-toi au compte correspondant.');
-      if(!active&&!confirm('Aucun compte connecté. Importer cette sauvegarde dans la partie locale de cet appareil ?'))return;
-      const key=active?'abidjan-life-life-v1:'+active:LIFE_SAVE_KEY;
-      const current=safeGet(key);if(current){safeSet(key+':preimport:'+Date.now(),current);}
-      const clean=JSON.stringify(data.save);if(clean.length>8*1024*1024)throw new Error('Fichier trop volumineux (limite 8 Mo).');
-      safeSet(key,clean);if(active)safeSet(LIFE_SAVE_KEY,clean);
-      showAccountStatus('Sauvegarde importée. Recharge le jeu pour appliquer toute la progression.',false);
-    }catch(e){showAccountStatus('Import impossible : '+e.message,true);}
-  };reader.onerror=()=>showAccountStatus('Impossible de lire le fichier sélectionné.',true);reader.readAsText(file);
-}
-const __abjExportBtn=document.getElementById('abjExportSave'),__abjImportBtn=document.getElementById('abjImportSave'),__abjImportFile=document.getElementById('abjImportFile');
-if(__abjExportBtn)__abjExportBtn.addEventListener('click',abjExportSave);
-if(__abjImportBtn&&__abjImportFile)__abjImportBtn.addEventListener('click',()=>__abjImportFile.click());
-if(__abjImportFile)__abjImportFile.addEventListener('change',e=>{abjImportSaveFile(e.target.files&&e.target.files[0]);e.target.value='';});
-
+// Les sauvegardes sont gérées automatiquement par le compte et le stockage du jeu.
 document.getElementById('accountContinue').addEventListener('click',accountContinue);
 document.getElementById('accountForgot').addEventListener('click',openRecoverFlow);
- document.getElementById('accountOtherRecovery').addEventListener('click',()=>{accountFlow='recoverEmail';document.getElementById('accountTitle').textContent='Récupération par e-mail';document.getElementById('accountIntro').textContent='Vérifie l’adresse e-mail enregistrée sur ton compte.';document.getElementById('accountRecoverEmail').value='';document.getElementById('accountRecoveryCode').value='';document.getElementById('accountRecoveryCodeNotice').textContent='';showAccountStatus('Saisis ton adresse e-mail, puis demande un code.',false);setAccountFieldVisibility();});
- document.getElementById('accountSendRecoveryCode').addEventListener('click',()=>{const a=findGameAccount(readGameAccounts(),pendingAccountPhone);const email=String(document.getElementById('accountRecoverEmail').value||'').trim().toLowerCase();if(!a||!a.email||email!==String(a.email).trim().toLowerCase()){showAccountStatus('Cette adresse ne correspond pas à celle enregistrée pour ce numéro.',true);return;}if(!window.crypto||!crypto.getRandomValues){showAccountStatus('Génération sécurisée indisponible sur ce navigateur. Utilise les questions de sécurité.',true);return;}const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);pendingRecoveryCode=String(bytes[0]%1000000).padStart(6,'0');pendingRecoveryExpiry=Date.now()+5*60*1000;pendingRecoveryAttempts=0;document.getElementById('accountRecoveryCodeNotice').textContent='Code local de test : '+pendingRecoveryCode+' (valable 5 minutes). Dans cette version HTML sans serveur, il n’est pas envoyé par e-mail.';showAccountStatus('Adresse reconnue. Pour ce prototype local, le code de test apparaît ci-dessus. La vraie livraison par e-mail nécessitera le serveur du jeu.',false);});
+ document.getElementById('accountSendRecoveryCode').addEventListener('click',async()=>{
+   const phone=normalizeIvorianMobile(document.getElementById('accountPhone').value);
+   const email=String(document.getElementById('accountRecoverEmail').value||'').trim().toLowerCase();
+   const at=email.indexOf('@'),dot=email.lastIndexOf('.');
+   if(!phone||phone!==pendingAccountPhone||at<1||dot<at+2||dot>=email.length-2){showAccountStatus('Vérifie le numéro et l’adresse e-mail.',true);return;}
+   const btn=document.getElementById('accountSendRecoveryCode');btn.disabled=true;btn.textContent='Envoi…';
+   try{
+     const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+     const response=await fetch(api+'/api/auth/recover-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,email})});
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok)throw new Error(data.error||'Envoi impossible.');
+     accountFlow='reset';
+     document.getElementById('accountRecoveryCodeNotice').textContent='Si les informations correspondent, le code arrive par e-mail. Vérifie aussi les courriers indésirables.';
+     document.getElementById('accountTitle').textContent='Changer le mot de passe';
+     document.getElementById('accountIntro').textContent='Saisis le code reçu et choisis ton nouveau mot de passe.';
+     showAccountStatus(data.message||'Demande traitée.',false);setAccountFieldVisibility();
+   }catch(error){showAccountStatus(error.message||'Service e-mail indisponible.',true);}
+   finally{btn.disabled=false;btn.textContent='Envoyer le code de vérification';}
+ });
 document.getElementById('accountSwitchRegister').addEventListener('click',openRegisterFlow);
 document.getElementById('accountBack').addEventListener('click',backAccountLogin);
 
@@ -2487,9 +2382,25 @@ function updateCreatorOrb(delta){
 function openCreatorAssistantPanel(){
  if(!isCreatorAccount(activeGameAccount))return;
  let p=document.getElementById('creatorAssistantPanel');if(!p){p=document.createElement('div');p.id='creatorAssistantPanel';p.style.cssText='position:fixed;right:16px;top:155px;z-index:130;width:min(390px,94vw);max-height:68vh;overflow:auto;padding:14px;background:#102a37;border:1px solid #65d9ee;border-radius:15px;color:white;box-shadow:0 15px 55px #000b';document.body.appendChild(p);}
- p.innerHTML='<div style="display:flex;justify-content:space-between"><b>✦ Assistant Abidjan Life</b><button id="creatorAssistantClose">✕</button></div><div id="creatorAssistantLog" style="height:230px;overflow:auto;background:#07131c;padding:9px;margin:9px 0;border-radius:9px;font-size:12px">Je suis l’assistant du jeu. Demande-moi comment fonctionnent ses systèmes ou comment les améliorer.</div><form id="creatorAssistantForm" style="display:flex;gap:6px"><input id="creatorAssistantInput" placeholder="Ta question…" style="flex:1;min-width:0;padding:10px;background:#091a25;color:white;border:1px solid #ffffff44;border-radius:8px"><button>Envoyer</button></form>';
+ p.innerHTML='<div style="display:flex;justify-content:space-between"><b>✦ Assistant Abidjan Life</b><button id="creatorAssistantClose">✕</button></div><div style="font-size:11px;color:#9ee5e1;margin:5px 0">IA générale avec recherche web · mémoire de conversation · 12 analystes de la ville</div><div id="creatorAssistantLog" style="height:230px;overflow:auto;background:#07131c;padding:9px;margin:9px 0;border-radius:9px;font-size:12px">Je suis l’assistant du jeu. Je peux répondre à des questions générales, rechercher sur le web et analyser les anomalies du monde.</div><button id="creatorAuditRun" type="button" style="width:100%;margin-bottom:8px">Lancer un audit des 12 analystes</button><form id="creatorAssistantForm" style="display:flex;gap:6px"><input id="creatorAssistantInput" placeholder="Pose une question…" style="flex:1;min-width:0;padding:10px;background:#091a25;color:white;border:1px solid #ffffff44;border-radius:8px"><button>Envoyer</button></form>';
  p.querySelector('#creatorAssistantClose').onclick=()=>p.remove();
- p.querySelector('#creatorAssistantForm').onsubmit=async e=>{e.preventDefault();const input=p.querySelector('#creatorAssistantInput'),log=p.querySelector('#creatorAssistantLog'),q=input.value.trim();if(!q)return;input.value='';log.innerHTML+='<p><b>Créateur :</b> '+escapeHTML(q)+'</p><p>Assistant : réponse en cours…</p>';try{const r=await fetch(creatorApi()+'/api/game/assistant',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({message:q})});const d=await r.json();log.innerHTML+='<p><b>Assistant :</b> '+escapeHTML(d.answer||d.error||'Pas de réponse.')+'</p>';}catch(err){log.innerHTML+='<p style="color:#ff8b91">Service IA indisponible.</p>';}log.scrollTop=log.scrollHeight;};
+ p.querySelector('#creatorAuditRun').onclick=async()=>{const log=p.querySelector('#creatorAssistantLog');log.innerHTML+='<p>Les 12 analystes inspectent la ville…</p>';try{const report=await window.ABJ_RUN_WORLD_AUDIT?.();if(!report)throw new Error('Entre dans le monde et attends le chargement de la carte.');log.innerHTML+='<p><b>Audit terminé :</b> '+report.summary.totalFindings+' anomalie(s) signalée(s) par '+report.summary.agents+' analystes. Ouvre l’onglet Rapports du bureau créateur pour copier ou télécharger le rapport.</p>';}catch(e){log.innerHTML+='<p>'+escapeHTML(e.message||'Audit indisponible.')+'</p>';}log.scrollTop=log.scrollHeight;};
+ const memoryKey='abj-creator-ai-memory:'+normalizeIvorianMobile(activeGameAccount);
+ let history=[];try{history=JSON.parse(safeGet(memoryKey)||'[]');if(!Array.isArray(history))history=[];}catch(e){history=[];}
+ const log=p.querySelector('#creatorAssistantLog');
+ if(history.length)log.innerHTML=history.slice(-10).map(m=>'<p><b>'+(m.role==='assistant'?'Assistant':'Créateur')+':</b> '+escapeHTML(m.content)+'</p>').join('');
+ p.querySelector('#creatorAssistantForm').onsubmit=async e=>{
+  e.preventDefault();const input=p.querySelector('#creatorAssistantInput'),q=input.value.trim();if(!q)return;input.value='';
+  const priorHistory=history.slice(-8);history.push({role:'user',content:q});log.innerHTML+='<p><b>Créateur :</b> '+escapeHTML(q)+'</p><p>Assistant : recherche et réflexion…</p>';
+  try{
+   const r=await fetch(creatorApi()+'/api/game/assistant',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({message:q,history:priorHistory})});
+   const d=await r.json();if(!r.ok)throw new Error(d.error||'Service IA indisponible');
+   const answer=String(d.answer||'Pas de réponse.');history.push({role:'assistant',content:answer});history=history.slice(-16);safeSet(memoryKey,JSON.stringify(history));
+   log.innerHTML+='<p><b>Assistant :</b> '+escapeHTML(answer)+'</p>';
+   (d.citations||[]).forEach(x=>{if(/^https:\/\//.test(x.url||''))log.innerHTML+='<p style="font-size:11px"><a href="'+escapeHTML(x.url)+'" target="_blank" rel="noopener noreferrer">'+escapeHTML(x.title||x.url)+'</a></p>';});
+  }catch(err){log.innerHTML+='<p style="color:#ff8b91">'+escapeHTML(err.message||'Service IA indisponible.')+'</p>';}
+  log.scrollTop=log.scrollHeight;
+ };
 }
 
 function creatorToken(){return activeGameAccount?safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount)):null;}
@@ -2565,7 +2476,18 @@ async function renderCreatorWorldTab(tab){
   }catch(e){box.textContent=e.message||'Impossible de charger les comptes.';}
   return;
  }
- if(tab==='reports'){body.innerHTML='<h3>Signalements des joueurs</h3><div id="creatorReportsList">Chargement…</div>';try{const r=await fetch(creatorApi()+'/api/creator/reports',{headers:{Authorization:'Bearer '+creatorToken()}});const d=await r.json();const list=document.getElementById('creatorReportsList');if(!r.ok)throw new Error(d.error);list.innerHTML=(d.items||[]).map(x=>'<article style="padding:10px;margin:8px 0;background:#091a25;border-left:3px solid #e66;border-radius:8px"><b>'+escapeHTML(x.player)+' · '+escapeHTML(x.kind)+'</b><small style="display:block;color:#a8bdc8">'+escapeHTML(x.createdAt)+' · '+escapeHTML(x.district)+'</small><p>'+escapeHTML(x.message)+'</p></article>').join('')||'Aucun signalement pour le moment.';creatorOrbAlert=false;}catch(e){document.getElementById('creatorReportsList').textContent=e.message||'Impossible de charger les signalements.';}return;
+ if(tab==='reports'){
+  body.innerHTML='<h3>Signalements et rapports des 12 analystes</h3><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="creatorReportsCopy">Copier le rapport complet</button><button id="creatorReportsDownload">Télécharger le rapport</button></div><div id="creatorReportsList">Chargement…</div>';
+  try{
+   const r=await fetch(creatorApi()+'/api/creator/reports',{headers:{Authorization:'Bearer '+creatorToken()}});const d=await r.json();const list=document.getElementById('creatorReportsList');if(!r.ok)throw new Error(d.error);
+   const items=d.items||[];window.ABJ_CREATOR_REPORT_EXPORT={generatedAt:new Date().toISOString(),reports:items};
+   list.innerHTML=items.map(x=>'<article style="padding:10px;margin:8px 0;background:#091a25;border-left:3px solid '+(String(x.kind).startsWith('analyst')?'#59d7cb':'#e66')+';border-radius:8px"><b>'+escapeHTML(x.player)+' · '+escapeHTML(x.kind)+'</b><small style="display:block;color:#a8bdc8">'+escapeHTML(x.createdAt)+' · '+escapeHTML(x.district)+'</small><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font:12px system-ui">'+escapeHTML(x.message)+'</pre></article>').join('')||'Aucun rapport pour le moment.';
+   const exportText=()=>JSON.stringify(window.ABJ_CREATOR_REPORT_EXPORT,null,2);
+   document.getElementById('creatorReportsCopy').onclick=async()=>{try{await navigator.clipboard.writeText(exportText());showMessage('Rapport copié.');}catch(e){showMessage('Copie indisponible dans ce navigateur.');}};
+   document.getElementById('creatorReportsDownload').onclick=()=>{const blob=new Blob([exportText()],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='abidjan-life-rapport-analystes.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+   creatorOrbAlert=false;
+  }catch(e){document.getElementById('creatorReportsList').textContent=e.message||'Impossible de charger les signalements.';}
+  return;
  }
  body.innerHTML='<h3>État du monde en direct</h3><div id="creatorWorldStats">Actualisation…</div><button id="creatorWorldRefresh">Actualiser</button>';
  const refresh=async()=>{const box=document.getElementById('creatorWorldStats');if(!box)return;try{const r=await fetch(creatorApi()+'/api/creator/world',{headers:{Authorization:'Bearer '+creatorToken()}});const d=await r.json();if(!r.ok)throw new Error(d.error);const v=d.vehicles||{};box.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px">'+[['Joueurs connectés',d.playersOnline],['PNJ total',d.npcTotal],['PNJ actifs',d.npcActive],['PNJ inactifs',d.npcInactive],...Object.entries(v).map(([k,n])=>['Véhicules · '+k,n])].map(([k,n])=>'<article style="padding:13px;background:#0a202b;border:1px solid #ffffff20;border-radius:10px"><small style="color:#9db8c5">'+escapeHTML(k)+'</small><div style="font-size:25px;font-weight:800;color:#f2d18d">'+Number(n||0).toLocaleString('fr-FR')+'</div></article>').join('')+'</div><p style="color:#a9bdc8;font-size:11px">Dernière télémétrie : '+(d.telemetryUpdatedAt?new Date(d.telemetryUpdatedAt).toLocaleTimeString():'en attente')+'</p>'; }catch(e){box.textContent=e.message||'Données indisponibles.';}};
@@ -2573,7 +2495,7 @@ async function renderCreatorWorldTab(tab){
 }
 async function reportGameIssue(kind,message){
  if(!activeGameAccount||!creatorToken())return;
- try{await fetch(creatorApi()+'/api/game/report',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({kind,message:String(message||'').slice(0,500),version:window.ABJ_BUILD_VERSION||'',district:currentQuartier||''})});}catch(e){console.warn('Signalement non transmis',e);}
+ try{await fetch(creatorApi()+'/api/game/report',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({kind,message:String(message||'').slice(0,5000),version:window.ABJ_BUILD_VERSION||'',district:currentQuartier||''})});}catch(e){console.warn('Signalement non transmis',e);}
 }
 function openCreatorAppearanceRoom(){
  if(!isCreatorAccount(activeGameAccount)||!currentInterior?.creatorHQ||currentFloor!==2)return;
@@ -3056,7 +2978,7 @@ function addDoor(x, z, rot, bx, bz, bw, bd, bh, buildingColor, style) {
   const numFloors = Math.max(1, Math.floor(bh / 3.1));
   interiors[id] = generateInterior(id, bw, bd, numFloors, buildingColor, style);
   const normal = new THREE.Vector3(Math.sin(rot), 0, Math.cos(rot));
-  doors.push({ x, z, id, rot, normal });
+  doors.push({ x, z, id, rot, normal, home: true, buildingName: 'Bâtiment accessible' });
 }
 
 function generateInterior(id, bw, bd, numFloors, wallColor, style) {
@@ -4099,6 +4021,7 @@ function startPlayerAtHome(){
 
 function enterBuilding(door) {
   if(!door || !door.home || currentInterior || !player || (door.creatorOnly&&!isCreatorAccount(activeGameAccount))) return;
+  if(door.adultOnly&&door.buildingType==='nightclub'&&!window.__ABJ_ADULT_CONFIRMED){const ok=window.confirm('LE TALON — établissement fictif réservé aux personnes de 18 ans et plus. Les interactions sont sociales et non explicites. Aucun échange d’argent réel ni transaction sexuelle n’est proposé. Confirmer que tu as 18 ans ou plus ?');if(!ok)return;window.__ABJ_ADULT_CONFIRMED=true;}
   const interior=interiors[door.id]; if(!interior) return;
   lastExteriorPosition={x:door.x+door.normal.x*3.6,z:door.z+door.normal.z*3.6,y:terrainHeight(door.x+door.normal.x*3.6,door.z+door.normal.z*3.6)+0.02,rotation:Math.atan2(door.normal.x,door.normal.z),door};
   currentInterior=interior;currentApartment=null;interior.group.visible=true;interior.currentFloor=0;currentFloor=0;restoreHomeDecor(interior);
@@ -4116,9 +4039,9 @@ function enterBuilding(door) {
   scene.background=new THREE.Color(0x25313a);scene.fog=null;
   if(interiorAmbientLight)interiorAmbientLight.intensity=.72;
   document.getElementById('interiorHint').style.display='block';
-  document.getElementById('interiorHint').textContent=(interior.style==='resident'?'🏢 Immeuble · E à l’ascenseur pour choisir un étage · E à une porte pour entrer dans un appartement':door.isMunicipality?'🏛️ Mairie de '+door.commune+' · Services administratifs au guichet · E près de la porte : sortir':door.buildingType&&door.buildingType.startsWith('store_')?'🏬 '+door.buildingName+' · F : utiliser / interagir · E près de la porte : sortir':door.buildingName&&door.buildingName!=='Maison d’Abidjan'?'🏢 '+door.buildingName+' · F : interagir · E près de la porte : sortir':"🏠 Maison · F : utiliser / déplacer un meuble · Lit : dormir · Douche : se laver · E près de la porte : sortir");
-  document.getElementById('etage').textContent=interior.numFloors>1?'Immeuble · Hall / Rez-de-chaussée':(door.buildingType?'Magasin · Rez-de-chaussée':'Maison · Rez-de-chaussée');
-  showMessage('Bienvenue chez toi. Salon, cuisine, chambre et salle de bain.');
+  document.getElementById('interiorHint').textContent=door.adultOnly?'🌙 Le Talon · Club privé 18+ · Bar, piste de danse et salons VIP · Aucun échange d’argent réel':(interior.style==='resident'?'🏢 Immeuble · E à l’ascenseur pour choisir un étage · E à une porte pour entrer dans un appartement':door.isMunicipality?'🏛️ Mairie de '+door.commune+' · Services administratifs au guichet · E près de la porte : sortir':door.buildingType&&door.buildingType.startsWith('store_')?'🏬 '+door.buildingName+' · F : utiliser / interagir · E près de la porte : sortir':door.buildingName&&door.buildingName!=='Maison d’Abidjan'?'🏢 '+door.buildingName+' · F : interagir · E près de la porte : sortir':"🏠 Maison · F : utiliser / déplacer un meuble · Lit : dormir · Douche : se laver · E près de la porte : sortir");
+  document.getElementById('etage').textContent=door.adultOnly?'Le Talon · Club privé':(interior.numFloors>1?'Immeuble · Hall / Rez-de-chaussée':(door.buildingType?'Magasin · Rez-de-chaussée':'Maison · Rez-de-chaussée'));
+  showMessage(door.adultOnly?'Bienvenue au Talon. Profite du bar, de la piste de danse et des salons VIP.':'Bienvenue chez toi. Salon, cuisine, chambre et salle de bain.');
 }
 
 function exitBuilding() {
@@ -5110,7 +5033,7 @@ function renderJumiaApp(){
 
 function renderShopApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
- const cards=ABJ_SHOP_ITEMS.map(it=>{const emoji=it.category==='Boisson'?'🥤':it.category==='Alimentation'?'🥖':it.category==='Repas'?'🍲':it.category==='Pharmacie'?'💊':'🧴';return '<div style="display:flex;gap:10px;padding:10px;margin:8px 0;border:1px solid #ffffff28;border-radius:10px;background:#ffffff0d"><div style="width:54px;height:54px;border-radius:12px;background:#ffffff14;display:grid;place-items:center;font-size:26px">'+emoji+'</div><div style="flex:1"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+escapeHTML(it.name)+'</b><b style="color:#ffe0a0;white-space:nowrap">'+it.price.toLocaleString('fr-FR')+' F</b></div><div style="font-size:11px;color:#c6d8e5;margin:5px 0">'+escapeHTML(it.category)+' · '+escapeHTML(it.description)+'</div><button data-buy="'+it.id+'">Acheter (Wave)</button></div></div>';}).join('');
+ const cards=ABJ_SHOP_ITEMS.map(it=>{const emoji=it.category==='Boisson'?'🥤':it.category==='Alimentation'?'🥖':it.category==='Repas'?'🍲':it.category==='Pharmacie'?'💊':'🧴';return '<div style="display:flex;gap:10px;padding:10px;margin:8px 0;border:1px solid #ffffff28;border-radius:10px;background:#ffffff0d"><div style="width:54px;height:54px;border-radius:12px;background:#ffffff14;display:grid;place-items:center;font-size:26px">'+emoji+'</div><div style="flex:1"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+escapeHTML(it.name)+'</b><b style="color:#ffe0a0;white-space:nowrap">'+it.price.toLocaleString('fr-FR')+' F</b></div><div style="font-size:11px;color:#c6d8e5;margin:5px 0">'+escapeHTML(it.category)+' · '+escapeHTML(it.description)+'</div><button data-buy="'+it.id+'">Acheter avec l’argent du jeu</button></div></div>';}).join('');
  content.innerHTML='<button id="phoneBack">← Applications</button><h3>🛍️ Boutique ABJ</h3><p>Portefeuille : <b>'+Math.floor(lifeState.money).toLocaleString('fr-FR')+' FCFA</b></p><p style="font-size:11px;color:#c6d8e5">Catalogue de simulation. Les achats sont débités du portefeuille du jeu et ajoutés à ton sac.</p><button id="openInventory">🎒 Voir mon sac ('+Object.values(lifeState.inventory||{}).reduce((a,n)=>a+n,0)+')</button>'+cards+'<p id="shopStatus" style="font-size:12px;color:#ffe0a0"></p>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
  document.getElementById('openInventory').onclick=()=>renderInventoryApp();
@@ -5132,12 +5055,13 @@ function renderGlovoApp(){
  content.querySelectorAll('[data-glovo]').forEach(btn=>btn.onclick=()=>{const it=ABJ_GLOVO_MENU.find(x=>x.id===btn.dataset.glovo);if(!it)return;if(lifeState.delivery){renderGlovoApp();return;}const finalPrice=Math.round(it.price*(hasPlayerTrait('cerveau')?.5:1));if(!abjChargeForApp(finalPrice,'LivraGo')){const st=document.getElementById('glovoStatus');if(st)st.textContent='Solde de paiement insuffisant.';return;}lifeState.bankTransactions.push({type:'debit',label:'LivraGo : '+it.name,amount:finalPrice,date:String(lifeState.hour).padStart(2,'0')+':'+String(Math.floor(lifeState.minute)).padStart(2,'0')});lifeState.bankTransactions=lifeState.bankTransactions.slice(-30);lifeState.delivery={itemId:it.id,remaining:45,restaurant:it.restaurant};saveLifeProgress(false);renderGlovoApp();});
 }
 function renderCreatorApp(platform){
- const content=document.getElementById('phoneAppContent');if(!content)return;lifeState.creator=lifeState.creator||{certified:false,displayName:'',youtubeFollowers:0,tiktokFollowers:0,posts:[],lastPayoutDay:-1};const c=lifeState.creator;const yt=platform==='youtube';const title=yt?'Diffuz':'Clipz';const followers=yt?c.youtubeFollowers:c.tiktokFollowers;const posts=c.posts.filter(p=>p.platform===platform);const gallery=(()=>{try{return JSON.parse(safeGet('abj-game-gallery-v1')||'[]')}catch(e){return[]}})();
+ const content=document.getElementById('phoneAppContent');if(!content)return;lifeState.creator=lifeState.creator||{certified:false,displayName:'',youtubeFollowers:0,tiktokFollowers:0,posts:[],lastPayoutDay:-1};const c=lifeState.creator;const yt=platform==='youtube';const title=yt?'Diffuz':'Clipz';const followers=yt?c.youtubeFollowers:c.tiktokFollowers;const posts=c.posts.filter(p=>p.platform===platform);const gallery=(()=>{try{return JSON.parse(safeGet('abj-life-gallery-v1')||'[]')}catch(e){return[]}})();
  const postCards=posts.slice().reverse().map(p=>'<div style="padding:10px;margin:8px 0;border:1px solid #ffffff25;border-radius:10px"><b>'+escapeHTML(p.caption)+'</b><div style="font-size:11px;color:#c6d8e5">'+escapeHTML(p.kind)+' · '+p.views.toLocaleString('fr-FR')+' vues · '+escapeHTML(p.date)+'</div></div>').join('');
- content.innerHTML='<button id="phoneBack">← Applications</button><h3>'+(yt?'▶️ ':'🎵 ')+title+'</h3>'+(c.certified?'<p>Compte créateur : <b>'+escapeHTML(c.displayName)+'</b></p><p>Abonnés : <b>'+followers.toLocaleString('fr-FR')+'</b> · Publications : '+posts.length+'</p><p style="font-size:11px;color:#c6d8e5">Les vues et revenus sont simulés dans le jeu. Les photos publiées doivent déjà être présentes dans ta galerie.</p><h4>Publier depuis la galerie</h4><select id="creatorMedia" style="width:100%;padding:9px;border-radius:8px">'+(gallery.length?gallery.map((g,i)=>'<option value="'+i+'">'+escapeHTML(g.name||('Photo '+(i+1)))+'</option>').join(''):'<option value="">Aucun média dans la galerie</option>')+'</select><input id="creatorCaption" maxlength="100" placeholder="Légende de ta publication" style="width:100%;padding:9px;margin:7px 0"><button id="creatorPublish" '+(gallery.length?'':'disabled')+'>Publier</button><h4>Mes publications</h4>'+(postCards||'<p>Aucune publication pour le moment.</p>'):'<p>Crée ton compte de créateur pour publier tes photos du jeu et développer ton audience.</p><label>Nom de compte</label><input id="creatorName" maxlength="32" placeholder="Ton pseudo dans Abidjan Life" style="width:100%;padding:9px;margin:7px 0"><label style="display:block;margin:8px 0"><input id="creatorConsent" type="checkbox"> Je confirme que ce compte est mon identité de créateur dans le jeu.</label><button id="creatorCertify">Créer et certifier mon compte</button>');
+ content.innerHTML='<button id="phoneBack">← Applications</button><h3>'+(yt?'▶️ ':'🎵 ')+title+'</h3>'+(c.certified?'<p>Compte créateur : <b>'+escapeHTML(c.displayName)+'</b></p><p>Abonnés : <b>'+followers.toLocaleString('fr-FR')+'</b> · Publications : '+posts.length+'</p><p style="font-size:11px;color:#c6d8e5">Les vues et revenus sont simulés dans le jeu. Les photos publiées doivent déjà être présentes dans ta galerie.</p><h4>Publier depuis la galerie</h4><select id="creatorMedia" style="width:100%;padding:9px;border-radius:8px">'+(gallery.length?gallery.map((g,i)=>'<option value="'+i+'">'+escapeHTML(g.name||('Photo '+(i+1)))+'</option>').join(''):'<option value="">Aucun média dans la galerie</option>')+'</select><input id="creatorCaption" maxlength="100" placeholder="Légende de ta publication" style="width:100%;padding:9px;margin:7px 0"><button id="creatorPublish" '+(gallery.length?'':'disabled')+'>Publier dans le jeu</button><button id="creatorShareMedia" '+(gallery.length?'':'disabled')+'>Partager la photo avec une application</button><h4>Mes publications</h4>'+(postCards||'<p>Aucune publication pour le moment.</p>'):'<p>Crée ton compte de créateur pour publier tes photos du jeu et développer ton audience.</p><label>Nom de compte</label><input id="creatorName" maxlength="32" placeholder="Ton pseudo dans Abidjan Life" style="width:100%;padding:9px;margin:7px 0"><label style="display:block;margin:8px 0"><input id="creatorConsent" type="checkbox"> Je confirme que ce compte est mon identité de créateur dans le jeu.</label><button id="creatorCertify">Créer et certifier mon compte</button>');
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
  const cert=document.getElementById('creatorCertify');if(cert)cert.onclick=()=>{const name=document.getElementById('creatorName').value.trim();if(name.length<3||!document.getElementById('creatorConsent').checked){showMessage('Saisis un pseudo (3 caractères minimum) et confirme la création.');return;}c.certified=true;c.displayName=name;saveLifeProgress(false);renderCreatorApp(platform);};
- const publish=document.getElementById('creatorPublish');if(publish)publish.onclick=()=>{const idx=Number(document.getElementById('creatorMedia').value),media=gallery[idx],caption=document.getElementById('creatorCaption').value.trim();if(!media||!caption){showMessage('Choisis une photo et écris une légende.');return;}const day=Math.floor((c.posts.length+1));const views=yt?80+Math.floor(Math.random()*420):100+Math.floor(Math.random()*900);c.posts.push({platform,caption,kind:'Photo',views,date:String(lifeState.hour).padStart(2,'0')+'h'+String(Math.floor(lifeState.minute)).padStart(2,'0'),mediaName:String(media.name||'Photo').slice(0,80)});if(yt)c.youtubeFollowers+=Math.max(1,Math.floor(views/45));else c.tiktokFollowers+=Math.max(1,Math.floor(views/80));saveLifeProgress(false);renderCreatorApp(platform);showMessage('Publication en ligne ! +'+views+' vues simulées.');};
+ const publish=document.getElementById('creatorPublish');if(publish)publish.onclick=()=>{const idx=Number(document.getElementById('creatorMedia').value),media=gallery[idx],caption=document.getElementById('creatorCaption').value.trim();if(!media||!caption){showMessage('Choisis une photo et écris une légende.');return;}const views=yt?80+Math.floor(Math.random()*420):100+Math.floor(Math.random()*900);c.posts.push({platform,caption,kind:'Photo',views,date:String(lifeState.hour).padStart(2,'0')+'h'+String(Math.floor(lifeState.minute)).padStart(2,'0'),mediaName:String(media.name||'Photo').slice(0,80)});if(yt)c.youtubeFollowers+=Math.max(1,Math.floor(views/45));else c.tiktokFollowers+=Math.max(1,Math.floor(views/80));saveLifeProgress(false);renderCreatorApp(platform);showMessage('Publication simulée dans le réseau du jeu.');};
+ const share=document.getElementById('creatorShareMedia');if(share)share.onclick=async()=>{const idx=Number(document.getElementById('creatorMedia').value),media=gallery[idx];if(!media?.data){showMessage('Photo introuvable dans la galerie.');return;}try{const response=await fetch(media.data),blob=await response.blob(),file=new File([blob],media.name||'Abidjan-Life.jpg',{type:blob.type||'image/jpeg'});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'Abidjan Life',text:document.getElementById('creatorCaption').value.trim()||'Ma photo dans Abidjan Life'});showMessage('Menu de partage ouvert. Choisis une application compatible.');}else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);showMessage('Photo téléchargée. Tu peux ensuite la joindre dans TikTok ou une autre application.');}}catch(error){showMessage('Partage indisponible : '+String(error.message||error));}};
 }
 const ABJ_GOOGLE_INDEX=[
  {title:'Se déplacer dans Abidjan',kind:'Guide',body:'Utilise l’application Transport pour repérer les arrêts SOTRA, gbaka et taxis proches de ta position.',keywords:'bus gbaka taxi sotra arrêt transport'},
@@ -5153,13 +5077,25 @@ const ABJ_GOOGLE_INDEX=[
 ];
 function renderGoogleApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
- content.innerHTML='<button id="phoneBack">← Applications</button><h3>🔎 ChercheABJ</h3><p style="font-size:12px;color:#c6d8e5">Recherche dans le guide et les services disponibles dans Abidjan Life.</p><input id="googleQuery" type="search" placeholder="Rechercher un lieu, un service, une aide…" style="width:100%;box-sizing:border-box;padding:11px;border-radius:9px;border:1px solid #ffffff40;background:#102b3b;color:white"><div id="googleResults" style="margin-top:10px"></div>';
+ content.innerHTML='<button id="phoneBack">← Applications</button><h3>🌍 Google du monde</h3><p style="font-size:12px;color:#c6d8e5">Pose une question ou recherche un sujet dans le monde réel. L’assistant consulte le web et affiche ses sources quand la recherche est disponible.</p><form id="googleSearchForm" style="display:flex;gap:7px"><input id="googleQuery" type="search" placeholder="Rechercher n’importe quel sujet…" style="flex:1;min-width:0;box-sizing:border-box;padding:11px;border-radius:9px;border:1px solid #ffffff40;background:#102b3b;color:white"><button>Rechercher</button></form><div id="googleResults" style="margin-top:10px"></div>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
- const field=document.getElementById('googleQuery'),results=document.getElementById('googleResults');
- const draw=()=>{const q=field.value.trim().toLocaleLowerCase('fr');const found=ABJ_GOOGLE_INDEX.filter(x=>(x.title+' '+x.kind+' '+x.body+' '+x.keywords).toLocaleLowerCase('fr').includes(q));results.innerHTML=q?(found.length?found.map(x=>'<article style="padding:10px;margin:8px 0;border:1px solid #ffffff25;border-radius:10px;background:#ffffff0b"><div style="font-size:10px;color:#91d8d3">'+escapeHTML(x.kind)+'</div><b>'+escapeHTML(x.title)+'</b><p style="font-size:12px;color:#d4e0e9;margin:6px 0">'+escapeHTML(x.body)+'</p></article>').join(''):'<p>Aucun résultat dans le guide du jeu. Essaie un autre mot.</p>'):'<b>Suggestions</b>'+ABJ_GOOGLE_INDEX.slice(0,5).map(x=>'<div style="padding:8px;border-bottom:1px solid #ffffff18"><b>'+escapeHTML(x.title)+'</b><div style="font-size:11px;color:#c6d8e5">'+escapeHTML(x.kind)+'</div></div>').join('');};
- field.addEventListener('input',draw);draw();field.focus();
+ const form=document.getElementById('googleSearchForm'),field=document.getElementById('googleQuery'),results=document.getElementById('googleResults');
+ form.addEventListener('submit',async e=>{
+  e.preventDefault();const q=field.value.trim();if(!q)return;
+  const token=safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount||''));
+  if(!token){results.textContent='Connecte-toi pour utiliser la recherche web.';return;}
+  const button=form.querySelector('button');button.disabled=true;button.textContent='Recherche…';results.innerHTML='<p>Recherche dans le web mondial…</p>';
+  try{
+   const r=await fetch(String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'')+'/api/game/assistant',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({message:q})});
+   const d=await r.json();if(!r.ok)throw new Error(d.error||'Recherche indisponible.');
+   results.innerHTML='<article style="padding:12px;border:1px solid #ffffff28;border-radius:12px;background:#ffffff0b;white-space:pre-wrap;line-height:1.55">'+escapeHTML(d.answer||'Aucun résultat fiable.')+'</article>';
+   if(Array.isArray(d.citations)&&d.citations.length){const src=document.createElement('div');src.innerHTML='<h4>Sources consultées</h4>'+d.citations.map(x=>'<p style="font-size:12px;margin:6px 0"><a target="_blank" rel="noopener noreferrer" href="'+escapeHTML(x.url)+'">'+escapeHTML(x.title||x.url)+'</a></p>').join('');results.appendChild(src);}
+   if(d.mode==='local-faq')results.insertAdjacentHTML('beforeend','<p style="font-size:11px;color:#ffd28a">La recherche web nécessite la configuration de l’IA sur le serveur.</p>');
+  }catch(error){results.textContent=error.message||'La recherche a échoué.';}
+  finally{button.disabled=false;button.textContent='Rechercher';}
+ });
+ field.focus();
 }
-
 
 function getHousingDoor(doorId){return doors.find(d=>d&&d.id===doorId&&String(d.id).startsWith('home'))||null;}
 function getHousingCandidates(){
@@ -5470,15 +5406,9 @@ function renderCheatApp(){
 }
 
 function renderCreatorOffersApp(){
-  const content=document.getElementById('phoneAppContent');if(!content)return;
-  const creator=!!(activeGameAccount&&(isCreatorAccount(activeGameAccount)||getCreatorTier()!=='none'));
-  const offers=[
-    {name:'Creator Starter',price:2500,detail:'Badge Creator, cadre de profil exclusif et 3 tenues de créateur.'},
-    {name:'Creator Pro',price:7500,detail:'Avantages Starter, pack de décoration studio et animations sociales supplémentaires.'},
-    {name:'Creator Studio',price:15000,detail:'Avantages Pro, studio personnel amélioré et pack cosmétique premium.'}
-  ];
-  content.innerHTML='<button id="phoneBack">← Applications</button><h3>✨ Offres Creator</h3>'+(creator?'<p style="font-size:12px;color:#c6d8e5">Offres réservées aux comptes créateur. Prix indicatifs en francs CFA (XOF), paiement en argent réel.</p>'+offers.map(o=>'<article style="padding:13px;margin:10px 0;border:1px solid #e9c77b66;border-radius:13px;background:linear-gradient(135deg,#ffffff12,#ffffff05)"><b>'+o.name+'</b><div style="font-size:20px;font-weight:900;color:#ffe0a0;margin:7px 0">'+o.price.toLocaleString('fr-FR')+' FCFA</div><p style="font-size:12px;color:#d2e0e8">'+o.detail+'</p><button disabled style="opacity:.55;cursor:not-allowed">Paiement sécurisé bientôt disponible</button></article>').join('')+'<p style="font-size:11px;color:#ffdf9a">Les paiements réels ne sont pas encore activés : aucun débit ne sera effectué. La connexion d’un prestataire de paiement et d’un serveur sécurisé est nécessaire avant toute vente.</p>':'<p>Cette application est réservée aux comptes créateur. Connecte-toi avec un compte autorisé pour consulter les offres.</p>');
-  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
+ const content=document.getElementById('phoneAppContent');if(!content)return;
+ content.innerHTML='<button id="phoneBack">← Applications</button><h3>✨ Abonnements et offres spéciales</h3><section style="padding:18px;margin:12px 0;border:1px solid #e9c77b66;border-radius:13px;background:linear-gradient(135deg,#ffffff12,#ffffff05);text-align:center"><div style="font-size:30px">🔒</div><b style="font-size:16px;color:#ffe0a0">Abonnements indisponibles pour le moment</b><p style="font-size:12px;color:#d2e0e8">Les abonnements seront proposés lorsque le jeu sera terminé. Aucun paiement ni souscription ne peut être effectué actuellement.</p></section>';
+ document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
 }
 
 function openPhoneApp(app){
@@ -7536,7 +7466,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
  const downloadedAppMeta={contacts:{name:'Contacts',emoji:'👥'},messages:{name:'Messages',emoji:'💬'},appels:{name:'Appels',emoji:'📞'},offrescreateur:{name:'Offres spéciales',emoji:'🎁'},cheats:{name:'Codes',emoji:'⌨️'},recompenses:{name:'Récompenses',emoji:'🏆'},helicoptere:{name:'Hélicoptère',emoji:'🚁'},yango:{name:'Yango',emoji:'🚕'},achats:{name:'Achats & livraisons',emoji:'🛍️'},finances:{name:'Finances',emoji:'💳'},communication:{name:'Communication',emoji:'💬'},medias:{name:'Médias',emoji:'📸'},viepratique:{name:'Vie pratique',emoji:'🏙️'},monsuccess:{name:'Mon Success',emoji:'🏆'},immoabj:{name:'Immo ABJ',emoji:'🏘️'},proemploi:{name:'Pro Emploi',emoji:'🧰'},inventaire:{name:'Inventaire',emoji:'🎒'},afgamer:{name:'AF GAMER CI',emoji:'🎮'},google:{name:'Recherche',emoji:'🔎'}};
  function restoreDownloadedPhoneApps(){const host=document.getElementById('phoneApps');if(!host)return;const ids=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];ids.forEach(id=>{const a=downloadedAppMeta[id];if(!a||host.querySelector('[data-app="'+id+'"]'))return;let target=host.querySelector('.phoneAppsPage:last-child');if(!target||target.querySelectorAll('.phoneApp').length>=9){target=document.createElement('div');target.className='phoneAppsPage';host.appendChild(target);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+a.emoji+'</span>'+a.name;b.addEventListener('click',()=>openPhoneApp(id));target.appendChild(b);});}
  const activateBeforePhoneRestore=activateGameAccount;
- activateGameAccount=async function(phone){await activateBeforePhoneRestore(phone);if(lifeState){lifeState.v19=lifeState.v19||{};lifeState.v19.installedApps=Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];['contacts','messages','appels','offrescreateur','cheats'].forEach(id=>{if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);});if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('recompenses'))lifeState.v19.installedApps.push('recompenses');if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('helicoptere'))lifeState.v19.installedApps.push('helicoptere');saveLifeProgress(false);}setTimeout(()=>{restoreDownloadedPhoneApps();window.ABJ_CONNECT_ONLINE&&window.ABJ_CONNECT_ONLINE();},350);};
+ activateGameAccount=async function(phone){await activateBeforePhoneRestore(phone);if(lifeState){lifeState.v19=lifeState.v19||{};lifeState.v19.installedApps=Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];['contacts','messages','appels','offrescreateur','cheats','recompenses'].forEach(id=>{if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);});if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('recompenses'))lifeState.v19.installedApps.push('recompenses');if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('helicoptere'))lifeState.v19.installedApps.push('helicoptere');saveLifeProgress(false);}setTimeout(()=>{restoreDownloadedPhoneApps();window.ABJ_CONNECT_ONLINE&&window.ABJ_CONNECT_ONLINE();},350);};
  window.ABJ_RESTORE_PHONE_APPS=restoreDownloadedPhoneApps;
  const countBtn=document.createElement('button');countBtn.id='abjOnlineCount';countBtn.type='button';countBtn.innerHTML='👥 <b id="abjOnlineNumber">0</b>';
  countBtn.style.cssText='display:none;position:relative;z-index:2;margin-left:auto;padding:6px 9px;border:1px solid #f0d18d;border-radius:18px;background:#081827;color:#fff;font:700 12px system-ui;cursor:pointer;box-shadow:0 2px 8px #0008';
@@ -8027,7 +7957,7 @@ const ABJ_MYV_CATALOG=[
  {id:'myv-pickup',brand:'Savanes',model:'Pickup 4x2',year:2023,type:'voiture',price:4200000,description:'Utilitaire pour les déplacements',docs:['Carte grise','Assurance simulée','Facture d’achat']},
  {id:'myv-moto',brand:'Lagune Moto',model:'City 125',year:2025,type:'moto',price:450000,description:'Moto légère pour la ville',docs:['Carte grise','Assurance simulée','Facture d’achat']}
 ];
-function abjChargeForApp(amount,label){amount=Math.max(0,Math.floor(Number(amount)||0));if(abjWaveInstalled()){if((lifeState.waveBalance||0)<amount)return false;lifeState.waveBalance-=amount;}else{if(lifeState.money<amount)return false;lifeState.money-=amount;}return true;}
+function abjChargeForApp(amount,label){amount=Math.max(0,Math.floor(Number(amount)||0));const primary=abjWaveInstalled()?'waveBalance':'money';if((Number(lifeState[primary])||0)>=amount){lifeState[primary]-=amount;return true;}if((Number(lifeState.bankBalance)||0)>=amount){lifeState.bankBalance-=amount;return true;}return false;}
 function abjWaveInstalled(){try{return !!JSON.parse(safeGet('abj-installed-apps:'+normalizeIvorianMobile(activeGameAccount))||'{}').wave;}catch(e){return false;}}
 function abjCashMethodLabel(){return abjWaveInstalled()?'Payer avec WaveABJ (solde du jeu)':'Payer en espèces (FCFA)';}
 function renderMyVApp(){
@@ -8580,6 +8510,78 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
 })();
 </script>
 
+
+<script>
+/* 12 analystes spécialisés du monde : audit déterministe, rapport agrégé et exportable. */
+(function(){
+ const analysts=[
+  {name:'Structure 3D',run:ctx=>ctx.meshes.filter(o=>!o.position||![o.position.x,o.position.y,o.position.z].every(Number.isFinite)).map(o=>'Objet '+(o.name||'sans nom')+' avec position non numérique.')},
+  {name:'Géométrie',run:ctx=>ctx.meshes.filter(o=>o.isMesh&&(!o.geometry||!o.geometry.getAttribute('position'))).map(o=>(o.name||'Mesh')+' sans géométrie exploitable.')},
+  {name:'Limites de la carte',run:ctx=>{const limit=(typeof CITY_SIZE!=='undefined'?CITY_SIZE:30000)*.65;return ctx.meshes.filter(o=>Math.abs(o.position.x)>limit||Math.abs(o.position.z)>limit).slice(0,20).map(o=>(o.name||'Objet')+' hors zone ('+Math.round(o.position.x)+','+Math.round(o.position.z)+').');}},
+  {name:'Collisions',run:ctx=>ctx.obstacles.filter(o=>![o.x,o.z,o.w,o.d].every(Number.isFinite)||o.w<=0||o.d<=0).slice(0,30).map(o=>'Obstacle invalide : '+JSON.stringify(o).slice(0,120))},
+  {name:'Portes et entrées',run:ctx=>{const ids=new Set(),out=[];for(const d of ctx.doors){if(!d||!d.id)out.push('Porte sans identifiant.');else if(ids.has(String(d.id)))out.push('Identifiant de porte dupliqué : '+d.id);else ids.add(String(d.id));if(d?.home&&ctx.interiors&&!ctx.interiors[d.id])out.push('Logement '+d.id+' sans intérieur associé.');}return out;}},
+  {name:'Intérieurs',run:ctx=>Object.keys(ctx.interiors||{}).filter(id=>!ctx.doors.some(d=>d&&String(d.id)===id)).slice(0,30).map(id=>'Intérieur sans porte correspondante : '+id)},
+  {name:'Réseau routier',run:ctx=>ctx.roads.filter(r=>!r?.a||!r?.b||![r.a.x,r.a.z,r.b.x,r.b.z].every(Number.isFinite)||Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)<.25).slice(0,40).map(r=>'Segment routier invalide : '+String(r?.id||r?.type||'sans identifiant'))},
+  {name:'Trottoirs et terrain',run:()=>{const out=[];if(typeof terrainHeight==='function'){for(let i=0;i<40;i++){const x=Math.sin(i*12.9898)*1000,z=Math.cos(i*7.233)*1000;if(!Number.isFinite(terrainHeight(x,z)))out.push('Hauteur de terrain non finie près de '+Math.round(x)+','+Math.round(z));}}return out;}},
+  {name:'Circulation',run:ctx=>ctx.vehicles.filter(v=>{const p=v?.position||v;return !p||!Number.isFinite(p.x)||!Number.isFinite(p.z);}).slice(0,30).map(v=>'Véhicule sans position valide : '+String(v?.name||v?.id||'inconnu'))},
+  {name:'Trajets des véhicules',run:ctx=>ctx.vehicles.filter(v=>Array.isArray(v?.route)&&v.route.some(s=>!s?.a||!s?.b||![s.a.x,s.a.z,s.b.x,s.b.z].every(Number.isFinite))).slice(0,30).map(v=>'Trajet incomplet pour '+String(v?.name||v?.id||'un véhicule'))},
+  {name:'Habitants et PNJ',run:ctx=>ctx.npcs.filter(n=>{const p=n?.position||n;return !p||!Number.isFinite(p.x)||!Number.isFinite(p.z);}).slice(0,30).map(n=>'PNJ sans position valide : '+String(n?.name||n?.id||'inconnu'))},
+  {name:'Cohérence générale',run:ctx=>{const out=[];if(ctx.roads.length===0)out.push('Aucun segment routier OSM chargé au moment du contrôle.');if(ctx.meshes.length===0)out.push('La scène 3D ne contient aucun objet inspectable.');if(ctx.doors.length&&Object.keys(ctx.interiors||{}).length===0)out.push('Des portes existent mais aucun intérieur n’est enregistré.');return out;}}
+ ];
+ function snapshot(){const root=typeof scene!=='undefined'?scene:null;if(!root)return null;const ctx={meshes:[],obstacles:typeof obstacles!=='undefined'?obstacles:[],doors:typeof doors!=='undefined'?doors:[],interiors:typeof interiors!=='undefined'?interiors:{},roads:typeof osmRoadSegments!=='undefined'?osmRoadSegments:[],vehicles:typeof vehicles!=='undefined'?vehicles:[],npcs:typeof npcs!=='undefined'?npcs:[]};root.traverse(o=>{let visible=true,p=o;while(p&&p!==root){if(p.visible===false){visible=false;break;}p=p.parent;}if(visible&&o&&o.position)ctx.meshes.push(o);});return ctx;}
+ let lastScanPosition=null,lastScanAt=0;
+ async function runAudit(force=false){if(!activeGameAccount||!creatorToken()||!creatorRoleVerified)return;if(typeof gameStarted!=='undefined'&&!gameStarted)return;if(typeof worldReady!=='undefined'&&!worldReady)return;if(typeof osmLoaded!=='undefined'&&!osmLoaded)return;if(typeof player!=='undefined'&&player?.position){const p=player.position,now=Date.now();if(!force&&lastScanPosition&&Math.hypot(p.x-lastScanPosition.x,p.z-lastScanPosition.z)<220&&now-lastScanAt<5*60*1000)return;lastScanPosition={x:p.x,z:p.z};lastScanAt=now;}const ctx=snapshot();if(!ctx)return;const results=analysts.map(a=>{try{return {agent:a.name,findings:a.run(ctx).slice(0,25)}}catch(e){return {agent:a.name,findings:['Contrôle interrompu : '+String(e.message||e).slice(0,140)]}}});const findings=results.flatMap(r=>r.findings.map(message=>({agent:r.agent,message})));const report={title:'Rapport d’audit Abidjan Life — 12 analystes',createdAt:new Date().toISOString(),version:window.ABJ_BUILD_VERSION||'inconnue',district:typeof currentQuartier!=='undefined'?currentQuartier:'Ville entière',sceneObjects:ctx.meshes.length,roads:ctx.roads.length,obstacles:ctx.obstacles.length,doors:ctx.doors.length,interiors:Object.keys(ctx.interiors||{}).length,vehicles:ctx.vehicles.length,npcs:ctx.npcs.length,analysts:results,summary:{agents:analysts.length,agentsWithFindings:results.filter(r=>r.findings.length).length,totalFindings:findings.length}};window.ABJ_LAST_WORLD_AUDIT=report;if(!findings.length)return report;const signature=JSON.stringify(findings).slice(0,1200),key='abj-world-audit:'+signature;if(safeGet(key))return report;safeSet(key,'1');try{await fetch(creatorApi()+'/api/game/report',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({kind:'analyst-12-world-audit',message:JSON.stringify(report,null,2).slice(0,4900),version:window.ABJ_BUILD_VERSION||'',district:report.district})});}catch(e){console.warn('Rapport des analystes non transmis',e);}return report;}
+ window.ABJ_RUN_WORLD_AUDIT=()=>runAudit(true);
+ function schedule(){if(window.__ABJ_ANALYSTS_STARTED)return;window.__ABJ_ANALYSTS_STARTED=true;setTimeout(()=>{runAudit(true);setInterval(()=>runAudit(false),2*60*1000);},45000);}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule);else schedule();
+})();
+</script>
+
+<script>
+/* Le Talon : club nocturne fictif 18+, sans contenu sexuel explicite ni transactions réelles. */
+(function(){
+ let built=false,attempts=0;
+ function buildTalon(){
+  if(built||!scene||!osmLoaded||!osmRoadSegments.length||typeof generateInterior!=='function')return false;
+  const roads=osmRoadSegments.filter(r=>r&&r.a&&r.b&&['primary','secondary','tertiary','residential','living_street','service'].includes(r.type)&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>35);
+  let best=null,bestScore=Infinity;
+  for(const r of roads){
+   const mx=(r.a.x+r.b.x)/2,mz=(r.a.z+r.b.z)/2,dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,len=Math.hypot(dx,dz)||1;
+   const nx=-dz/len,nz=dx/len;
+   for(const side of [-1,1]){
+    const x=mx+nx*side*25,z=mz+nz*side*25;
+    if(Math.hypot(x,z)>2600||isOnRoad(x,z,5)||overlapsExisting(x,z,28,22,4))continue;
+    const score=Math.hypot(x,z)+Math.random()*2;
+    if(score<bestScore){bestScore=score;best={x,z,nx:-nx*side,nz:-nz*side,yaw:Math.atan2(-nx*side,-nz*side)};}
+   }
+  }
+  if(!best)return false;
+  const x=best.x,z=best.z,h=10,w=28,d=22,g=new THREE.Group();
+  const wall=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:0x20242f,roughness:.72}));wall.position.y=h/2;wall.castShadow=true;wall.receiveShadow=true;g.add(wall);
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(w+1,.65,d+1),new THREE.MeshStandardMaterial({color:0x10151f,metalness:.3,roughness:.6}));roof.position.y=h+.3;roof.castShadow=true;g.add(roof);
+  const facade=new THREE.Mesh(new THREE.BoxGeometry(w*.72,4,.22),new THREE.MeshStandardMaterial({color:0x142b3d,metalness:.25,roughness:.28,emissive:0x0b2335}));facade.position.set(0,6,d/2+.12);g.add(facade);
+  const windowMat=new THREE.MeshStandardMaterial({color:0x5a1d51,emissive:0x9d1c83,emissiveIntensity:.8});
+  for(const side of [-1,1]){const win=new THREE.Mesh(new THREE.BoxGeometry(3.6,3,.18),windowMat);win.position.set(side*8,5,d/2+.15);g.add(win);}
+  const signCanvas=document.createElement('canvas');signCanvas.width=512;signCanvas.height=160;const ctx=signCanvas.getContext('2d');ctx.fillStyle='#111522';ctx.fillRect(0,0,512,160);ctx.strokeStyle='#d64bb5';ctx.lineWidth=8;ctx.strokeRect(8,8,496,144);ctx.fillStyle='#ffe0fa';ctx.font='bold 78px Arial';ctx.textAlign='center';ctx.fillText('LE TALON',256,104);
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(15,4.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signCanvas),transparent:true,side:THREE.DoubleSide}));sign.position.set(0,8.4,d/2+.3);g.add(sign);
+  const canopy=new THREE.Mesh(new THREE.BoxGeometry(8,.45,3.2),new THREE.MeshStandardMaterial({color:0x7a285f,emissive:0x4b123c,emissiveIntensity:.55}));canopy.position.set(0,3.2,d/2+1.2);g.add(canopy);
+  g.position.set(x,terrainHeight(x,z),z);g.rotation.y=best.yaw;scene.add(g);registerDistanceManagedBuilding(g);addObstacle(x,z,w,d,h+1);allBuildings.push({x,z,w,d,h:h+1,type:'nightclub',name:'Le Talon'});addPOI(x,z,'loisir','Le Talon',{category:'club',age:'18+'});
+  const id='talon-1',doorX=x+best.nx*10,doorZ=z+best.nz*10;
+  const interior=generateInterior(id,w,d,1,0x303344,'maquis');interiors[id]=interior;
+  const floor=interior.floors&&interior.floors[0];
+  if(floor){
+   const dance=new THREE.Mesh(new THREE.BoxGeometry(10,.12,7),new THREE.MeshStandardMaterial({color:0x292c48,metalness:.45,roughness:.3,emissive:0x241044,emissiveIntensity:.35}));dance.position.set(0,.18,-1);floor.add(dance);
+   const bar=new THREE.Mesh(new THREE.BoxGeometry(9,1.1,1.5),new THREE.MeshStandardMaterial({color:0x4a293d,roughness:.4}));bar.position.set(-7,.72,-7);floor.add(bar);
+   for(const px of [-8,8])for(const pz of [-7,7]){const booth=new THREE.Mesh(new THREE.BoxGeometry(4,.8,2.8),new THREE.MeshStandardMaterial({color:0x492d49,roughness:.6}));booth.position.set(px,.58,pz);floor.add(booth);}
+   const lampMat=new THREE.MeshStandardMaterial({color:0x9e4fc0,emissive:0x7b22a5,emissiveIntensity:1.4});
+   for(const px of [-6,0,6]){const lamp=new THREE.Mesh(new THREE.SphereGeometry(.28,8,6),lampMat);lamp.position.set(px,3,-2);floor.add(lamp);}
+  }
+  doors.push({x:doorX,z:doorZ,id,rot:0,normal:new THREE.Vector3(best.nx,0,best.nz),home:true,buildingType:'nightclub',buildingName:'Le Talon',adultOnly:true});
+  built=true;window.ABJ_LE_TALON={id,x,z,name:'Le Talon',ageLimit:18};console.info('Le Talon construit dans Abidjan Life.',window.ABJ_LE_TALON);return true;
+ }
+ const timer=setInterval(()=>{attempts++;if(buildTalon()||attempts>180)clearInterval(timer);},1000);
+})();
+</script>
 </body>
 </html>
 
@@ -8602,7 +8604,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  function apiBase(){return String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');}
  function ensureRewardsIcon(){
   const pages=document.querySelectorAll('#phoneApps .phoneAppsPage');
-  const page=pages[pages.length-1];if(!page||!creatorRoleVerified||!activeGameAccount)return;
+  const page=pages[pages.length-1];if(!page||!activeGameAccount)return;
   if(page.querySelector('[data-app="recompenses"]'))return;
   const b=document.createElement('button');b.className='phoneApp abjCreatorApp';b.dataset.app='recompenses';
   b.innerHTML='<span>🎁</span><b>Récompenses</b>';
@@ -8611,21 +8613,45 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  }
  async function renderRewards(){
   const c=document.getElementById('phoneAppContent');if(!c)return;
-  c.innerHTML='<button id="rewardBack">← Applications</button><div id="abjCreatorRewards"><h3>🎁 Récompenses du créateur</h3><p class="muted">Attribue des gemmes temporaires aux joueurs. Les privilèges de créateur restent réservés à ton compte.</p><div class="rewardPanel"><label>Numéro du compte joueur</label><input id="rewardPhone" placeholder="Numéro ivoirien du joueur" inputmode="tel"><label>Nombre de gemmes</label><input id="rewardGems" type="number" min="1" max="1000000" value="100"><label>Durée de validité (jours)</label><input id="rewardDays" type="number" min="1" max="365" value="7"><label>Message de récompense</label><input id="rewardLabel" maxlength="60" value="Récompense AF GAMER CI"><button id="rewardGrant">Attribuer la récompense</button><p id="rewardStatus" class="muted"></p></div><div class="rewardPanel"><b>Récompenses actives</b><div id="rewardList" class="muted">Chargement…</div></div></div>';
+  c.innerHTML='<button id="rewardBack">← Applications</button><div id="abjCreatorRewards"><h3>🎁 Récompenses AF GAMER</h3><p class="muted">Tu peux offrir aux joueurs des gemmes, de l’argent de jeu, des objets et des bons pour véhicules, propriétés, entreprises ou cadeaux personnalisés.</p><div class="rewardPanel"><label>Numéro du compte joueur</label><input id="rewardPhone" placeholder="Numéro ivoirien du joueur" inputmode="tel"><label>Type de récompense</label><select id="rewardType"><option value="gems">Gemmes</option><option value="cash">Argent de poche (jeu)</option><option value="bank">Virement bancaire (jeu)</option><option value="item">Article / objet</option><option value="vehicle">Bon véhicule</option><option value="property">Bon propriété / terrain</option><option value="business">Bon entreprise</option><option value="custom">Cadeau personnalisé</option></select><label>Quantité (gemmes ou FCFA de jeu)</label><input id="rewardAmount" type="number" min="1" max="1000000000" value="100"><label>Nom ou description du cadeau</label><input id="rewardValue" maxlength="120" placeholder="Ex. moto, villa, parc, article…"><label>Message</label><input id="rewardLabel" maxlength="100" value="Récompense AF GAMER CI"><label>Délai pour récupérer (jours)</label><input id="rewardDays" type="number" min="1" max="365" value="30"><button id="rewardGrant">Envoyer la récompense</button><p id="rewardStatus" class="muted"></p></div><div class="rewardPanel"><b>Récompenses et cadeaux envoyés</b><div id="rewardList" class="muted">Chargement…</div></div></div>';
   document.getElementById('rewardBack').onclick=()=>{c.style.display='none';showPhoneHome();};
   const status=document.getElementById('rewardStatus'),list=document.getElementById('rewardList');
   const headers={'Authorization':'Bearer '+creatorToken(),'Content-Type':'application/json'};
   async function load(){
-   try{const r=await fetch(apiBase()+'/api/creator/rewards',{headers,cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Accès refusé');const active=(d.accounts||[]).flatMap(a=>(a.rewards||[]).map(x=>({name:a.name,phone:a.phone,...x})));list.innerHTML=active.length?active.map(x=>'<p>⭐ '+escapeHTML(x.name)+' · '+escapeHTML(x.phone)+'<br>'+Number(x.gems).toLocaleString('fr-FR')+' gemmes · '+escapeHTML(x.label)+'<br><small>Expire le '+new Date(x.expiresAt).toLocaleDateString('fr-FR')+'</small></p>').join(''):'Aucune récompense active.';}
-   catch(e){list.textContent=e.message;}
+   try{
+    const r=await fetch(apiBase()+'/api/creator/rewards',{headers,cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Accès refusé');
+    const active=(d.accounts||[]).flatMap(a=>[...(a.rewards||[]).map(x=>({name:a.name,phone:a.phone,...x,displayType:'Gemmes'})),...(a.inbox||[]).map(x=>({name:a.name,phone:a.phone,...x,displayType:x.type}))]);
+    list.innerHTML=active.length?active.slice().reverse().map(x=>'<article style="padding:8px;border-bottom:1px solid #ffffff25"><b>'+escapeHTML(x.name)+' · '+escapeHTML(x.displayType)+'</b><div>'+escapeHTML(x.phone)+' · '+escapeHTML(x.label)+'</div><small>'+escapeHTML(String(x.value||''))+' '+(x.gems||x.amount?Number(x.gems||x.amount).toLocaleString('fr-FR'):'')+' · '+escapeHTML(x.status||'actif')+' · Expire '+new Date(x.expiresAt).toLocaleDateString('fr-FR')+'</small></article>').join(''):'Aucune récompense envoyée.';
+   }catch(e){list.textContent=e.message;}
   }
   document.getElementById('rewardGrant').onclick=async()=>{
    status.textContent='Enregistrement…';
-   try{const r=await fetch(apiBase()+'/api/creator/rewards',{method:'POST',headers,body:JSON.stringify({phone:document.getElementById('rewardPhone').value,gems:document.getElementById('rewardGems').value,days:document.getElementById('rewardDays').value,label:document.getElementById('rewardLabel').value})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Attribution impossible');status.textContent='Récompense enregistrée pour '+d.target.name+'.';await load();}
-   catch(e){status.textContent=e.message;}
+   try{
+    const r=await fetch(apiBase()+'/api/creator/rewards',{method:'POST',headers,body:JSON.stringify({phone:document.getElementById('rewardPhone').value,type:document.getElementById('rewardType').value,amount:document.getElementById('rewardAmount').value,value:document.getElementById('rewardValue').value,days:document.getElementById('rewardDays').value,label:document.getElementById('rewardLabel').value})});
+    const d=await r.json();if(!r.ok)throw new Error(d.error||'Attribution impossible');
+    status.textContent='Récompense envoyée à '+d.target.name+'.';await load();
+   }catch(e){status.textContent=e.message;}
   };
   await load();
  }
+ async function renderPlayerRewards(){
+  const c=document.getElementById('phoneAppContent');if(!c)return;
+  c.innerHTML='<button id="rewardBack">← Applications</button><h3>🎁 Mes récompenses</h3><div id="playerRewardBody">Chargement…</div>';
+  document.getElementById('rewardBack').onclick=()=>{c.style.display='none';showPhoneHome();};
+  const body=document.getElementById('playerRewardBody'),token=safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount||''));
+  const base=apiBase();
+  async function load(){
+   const r=await fetch(base+'/api/rewards/me',{headers:{Authorization:'Bearer '+token},cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Impossible de charger tes récompenses.');
+   const gemRows=(d.gemRewards||[]).map(x=>'<article style="padding:10px;margin:7px 0;border:1px solid #b89b55;border-radius:10px"><b>💎 '+Number(x.gems||0).toLocaleString('fr-FR')+' gemmes</b><p>'+escapeHTML(x.label||'Récompense créateur')+'</p><small>Disponibles jusqu’au '+new Date(x.expiresAt).toLocaleDateString('fr-FR')+'</small></article>').join('');
+   const inbox=(d.rewards||[]).map(x=>'<article style="padding:10px;margin:7px 0;border:1px solid #ffffff28;border-radius:10px"><b>'+escapeHTML(x.label||'Cadeau AF GAMER')+'</b><p style="font-size:12px;color:#c6d8e5">'+escapeHTML(x.type)+' · '+escapeHTML(x.value||'')+' '+(x.amount?Number(x.amount).toLocaleString('fr-FR'):'')+'</p><small>'+escapeHTML(x.status||'available')+' · Expire le '+new Date(x.expiresAt).toLocaleDateString('fr-FR')+'</small>'+(x.status==='claimed'?'<p>✓ Récupéré</p>':'<button data-claim="'+escapeHTML(x.id)+'">Récupérer</button>')+'</article>').join('');
+   const vault=(d.vault||[]).map(x=>'<p>✓ '+escapeHTML(x.label)+' · '+escapeHTML(x.type)+' · '+escapeHTML(x.value||'')+'</p>').join('');
+   body.innerHTML='<section style="padding:12px;border:1px solid #9f8a4b;border-radius:12px"><b>💎 Solde : '+Number(d.gems||0).toLocaleString('fr-FR')+' gemmes</b><p style="font-size:12px;color:#c6d8e5">1 gemme = 1 000 000 FCFA de monnaie du jeu, crédités sur ton compte bancaire virtuel. Cette conversion ne donne pas de francs CFA réels.</p><div style="display:flex;gap:7px"><input id="exchangeGemAmount" type="number" min="1" max="100000" value="1" style="min-width:0;flex:1"><button id="exchangeGemButton">Convertir en FCFA de jeu</button></div></section><h4>Gemmes reçues</h4>'+(gemRows||'<p>Aucune gemme temporaire.</p>')+'<h4>Cadeaux à récupérer</h4>'+(inbox||'<p>Aucun cadeau en attente.</p>')+'<h4>Cadeaux déjà reçus</h4>'+(vault||'<p>Aucun cadeau récupéré.</p>');
+   body.querySelectorAll('[data-claim]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const cr=await fetch(base+'/api/rewards/claim',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({id:b.dataset.claim})}),cd=await cr.json();if(!cr.ok)throw new Error(cd.error||'Récupération impossible');if(cd.granted.type==='cash')lifeState.money=(Number(lifeState.money)||0)+Number(cd.granted.amount||0);if(cd.granted.type==='bank')lifeState.bankBalance=(Number(lifeState.bankBalance)||0)+Number(cd.granted.amount||0);saveLifeProgress(false);await load();showMessage('🎁 Récompense récupérée.');}catch(e){showMessage(e.message||'Erreur de récupération.');b.disabled=false;}});
+   const ex=body.querySelector('#exchangeGemButton');if(ex)ex.onclick=async()=>{ex.disabled=true;try{const gems=Number(body.querySelector('#exchangeGemAmount').value);const er=await fetch(base+'/api/rewards/exchange-gems',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({gems})}),ed=await er.json();if(!er.ok)throw new Error(ed.error||'Conversion impossible');lifeState.bankBalance=(Number(lifeState.bankBalance)||0)+Number(ed.gameMoney||0);saveLifeProgress(false);await load();showMessage('💎 Gemmes converties en '+Number(ed.gameMoney||0).toLocaleString('fr-FR')+' FCFA de jeu.');}catch(e){showMessage(e.message||'Conversion impossible.');ex.disabled=false;}};
+  }
+  try{await load();}catch(e){body.textContent=e.message||'Récompenses indisponibles.';}
+ }
+
  const originalActivate=window.activateGameAccount||activateGameAccount;
  if(typeof originalActivate==='function'&&!window.__ABJ_CREATOR_ACCOUNT_WRAPPED){
   window.__ABJ_CREATOR_ACCOUNT_WRAPPED=true;
@@ -8636,10 +8662,9 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   window.__ABJ_CREATOR_APP_WRAPPED=true;
   window.openPhoneApp=function(app){
    if(app==='recompenses'){
-    if(!creatorRoleVerified){showMessage('Accès réservé au compte créateur.');return;}
     openPhone();const home=document.getElementById('phoneHomeShell'),apps=document.getElementById('phoneApps'),content=document.getElementById('phoneAppContent');
     if(home)home.style.display='none';if(apps)apps.style.display='none';if(content)content.style.display='block';
-    renderRewards();return;
+    if(creatorRoleVerified)renderRewards();else renderPlayerRewards();return;
    }
    return originalOpen(app);
   };

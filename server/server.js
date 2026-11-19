@@ -13,7 +13,14 @@ const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('he
 const CLIENT_ORIGINS = (process.env.CLIENT_ORIGINS || '*').split(',').map(s => s.trim()).filter(Boolean);
 const UPDATE_ADMIN_TOKEN = process.env.UPDATE_ADMIN_TOKEN || '';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-6.2-astra';
+const nodemailer = require('nodemailer');
+const SMTP_HOST = process.env.SMTP_HOST || '';
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
+const mailTransport = SMTP_HOST && SMTP_USER && SMTP_PASS ? nodemailer.createTransport({host:SMTP_HOST,port:SMTP_PORT,secure:SMTP_PORT===465,auth:{user:SMTP_USER,pass:SMTP_PASS}}) : null;
 const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.26.0';
 const DEFAULT_CLIENT_URL = process.env.CLIENT_URL || '';
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -59,6 +66,7 @@ function publicPlayer(p){return {id:p.id,profile:p.profile,position:p.position,n
 function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.size});}
 
 const recoveryTickets = new Map();
+const emailRecoveryTickets = new Map();
 const attempts = new Map();
 const worldTelemetry = { npcTotal: 0, npcActive: 0, vehicles: {}, updatedAt: 0 };
 const creatorReports = [];
@@ -194,7 +202,9 @@ function refreshCreatorGemBalance(account) {
   account.profile = account.profile || {};
   const now=Date.now();
   account.profile.creatorRewards=(account.profile.creatorRewards||[]).filter(x=>Number(x.expiresAt)>now);
-  account.profile.gems=account.profile.creatorRewards.reduce((sum,x)=>sum+Math.max(0,Math.floor(Number(x.gems)||0)),0);
+  const timed=account.profile.creatorRewards.reduce((sum,x)=>sum+Math.max(0,Math.floor(Number(x.gems)||0)),0);
+  account.profile.purchasedGems=Math.max(0,Math.floor(Number(account.profile.purchasedGems)||0));
+  account.profile.gems=timed+account.profile.purchasedGems;
   return account.profile.gems;
 }
 function publicPlayer(account, id) {
@@ -441,100 +451,23 @@ app.post('/api/admin/updates/publish', requireUpdateAdmin, (req, res) => {
   });
 });
 
-app.post('/api/auth/register', async (req, res) => {
-  const phone = phoneOf(req.body.phone);
-  const password = String(req.body.password || '');
-  const email = clean(req.body.email, 120).toLowerCase();
-  const s = req.body.security || {};
-  const day = Number(req.body.birthDay);
-  const month = Number(req.body.birthMonth);
-
-  if (!rateLimit(req.ip + ':register', 6)) {
-    return res.status(429).json({
-      error: 'Trop de créations de comptes. Réessaie dans une minute.'
-    });
-  }
-
-  if (!phone) return res.status(400).json({ error: 'Numéro ivoirien invalide.' });
-
-  if (password.length < 8 || password.length > 128) {
-    return res.status(400).json({
-      error: 'Mot de passe : 8 à 128 caractères.'
-    });
-  }
-
-  if (!/^\S+@\S+\.\S{2,}$/.test(email)) {
-    return res.status(400).json({ error: 'Adresse e-mail invalide.' });
-  }
-
-  if (
-    !Number.isInteger(day) || day < 1 || day > 31 ||
-    !Number.isInteger(month) || month < 1 || month > 12 ||
-    answer(s.parentName).length < 2 ||
-    !answer(s.petName) ||
-    answer(s.sport).length < 2
-  ) {
-    return res.status(400).json({
-      error: 'Date de naissance ou questions de récupération invalides.'
-    });
-  }
-
-  if (accounts.has(phone)) {
-    return res.status(409).json({
-      error: 'Ce numéro possède déjà un compte.'
-    });
-  }
-
-  if ([...accounts.values()].some(a => a.email === email)) {
-    return res.status(409).json({
-      error: 'Cette adresse e-mail est déjà utilisée.'
-    });
-  }
-
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  const account = {
-    phone,
-    email,
-    passwordHash,
-    security: {
-      birthDay: day,
-      birthMonth: month,
-      parentName: answer(s.parentName),
-      petName: answer(s.petName),
-      sport: answer(s.sport)
-    },
-    profile: {
-      name: safePlayerName(phone, 'Mon personnage'),
-      gender: 'homme',
-      skin: 0x7a4a24,
-      hair: 0x17120f,
-      shirt: 0xe74c3c,
-      pants: 0x2c3e50
-    },
-    position: { x: 0, z: 0, yaw: 0 },
-    needs: null,
-    save: null,
-    createdAt: Date.now()
-  };
-
-  try {
-    await persistAccount(account);
-  } catch (error) {
-    console.error('Échec enregistrement nouveau compte:', error.message);
-    return res.status(503).json({ error: 'Impossible de sécuriser le compte maintenant. Réessaie.' });
-  }
-  accounts.set(phone, account);
-
-  res.status(201).json({
-    token: issueToken(phone),
-    player: {
-      id: phone,
-      profile: accounts.get(phone).profile,
-      position: accounts.get(phone).position,
-      save: null
-    }
-  });
+app.post('/api/auth/register', async (req,res) => {
+  if (!rateLimit(req.ip + ':register', 5, 60000)) return res.status(429).json({error:'Trop de créations de compte. Réessaie dans une minute.'});
+  const phone=phoneOf(req.body.phone), password=String(req.body.password||'');
+  const email=clean(req.body.email,120).toLowerCase();
+  if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
+  if(isCreatorPhone(phone)) return res.status(403).json({error:'Ce numéro est réservé au compte créateur officiel.'});
+  if(password.length<8||password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
+  if(email && !/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
+  if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
+  if(email && [...accounts.values()].some(a=>a.email===email)) return res.status(409).json({error:'Cette adresse e-mail est déjà utilisée.'});
+  const account={phone,email:email||null,passwordHash:await bcrypt.hash(password,12),security:{},
+    profile:{name:safePlayerName(phone,'Mon personnage'),gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50},
+    position:{x:0,z:0,yaw:0},needs:null,save:null,createdAt:Date.now()};
+  try { await persistAccount(account); }
+  catch(error){ console.error('Échec enregistrement nouveau compte:',error.message); return res.status(503).json({error:'Impossible de sauvegarder le compte. Réessaie.'}); }
+  accounts.set(phone,account);
+  res.set('Cache-Control','no-store').status(201).json({token:issueToken(phone),player:{id:phone,profile:account.profile,position:account.position,save:null}});
 });
 
 app.post('/api/auth/migrate-local', async (req, res) => {
@@ -548,6 +481,9 @@ app.post('/api/auth/migrate-local', async (req, res) => {
     });
   }
 
+  if (isCreatorPhone(phone)) {
+    return res.status(403).json({error:'Le numéro créateur ne peut pas être revendiqué par une migration locale.'});
+  }
   if (!phone || password.length < 8 || accounts.has(phone)) {
     return res.status(400).json({
       error: 'Migration impossible ou compte déjà présent sur le serveur.'
@@ -570,18 +506,11 @@ app.post('/api/auth/migrate-local', async (req, res) => {
   const email = clean(req.body.email, 120).toLowerCase();
   const s = req.body.security || {};
 
-  if (
-    !/^\S+@\S+\.\S{2,}$/.test(email) ||
-    answer(s.parentName).length < 2 ||
-    !answer(s.petName) ||
-    answer(s.sport).length < 2
-  ) {
-    return res.status(400).json({
-      error: 'Les informations de récupération du compte local sont incomplètes.'
-    });
+  if (!/^\S+@\S+\.\S{2,}$/.test(email)) {
+    return res.status(400).json({error:'Adresse e-mail invalide.'});
   }
 
-  if ([...accounts.values()].some(a => a.email === email)) {
+  if (email && [...accounts.values()].some(a => a.email === email)) {
     return res.status(409).json({
       error: 'Cette adresse e-mail est déjà utilisée.'
     });
@@ -595,15 +524,9 @@ app.post('/api/auth/migrate-local', async (req, res) => {
 
   const a = {
     phone,
-    email,
+    email: email || null,
     passwordHash: await bcrypt.hash(password, 12),
-    security: {
-      birthDay: Number(s.birthDay) || 1,
-      birthMonth: Number(s.birthMonth) || 1,
-      parentName: answer(s.parentName),
-      petName: answer(s.petName),
-      sport: answer(s.sport)
-    },
+    security: {},
     profile: {
       name: safePlayerName(phone, profile.name || 'Mon personnage'),
       gender: profile.gender === 'femme' ? 'femme' : 'homme',
@@ -657,73 +580,48 @@ app.post('/api/auth/login', async (req, res) => {
   });
 });
 
-app.post('/api/auth/recover', (req, res) => {
-  const phone = phoneOf(req.body.phone);
-  const a = phone && accounts.get(phone);
-  const s = req.body.security || {};
-
-  if (!rateLimit(req.ip + ':recover', 8)) {
-    return res.status(429).json({
-      error: 'Trop de tentatives de récupération.'
-    });
+app.post('/api/auth/recover-email', async (req,res) => {
+  if (!rateLimit(req.ip+':recover-email',5,60000)) return res.status(429).json({error:'Trop de demandes. Réessaie dans une minute.'});
+  if (!mailTransport) return res.status(503).json({error:'La récupération par e-mail attend la configuration SMTP sécurisée sur Render.'});
+  const phone=phoneOf(req.body.phone),email=clean(req.body.email,120).toLowerCase();
+  if (!phone || !/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Saisis un numéro et une adresse e-mail valides.'});
+  const account=accounts.get(phone);
+  // Réponse identique que le compte existe ou non, pour éviter l'énumération.
+  if (account && account.email===email) {
+    const code=String(crypto.randomInt(0,1000000)).padStart(6,'0');
+    const codeHash=crypto.createHash('sha256').update(phone+':'+email+':'+code+':'+JWT_SECRET).digest('hex');
+    emailRecoveryTickets.set(phone,{email,codeHash,expires:Date.now()+10*60*1000,attempts:0});
+    try {
+      await mailTransport.sendMail({from:SMTP_FROM,to:email,subject:'Code de récupération Abidjan Life',text:'Ton code de récupération Abidjan Life est : '+code+'\nIl expire dans 10 minutes. Si tu n’as pas demandé ce code, ignore ce message.'});
+    } catch(error) {
+      emailRecoveryTickets.delete(phone);
+      console.error('Envoi code récupération impossible:',error.message);
+      return res.status(503).json({error:'Le code n’a pas pu être envoyé. Réessaie plus tard.'});
+    }
   }
-
-  if (
-    !a ||
-    answer(s.parentName) !== a.security.parentName ||
-    answer(s.petName) !== a.security.petName ||
-    answer(s.sport) !== a.security.sport
-  ) {
-    return res.status(400).json({
-      error: 'Numéro ou réponses de sécurité incorrects.'
-    });
-  }
-
-  const ticket = crypto.randomBytes(32).toString('hex');
-
-  recoveryTickets.set(ticket, {
-    phone,
-    expires: Date.now() + 10 * 60 * 1000
-  });
-
-  res.json({ recoveryTicket: ticket, expiresIn: 600 });
+  res.set('Cache-Control','no-store').json({ok:true,message:'Si le numéro et l’adresse correspondent, un code de vérification vient d’être envoyé.'});
 });
-
-app.post('/api/auth/reset', async (req, res) => {
-  const phone = phoneOf(req.body.phone);
-  const ticket = recoveryTickets.get(String(req.body.recoveryTicket || ''));
-  const password = String(req.body.password || '');
-
-  if (!ticket || ticket.phone !== phone || ticket.expires < Date.now()) {
-    return res.status(400).json({
-      error: 'Vérification expirée. Recommence les questions de sécurité.'
-    });
-  }
-
-  if (password.length < 8 || password.length > 128) {
-    return res.status(400).json({
-      error: 'Mot de passe : 8 à 128 caractères.'
-    });
-  }
-
-  const a = accounts.get(phone);
-
-  if (!a) return res.status(404).json({ error: 'Compte introuvable.' });
-
-  const previousHash = a.passwordHash;
-  a.passwordHash = await bcrypt.hash(password, 12);
-  try {
-    await persistAccount(a);
-  } catch (error) {
-    a.passwordHash = previousHash;
-    console.error('Échec sauvegarde nouveau mot de passe:', error.message);
-    return res.status(503).json({ error: 'Le nouveau mot de passe n’a pas pu être enregistré. Réessaie.' });
-  }
-  recoveryTickets.delete(String(req.body.recoveryTicket));
-
-  res.json({ ok: true });
+app.post('/api/auth/reset-email', async (req,res) => {
+  if (!rateLimit(req.ip+':reset-email',8,60000)) return res.status(429).json({error:'Trop de tentatives. Réessaie dans une minute.'});
+  const phone=phoneOf(req.body.phone),email=clean(req.body.email,120).toLowerCase();
+  const code=String(req.body.code||'').replace(/\D/g,'').slice(0,6);
+  const password=String(req.body.password||'');
+  const ticket=phone&&emailRecoveryTickets.get(phone);
+  if (!ticket || ticket.email!==email || ticket.expires<Date.now()) return res.status(400).json({error:'Code expiré ou invalide. Demande un nouveau code.'});
+  if (++ticket.attempts>5) {emailRecoveryTickets.delete(phone);return res.status(429).json({error:'Trop de codes incorrects. Demande un nouveau code.'});}
+  const expected=crypto.createHash('sha256').update(phone+':'+email+':'+code+':'+JWT_SECRET).digest('hex');
+  const actual=crypto.createHash('sha256').update(phone+':'+email+':'+String(code)+':'+JWT_SECRET).digest('hex');
+  if (!code || !crypto.timingSafeEqual(Buffer.from(ticket.codeHash),Buffer.from(actual))) return res.status(400).json({error:'Code incorrect.'});
+  if (password.length<8 || password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
+  const account=accounts.get(phone);
+  if (!account || account.email!==email) return res.status(400).json({error:'Compte introuvable ou adresse non reconnue.'});
+  const previousHash=account.passwordHash;
+  account.passwordHash=await bcrypt.hash(password,12);
+  try {await persistAccount(account);}
+  catch(error) {account.passwordHash=previousHash;return res.status(503).json({error:'Le nouveau mot de passe n’a pas pu être enregistré.'});}
+  emailRecoveryTickets.delete(phone);
+  res.set('Cache-Control','no-store').json({ok:true});
 });
-
 // Suppression définitive du compte connecté et de toutes ses données de jeu.
 app.delete('/api/account/me', auth, async (req, res) => {
   const phone = req.phone;
@@ -852,7 +750,7 @@ app.post('/api/game/afgamer-message', auth, async (req,res) => {
 });
 app.post('/api/game/report', auth, async (req,res) => {
   if (!rateLimit(req.phone+':game-report',12,60000)) return res.status(429).json({error:'Trop de signalements. Réessaie plus tard.'});
-  const message=clean(req.body.message,500),kind=clean(req.body.kind,40)||'client-error';
+  const message=clean(req.body.message,5000),kind=clean(req.body.kind,40)||'client-error';
   if(!message)return res.status(400).json({error:'Signalement vide.'});
   const report={id:crypto.randomUUID(),kind,message,player:clean(accounts.get(req.phone)?.profile?.name,24)||'Citoyen',phone:req.phone,version:clean(req.body.version,32),district:clean(req.body.district,80),createdAt:new Date().toISOString(),status:'nouveau'};
   if(persistentStorageEnabled){
@@ -864,17 +762,38 @@ app.post('/api/game/report', auth, async (req,res) => {
   res.status(201).json({ok:true});
 });
 app.post('/api/game/assistant', auth, async (req,res) => {
-  if(!rateLimit(req.phone+':game-ai',20,60000))return res.status(429).json({error:'Tu poses trop de questions. Attends un instant.'});
-  const question=clean(req.body.message,1200);
-  if(!question)return res.status(400).json({error:'Écris une question sur Abidjan Life.'});
-  const knowledge=`Tu es l'assistant intégré d'Abidjan Life, un jeu de vie 3D situé à Abidjan. Tu réponds en français, clairement et sans prétendre qu'une fonctionnalité non confirmée existe. Le jeu actuel comprend un monde urbain fondé sur les données OpenStreetMap, des quartiers/communes, déplacements à pied, véhicules et circulation IA (gbaka, taxis, motos, voitures, bus), PNJ, bâtiments et intérieurs, téléphone avec applications simulées, économie en FCFA, compte en ligne, sauvegarde Supabase, multijoueur et services de vie (emploi, études, santé, mairie, logement, banque, Wave simulé). Les commandes principales : ZQSD/WASD pour se déplacer, souris pour caméra, E pour interagir/entrer/sortir/ascenseur, F pour interagir avec meubles, P ou M pour téléphone/carte selon configuration. Tu peux aider à expliquer, dépanner et proposer des améliorations du jeu. Tu ne peux pas modifier le jeu directement. Les paiements Wave ne sont pas réels. Le permis, les achats réels et les fonctions annoncées mais pas encore livrées ne doivent pas être présentés comme disponibles.`;
-  if(!OPENAI_API_KEY)return res.json({answer:'Assistant de jeu en mode connaissances locales : '+localGameAnswer(question),mode:'local-faq',note:'Pour les réponses IA génératives, configure OPENAI_API_KEY sur le serveur Render.'});
-  try{
-    const response=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+OPENAI_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({model:OPENAI_MODEL,messages:[{role:'system',content:knowledge},{role:'user',content:question}],temperature:.35,max_tokens:500})});
+  if(!rateLimit(req.phone+':game-ai',20,60000)) return res.status(429).json({error:'Tu poses trop de questions. Attends un instant.'});
+  const question=clean(req.body.message,1800);
+  const account=accounts.get(req.phone);
+  const storedHistory=Array.isArray(account?.profile?.assistantMemory)?account.profile.assistantMemory:[];
+  const clientHistory=Array.isArray(req.body.history)?req.body.history:[];
+  const history=(storedHistory.length?storedHistory:clientHistory).slice(-8).map(m=>({role:m?.role==='assistant'?'assistant':'user',content:clean(m?.content,1200)})).filter(m=>m.content);
+  if(!question) return res.status(400).json({error:'Écris une question.'});
+  const knowledge=`Tu es l'assistant général d'Abidjan Life et l'assistant numérique du joueur. Tu peux répondre à des questions de culture générale, sciences, histoire, technologie, actualité, géographie, vie quotidienne et questions sur le jeu. Réponds en français sauf demande contraire. Pour les faits récents, les informations du monde réel, les prix, les lois ou les événements, utilise la recherche web disponible, compare les sources et donne des liens de sources dans ta réponse. Signale clairement les incertitudes et les dates. N'invente jamais de faits, de liens, de fonctions du jeu, de paiements ou de connexions. Distingue toujours ce qui existe réellement dans la version actuelle du jeu, ce qui est seulement simulé et ce qui est proposé pour plus tard. Abidjan Life est un jeu 3D situé à Abidjan avec déplacements, véhicules, PNJ, bâtiments, intérieurs, téléphone, services de vie, comptes et multijoueur. Les paiements Wave, les achats d'argent réel et les retraits ne sont pas encore activés. Tu peux expliquer, analyser, proposer des améliorations et rédiger des rapports, mais tu ne peux pas modifier le jeu ou effectuer une transaction par toi-même. Ne prétends pas apprendre ou modifier tes propres poids : tu peux utiliser le contexte de la conversation et les retours explicitement enregistrés par le système.`;
+  if(!OPENAI_API_KEY) return res.json({answer:'Le service IA génératif n’est pas configuré sur le serveur. Les réponses locales restent limitées.',mode:'local-faq',note:'Configure OPENAI_API_KEY sur Render pour activer l’assistant avancé.'});
+  try {
+    const response=await fetch('https://api.openai.com/v1/responses',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+OPENAI_API_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:OPENAI_MODEL,
+        tools:[{type:'web_search',search_context_size:'medium',user_location:{type:'approximate',country:'CI',city:'Abidjan',region:'Abidjan'}}],
+        tool_choice:'auto',
+        max_output_tokens:1100,
+        input:[{role:'system',content:knowledge},...history,{role:'user',content:question}]
+      })
+    });
     const data=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(data.error?.message||'Service IA indisponible');
-    res.set('Cache-Control','no-store').json({answer:clean(data.choices?.[0]?.message?.content,3000)||'Je n’ai pas trouvé de réponse fiable.',mode:'ai'});
-  }catch(error){res.status(503).json({error:'Assistant temporairement indisponible. '+clean(error.message,180)});}
+    if(!response.ok) throw new Error(data.error?.message||'Service IA indisponible');
+    const answerText=clean(data.output_text||(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n'),5000);
+    const citations=(data.output||[]).flatMap(x=>x.content||[]).flatMap(x=>x.annotations||[]).filter(x=>x.type==='url_citation').map(x=>({title:clean(x.title,180),url:clean(x.url,500)})).filter(x=>/^https:\/\//.test(x.url)).slice(0,8);
+    const finalAnswer=answerText||'Je n’ai pas trouvé de réponse fiable.';
+    if(account){account.profile=account.profile||{};account.profile.assistantMemory=[...history,{role:'user',content:question},{role:'assistant',content:finalAnswer}].slice(-16);try{await persistAccount(account);}catch(memoryError){console.warn('Mémoire IA non persistée:',memoryError.message);}}
+    res.set('Cache-Control','no-store').json({answer:finalAnswer,mode:'ai-web',citations});
+  } catch(error) {
+    console.error('Assistant IA:',error.message);
+    res.status(503).json({error:'Assistant temporairement indisponible. '+clean(error.message,180)});
+  }
 });
 function localGameAnswer(q){
  const t=q.toLowerCase();
@@ -891,31 +810,81 @@ app.get('/api/account/role', auth, (req,res)=>{
 });
 
 app.get('/api/creator/rewards', auth, requireCreator, (_req,res)=>{
-  const now=Date.now();
   const accountsList=[...accounts.values()].map(a=>{
     refreshCreatorGemBalance(a);
-    return {name:a.profile?.name||'Citoyen',phone:a.phone,rewards:a.profile.creatorRewards,gems:a.profile.gems};
+    return {name:a.profile?.name||'Citoyen',phone:a.phone,rewards:a.profile.creatorRewards||[],inbox:a.profile.rewardInbox||[],gems:a.profile.gems};
   });
   res.set('Cache-Control','no-store').json({ok:true,accounts:accountsList});
 });
 app.post('/api/creator/rewards', auth, requireCreator, async (req,res)=>{
-  const targetPhone=phoneOf(req.body.phone);
-  const gems=Math.max(0,Math.min(1000000,Math.floor(Number(req.body.gems)||0)));
-  const days=Math.max(1,Math.min(365,Math.floor(Number(req.body.days)||1)));
-  const label=clean(req.body.label,60)||'Récompense du créateur';
+  const targetPhone=phoneOf(req.body.phone),type=clean(req.body.type||'gems',20).toLowerCase();
+  const amount=Math.max(0,Math.min(1000000000,Math.floor(Number(req.body.amount??req.body.gems)||0)));
+  const days=Math.max(1,Math.min(365,Math.floor(Number(req.body.days)||30)));
+  const label=clean(req.body.label,100)||'Récompense AF GAMER CI';
+  const value=clean(req.body.value,120);
+  const allowed=new Set(['gems','cash','bank','item','vehicle','property','business','custom']);
   const target=targetPhone&&accounts.get(targetPhone);
   if(!target)return res.status(404).json({error:'Compte joueur introuvable.'});
-  if(!gems)return res.status(400).json({error:'Indique un nombre de gemmes supérieur à zéro.'});
-  const reward={id:crypto.randomBytes(10).toString('hex'),label,gems,grantedAt:Date.now(),expiresAt:Date.now()+days*86400000,grantedBy:'Aski'};
+  if(!allowed.has(type))return res.status(400).json({error:'Type de récompense inconnu.'});
+  if(['gems','cash','bank'].includes(type)&&amount<=0)return res.status(400).json({error:'Indique un montant supérieur à zéro.'});
+  if(!['gems','cash','bank'].includes(type)&&!value&&!label)return res.status(400).json({error:'Décris la récompense.'});
   target.profile=target.profile||{};
-  const previousRewards=target.profile.creatorRewards||[];
-  const previousGems=Number(target.profile.gems)||0;
-  target.profile.creatorRewards=[...previousRewards.filter(x=>Number(x.expiresAt)>Date.now()),reward].slice(-30);
-  refreshCreatorGemBalance(target);
-  try{await persistAccount(target);}catch(error){target.profile.creatorRewards=previousRewards;target.profile.gems=previousGems;return res.status(503).json({error:'La récompense n’a pas pu être sauvegardée.'});}
-  res.json({ok:true,reward,target:{name:target.profile.name,phone:target.phone,gems:target.profile.gems}});
+  const previousRewards=target.profile.creatorRewards||[],previousInbox=target.profile.rewardInbox||[],previousGems=Number(target.profile.gems)||0;
+  const reward={id:crypto.randomBytes(10).toString('hex'),type,label,value,amount,grantedAt:Date.now(),expiresAt:Date.now()+days*86400000,grantedBy:'Aski',status:'available'};
+  if(type==='gems'){
+    const gems=amount;
+    target.profile.creatorRewards=[...previousRewards.filter(x=>Number(x.expiresAt)>Date.now()),{...reward,gems}].slice(-50);
+    refreshCreatorGemBalance(target);
+  }else{
+    target.profile.rewardInbox=[...previousInbox.filter(x=>x&&x.status!=='expired'),reward].slice(-100);
+  }
+  try{await persistAccount(target);}catch(error){target.profile.creatorRewards=previousRewards;target.profile.rewardInbox=previousInbox;target.profile.gems=previousGems;return res.status(503).json({error:'La récompense n’a pas pu être sauvegardée.'});}
+  res.json({ok:true,reward,target:{name:target.profile.name,phone:target.phone,gems:refreshCreatorGemBalance(target)}});
 });
-
+app.get('/api/rewards/me',auth,(req,res)=>{
+  const account=accounts.get(req.phone);account.profile=account.profile||{};
+  res.set('Cache-Control','no-store').json({gems:refreshCreatorGemBalance(account),gemRewards:(account.profile.creatorRewards||[]),rewards:(account.profile.rewardInbox||[]),vault:(account.profile.rewardVault||[])});
+});
+app.post('/api/rewards/claim',auth,async(req,res)=>{
+  const account=accounts.get(req.phone);account.profile=account.profile||{};
+  const id=clean(req.body.id,40),inbox=account.profile.rewardInbox||[],reward=inbox.find(x=>x.id===id);
+  if(!reward)return res.status(404).json({error:'Récompense introuvable.'});
+  if(reward.status==='claimed')return res.status(409).json({error:'Cette récompense a déjà été récupérée.'});
+  if(Number(reward.expiresAt)<=Date.now()){reward.status='expired';try{await persistAccount(account);}catch(e){}return res.status(410).json({error:'Cette récompense a expiré.'});}
+  const previousSave=account.save?JSON.parse(JSON.stringify(account.save)):null,previousProfile=JSON.parse(JSON.stringify(account.profile));
+  account.save=account.save&&typeof account.save==='object'?account.save:{};
+  let granted={type:reward.type,amount:reward.amount||0,label:reward.label};
+  if(reward.type==='cash'||reward.type==='bank'){
+    const key=reward.type==='cash'?'money':'bankBalance';
+    account.save[key]=Math.max(0,Number(account.save[key])||0)+Math.max(0,Math.floor(Number(reward.amount)||0));
+  }else{
+    account.profile.rewardVault=account.profile.rewardVault||[];
+    account.profile.rewardVault.push({id:reward.id,type:reward.type,label:reward.label,value:reward.value||'',claimedAt:Date.now(),grantedBy:reward.grantedBy||'AF GAMER'});
+    account.profile.rewardVault=account.profile.rewardVault.slice(-200);
+    if(reward.type==='gems')account.profile.purchasedGems=(Number(account.profile.purchasedGems)||0)+Math.max(0,Math.floor(Number(reward.amount)||0));
+  }
+  reward.status='claimed';reward.claimedAt=Date.now();
+  try{await persistAccount(account);}catch(error){account.save=previousSave;account.profile=previousProfile;return res.status(503).json({error:'La récompense n’a pas pu être récupérée.'});}
+  res.json({ok:true,granted,save:account.save,gems:refreshCreatorGemBalance(account)});
+});
+app.post('/api/rewards/exchange-gems',auth,async(req,res)=>{
+  const account=accounts.get(req.phone);account.profile=account.profile||{};
+  const amount=Math.max(0,Math.min(100000,Math.floor(Number(req.body.gems)||0)));
+  if(!amount)return res.status(400).json({error:'Indique le nombre de gemmes à convertir.'});
+  const balance=refreshCreatorGemBalance(account);
+  if(amount>balance)return res.status(400).json({error:'Solde de gemmes insuffisant.'});
+  const previousProfile=JSON.parse(JSON.stringify(account.profile)),previousSave=account.save?JSON.parse(JSON.stringify(account.save)):null;
+  let remaining=amount;
+  const purchased=Math.min(remaining,Number(account.profile.purchasedGems)||0);
+  account.profile.purchasedGems=Math.max(0,(Number(account.profile.purchasedGems)||0)-purchased);remaining-=purchased;
+  if(remaining){for(const reward of account.profile.creatorRewards||[]){const take=Math.min(remaining,Math.max(0,Number(reward.gems)||0));reward.gems-=take;remaining-=take;if(!remaining)break;}}
+  account.save=account.save&&typeof account.save==='object'?account.save:{};
+  const gameMoney=amount*1000000;
+  account.save.bankBalance=Math.max(0,Number(account.save.bankBalance)||0)+gameMoney;
+  refreshCreatorGemBalance(account);
+  try{await persistAccount(account);}catch(error){account.profile=previousProfile;account.save=previousSave;return res.status(503).json({error:'Conversion impossible à sauvegarder.'});}
+  res.json({ok:true,gems:account.profile.gems,gameMoney,rate:1000000,save:account.save});
+});
 app.get('/api/creator/status', auth, requireCreator, (_req,res)=>res.json({ok:true,creator:true,configuredAI:!!OPENAI_API_KEY}));
 
 app.get('/api/me', auth, (req, res) =>

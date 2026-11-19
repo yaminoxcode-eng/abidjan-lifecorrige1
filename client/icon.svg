@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#092b46"/><stop offset="1" stop-color="#167b82"/></linearGradient><linearGradient id="gold" x2="1" y2="1"><stop stop-color="#ffe49a"/><stop offset="1" stop-color="#d18a35"/></linearGradient></defs>
+<rect width="512" height="512" rx="112" fill="#081b2a"/><rect x="22" y="22" width="468" height="468" rx="94" fill="url(#sky)" stroke="url(#gold)" stroke-width="12"/>
+<circle cx="375" cy="130" r="48" fill="#ffd98b" opacity=".95"/>
+<path d="M45 337 115 285 165 316 220 250 280 310 330 265 390 310 467 270V430H45Z" fill="#123e4c"/>
+<path d="M45 365 135 330 205 358 275 322 345 355 467 320V455H45Z" fill="#0a5364"/>
+<path d="M45 395Q140 365 245 397T467 390V455H45Z" fill="#147d85"/>
+<g fill="#e8c477"><path d="M105 285h45v78h-45zM157 260h54v103h-54zM220 224h48v139h-48zM278 275h44v88h-44zM340 245h48v118h-48zM397 288h35v75h-35z"/></g>
+<g fill="#f7e2ad"><rect x="117" y="300" width="7" height="9"/><rect x="135" y="300" width="7" height="9"/><rect x="169" y="278" width="8" height="10"/><rect x="190" y="278" width="8" height="10"/><rect x="233" y="245" width="8" height="11"/><rect x="251" y="245" width="8" height="11"/><rect x="290" y="292" width="8" height="10"/><rect x="354" y="263" width="8" height="10"/><rect x="374" y="263" width="8" height="10"/></g>
+<path d="M65 420q65-18 130 0t130 0 122 0" fill="none" stroke="#ffe49a" stroke-width="5" opacity=".8"/>
+<text x="256" y="105" text-anchor="middle" font-family="Arial,sans-serif" font-size="40" font-weight="900" fill="#fff4d4" letter-spacing="2">ABIDJAN</text>
+<text x="256" y="151" text-anchor="middle" font-family="Arial,sans-serif" font-size="42" font-weight="900" fill="#ffd98b" letter-spacing="5">LIFE</text>
+</svg>
