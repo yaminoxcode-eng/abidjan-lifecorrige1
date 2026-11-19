@@ -939,7 +939,10 @@ io.use((socket, next) => {
 
 app.get('/api/players', (req, res) => {
   res.set('Cache-Control', 'no-store');
-  res.json({ count: activePlayers.size, players: [...activePlayers.values()].map(p => ({ name: clean(p.profile?.name, 24) || 'Citoyen' })) });
+  res.json({ count: activePlayers.size, players: [...activePlayers.values()].map(p => ({
+    id:p.id,name:clean(p.profile?.name,24)||'Citoyen',profile:p.profile,
+    position:p.position,moving:!!p.moving,vehicle:p.vehicle||null
+  })) });
 });
 io.on('connection', (socket) => {
   const account = accounts.get(socket.phone);
@@ -995,6 +998,20 @@ io.on('connection', (socket) => {
     vehicle: state.vehicle
   });
 
+  socket.on('social:message',(payload={},ack)=>{
+    const target=String(payload.to||'');
+    const text=clean(payload.text,500);
+    if(!target||target===socket.id||!text||!activePlayers.has(target)){if(typeof ack==='function')ack({ok:false,error:'Joueur indisponible.'});return;}
+    const message={id:crypto.randomBytes(8).toString('hex'),from:socket.id,fromName:clean(state.profile?.name,24)||'Citoyen',text,createdAt:Date.now()};
+    io.to(target).emit('social:message',message);
+    if(typeof ack==='function')ack({ok:true,message});
+  });
+  socket.on('social:call',(payload={},ack)=>{
+    const target=String(payload.to||'');
+    if(!target||target===socket.id||!activePlayers.has(target)){if(typeof ack==='function')ack({ok:false,error:'Joueur indisponible.'});return;}
+    io.to(target).emit('social:call',{from:socket.id,fromName:clean(state.profile?.name,24)||'Citoyen',createdAt:Date.now()});
+    if(typeof ack==='function')ack({ok:true});
+  });
   socket.on('world:telemetry', payload => {
     if (socket.id !== worldStateOwner || !payload || typeof payload !== 'object') return;
     const vehicles = payload.vehicles && typeof payload.vehicles === 'object' ? payload.vehicles : {};
