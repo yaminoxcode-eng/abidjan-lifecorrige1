@@ -8472,13 +8472,17 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   try{
    lifeState.v19=lifeState.v19||{};
    lifeState.v19.installedApps=Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];
+   let changed=false;
    ['contacts','messages','appels','offrescreateur','cheats'].forEach(id=>{
-    if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);
+    if(!lifeState.v19.installedApps.includes(id)){lifeState.v19.installedApps.push(id);changed=true;}
    });
    if(typeof creatorRoleVerified!=='undefined'&&creatorRoleVerified){
-    ['recompenses','helicoptere'].forEach(id=>{if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);});
+    ['recompenses','helicoptere'].forEach(id=>{
+     if(!lifeState.v19.installedApps.includes(id)){lifeState.v19.installedApps.push(id);changed=true;}
+    });
    }
-   if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+   // Ne sauvegarder que lorsqu'une application a réellement été ajoutée.
+   if(changed&&typeof saveLifeProgress==='function')saveLifeProgress(false);
   }catch(e){console.warn('Applications du téléphone non sauvegardées',e);}
  }
  function ensurePhoneIcons(){
