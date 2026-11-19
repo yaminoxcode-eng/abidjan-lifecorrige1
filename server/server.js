@@ -13,7 +13,14 @@ const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('he
 const CLIENT_ORIGINS = (process.env.CLIENT_ORIGINS || '*').split(',').map(s => s.trim()).filter(Boolean);
 const UPDATE_ADMIN_TOKEN = process.env.UPDATE_ADMIN_TOKEN || '';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-6.2-astra';
+const nodemailer = require('nodemailer');
+const SMTP_HOST = process.env.SMTP_HOST || '';
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
+const mailTransport = SMTP_HOST && SMTP_USER && SMTP_PASS ? nodemailer.createTransport({host:SMTP_HOST,port:SMTP_PORT,secure:SMTP_PORT===465,auth:{user:SMTP_USER,pass:SMTP_PASS}}) : null;
 const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.26.0';
 const DEFAULT_CLIENT_URL = process.env.CLIENT_URL || '';
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -59,6 +66,7 @@ function publicPlayer(p){return {id:p.id,profile:p.profile,position:p.position,n
 function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.size});}
 
 const recoveryTickets = new Map();
+const emailRecoveryTickets = new Map();
 const attempts = new Map();
 const worldTelemetry = { npcTotal: 0, npcActive: 0, vehicles: {}, updatedAt: 0 };
 const creatorReports = [];
@@ -445,98 +453,28 @@ app.post('/api/auth/register', async (req, res) => {
   const phone = phoneOf(req.body.phone);
   const password = String(req.body.password || '');
   const email = clean(req.body.email, 120).toLowerCase();
-  const s = req.body.security || {};
-  const day = Number(req.body.birthDay);
-  const month = Number(req.body.birthMonth);
 
-  if (!rateLimit(req.ip + ':register', 6)) {
-    return res.status(429).json({
-      error: 'Trop de créations de comptes. Réessaie dans une minute.'
-    });
-  }
-
-  if (!phone) return res.status(400).json({ error: 'Numéro ivoirien invalide.' });
-
-  if (password.length < 8 || password.length > 128) {
-    return res.status(400).json({
-      error: 'Mot de passe : 8 à 128 caractères.'
-    });
-  }
-
-  if (!/^\S+@\S+\.\S{2,}$/.test(email)) {
-    return res.status(400).json({ error: 'Adresse e-mail invalide.' });
-  }
-
-  if (
-    !Number.isInteger(day) || day < 1 || day > 31 ||
-    !Number.isInteger(month) || month < 1 || month > 12 ||
-    answer(s.parentName).length < 2 ||
-    !answer(s.petName) ||
-    answer(s.sport).length < 2
-  ) {
-    return res.status(400).json({
-      error: 'Date de naissance ou questions de récupération invalides.'
-    });
-  }
-
-  if (accounts.has(phone)) {
-    return res.status(409).json({
-      error: 'Ce numéro possède déjà un compte.'
-    });
-  }
-
-  if ([...accounts.values()].some(a => a.email === email)) {
-    return res.status(409).json({
-      error: 'Cette adresse e-mail est déjà utilisée.'
-    });
-  }
+  if (!rateLimit(req.ip + ':register', 6)) return res.status(429).json({error:'Trop de créations de comptes. Réessaie dans une minute.'});
+  if (!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
+  if (password.length < 8 || password.length > 128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
+  if (!/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
+  if (accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte.'});
+  if ([...accounts.values()].some(a => a.email === email)) return res.status(409).json({error:'Cette adresse e-mail est déjà utilisée.'});
 
   const passwordHash = await bcrypt.hash(password, 12);
-
   const account = {
-    phone,
-    email,
-    passwordHash,
-    security: {
-      birthDay: day,
-      birthMonth: month,
-      parentName: answer(s.parentName),
-      petName: answer(s.petName),
-      sport: answer(s.sport)
-    },
-    profile: {
-      name: safePlayerName(phone, 'Mon personnage'),
-      gender: 'homme',
-      skin: 0x7a4a24,
-      hair: 0x17120f,
-      shirt: 0xe74c3c,
-      pants: 0x2c3e50
-    },
-    position: { x: 0, z: 0, yaw: 0 },
-    needs: null,
-    save: null,
-    createdAt: Date.now()
+    phone,email,passwordHash,security:{},
+    profile:{name:safePlayerName(phone,'Mon personnage'),gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50},
+    position:{x:0,z:0,yaw:0},needs:null,save:null,createdAt:Date.now()
   };
-
-  try {
-    await persistAccount(account);
-  } catch (error) {
-    console.error('Échec enregistrement nouveau compte:', error.message);
-    return res.status(503).json({ error: 'Impossible de sécuriser le compte maintenant. Réessaie.' });
+  try { await persistAccount(account); }
+  catch(error) {
+    console.error('Échec enregistrement nouveau compte:',error.message);
+    return res.status(503).json({error:'Impossible de sécuriser le compte maintenant. Réessaie.'});
   }
-  accounts.set(phone, account);
-
-  res.status(201).json({
-    token: issueToken(phone),
-    player: {
-      id: phone,
-      profile: accounts.get(phone).profile,
-      position: accounts.get(phone).position,
-      save: null
-    }
-  });
+  accounts.set(phone,account);
+  res.status(201).json({token:issueToken(phone),player:{id:phone,profile:account.profile,position:account.position,save:null}});
 });
-
 app.post('/api/auth/migrate-local', async (req, res) => {
   const phone = phoneOf(req.body.phone);
   const password = String(req.body.password || '');
@@ -657,73 +595,48 @@ app.post('/api/auth/login', async (req, res) => {
   });
 });
 
-app.post('/api/auth/recover', (req, res) => {
-  const phone = phoneOf(req.body.phone);
-  const a = phone && accounts.get(phone);
-  const s = req.body.security || {};
-
-  if (!rateLimit(req.ip + ':recover', 8)) {
-    return res.status(429).json({
-      error: 'Trop de tentatives de récupération.'
-    });
+app.post('/api/auth/recover-email', async (req,res) => {
+  if (!rateLimit(req.ip+':recover-email',5,60000)) return res.status(429).json({error:'Trop de demandes. Réessaie dans une minute.'});
+  if (!mailTransport) return res.status(503).json({error:'La récupération par e-mail attend la configuration SMTP sécurisée sur Render.'});
+  const phone=phoneOf(req.body.phone),email=clean(req.body.email,120).toLowerCase();
+  if (!phone || !/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Saisis un numéro et une adresse e-mail valides.'});
+  const account=accounts.get(phone);
+  // Réponse identique que le compte existe ou non, pour éviter l'énumération.
+  if (account && account.email===email) {
+    const code=String(crypto.randomInt(0,1000000)).padStart(6,'0');
+    const codeHash=crypto.createHash('sha256').update(phone+':'+email+':'+code+':'+JWT_SECRET).digest('hex');
+    emailRecoveryTickets.set(phone,{email,codeHash,expires:Date.now()+10*60*1000,attempts:0});
+    try {
+      await mailTransport.sendMail({from:SMTP_FROM,to:email,subject:'Code de récupération Abidjan Life',text:'Ton code de récupération Abidjan Life est : '+code+'\nIl expire dans 10 minutes. Si tu n’as pas demandé ce code, ignore ce message.'});
+    } catch(error) {
+      emailRecoveryTickets.delete(phone);
+      console.error('Envoi code récupération impossible:',error.message);
+      return res.status(503).json({error:'Le code n’a pas pu être envoyé. Réessaie plus tard.'});
+    }
   }
-
-  if (
-    !a ||
-    answer(s.parentName) !== a.security.parentName ||
-    answer(s.petName) !== a.security.petName ||
-    answer(s.sport) !== a.security.sport
-  ) {
-    return res.status(400).json({
-      error: 'Numéro ou réponses de sécurité incorrects.'
-    });
-  }
-
-  const ticket = crypto.randomBytes(32).toString('hex');
-
-  recoveryTickets.set(ticket, {
-    phone,
-    expires: Date.now() + 10 * 60 * 1000
-  });
-
-  res.json({ recoveryTicket: ticket, expiresIn: 600 });
+  res.set('Cache-Control','no-store').json({ok:true,message:'Si le numéro et l’adresse correspondent, un code de vérification vient d’être envoyé.'});
 });
-
-app.post('/api/auth/reset', async (req, res) => {
-  const phone = phoneOf(req.body.phone);
-  const ticket = recoveryTickets.get(String(req.body.recoveryTicket || ''));
-  const password = String(req.body.password || '');
-
-  if (!ticket || ticket.phone !== phone || ticket.expires < Date.now()) {
-    return res.status(400).json({
-      error: 'Vérification expirée. Recommence les questions de sécurité.'
-    });
-  }
-
-  if (password.length < 8 || password.length > 128) {
-    return res.status(400).json({
-      error: 'Mot de passe : 8 à 128 caractères.'
-    });
-  }
-
-  const a = accounts.get(phone);
-
-  if (!a) return res.status(404).json({ error: 'Compte introuvable.' });
-
-  const previousHash = a.passwordHash;
-  a.passwordHash = await bcrypt.hash(password, 12);
-  try {
-    await persistAccount(a);
-  } catch (error) {
-    a.passwordHash = previousHash;
-    console.error('Échec sauvegarde nouveau mot de passe:', error.message);
-    return res.status(503).json({ error: 'Le nouveau mot de passe n’a pas pu être enregistré. Réessaie.' });
-  }
-  recoveryTickets.delete(String(req.body.recoveryTicket));
-
-  res.json({ ok: true });
+app.post('/api/auth/reset-email', async (req,res) => {
+  if (!rateLimit(req.ip+':reset-email',8,60000)) return res.status(429).json({error:'Trop de tentatives. Réessaie dans une minute.'});
+  const phone=phoneOf(req.body.phone),email=clean(req.body.email,120).toLowerCase();
+  const code=String(req.body.code||'').replace(/\D/g,'').slice(0,6);
+  const password=String(req.body.password||'');
+  const ticket=phone&&emailRecoveryTickets.get(phone);
+  if (!ticket || ticket.email!==email || ticket.expires<Date.now()) return res.status(400).json({error:'Code expiré ou invalide. Demande un nouveau code.'});
+  if (++ticket.attempts>5) {emailRecoveryTickets.delete(phone);return res.status(429).json({error:'Trop de codes incorrects. Demande un nouveau code.'});}
+  const expected=crypto.createHash('sha256').update(phone+':'+email+':'+code+':'+JWT_SECRET).digest('hex');
+  const actual=crypto.createHash('sha256').update(phone+':'+email+':'+String(code)+':'+JWT_SECRET).digest('hex');
+  if (!code || !crypto.timingSafeEqual(Buffer.from(ticket.codeHash),Buffer.from(actual))) return res.status(400).json({error:'Code incorrect.'});
+  if (password.length<8 || password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
+  const account=accounts.get(phone);
+  if (!account || account.email!==email) return res.status(400).json({error:'Compte introuvable ou adresse non reconnue.'});
+  const previousHash=account.passwordHash;
+  account.passwordHash=await bcrypt.hash(password,12);
+  try {await persistAccount(account);}
+  catch(error) {account.passwordHash=previousHash;return res.status(503).json({error:'Le nouveau mot de passe n’a pas pu être enregistré.'});}
+  emailRecoveryTickets.delete(phone);
+  res.set('Cache-Control','no-store').json({ok:true});
 });
-
 // Suppression définitive du compte connecté et de toutes ses données de jeu.
 app.delete('/api/account/me', auth, async (req, res) => {
   const phone = req.phone;
@@ -864,17 +777,32 @@ app.post('/api/game/report', auth, async (req,res) => {
   res.status(201).json({ok:true});
 });
 app.post('/api/game/assistant', auth, async (req,res) => {
-  if(!rateLimit(req.phone+':game-ai',20,60000))return res.status(429).json({error:'Tu poses trop de questions. Attends un instant.'});
-  const question=clean(req.body.message,1200);
-  if(!question)return res.status(400).json({error:'Écris une question sur Abidjan Life.'});
-  const knowledge=`Tu es l'assistant intégré d'Abidjan Life, un jeu de vie 3D situé à Abidjan. Tu réponds en français, clairement et sans prétendre qu'une fonctionnalité non confirmée existe. Le jeu actuel comprend un monde urbain fondé sur les données OpenStreetMap, des quartiers/communes, déplacements à pied, véhicules et circulation IA (gbaka, taxis, motos, voitures, bus), PNJ, bâtiments et intérieurs, téléphone avec applications simulées, économie en FCFA, compte en ligne, sauvegarde Supabase, multijoueur et services de vie (emploi, études, santé, mairie, logement, banque, Wave simulé). Les commandes principales : ZQSD/WASD pour se déplacer, souris pour caméra, E pour interagir/entrer/sortir/ascenseur, F pour interagir avec meubles, P ou M pour téléphone/carte selon configuration. Tu peux aider à expliquer, dépanner et proposer des améliorations du jeu. Tu ne peux pas modifier le jeu directement. Les paiements Wave ne sont pas réels. Le permis, les achats réels et les fonctions annoncées mais pas encore livrées ne doivent pas être présentés comme disponibles.`;
-  if(!OPENAI_API_KEY)return res.json({answer:'Assistant de jeu en mode connaissances locales : '+localGameAnswer(question),mode:'local-faq',note:'Pour les réponses IA génératives, configure OPENAI_API_KEY sur le serveur Render.'});
-  try{
-    const response=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+OPENAI_API_KEY,'Content-Type':'application/json'},body:JSON.stringify({model:OPENAI_MODEL,messages:[{role:'system',content:knowledge},{role:'user',content:question}],temperature:.35,max_tokens:500})});
+  if(!rateLimit(req.phone+':game-ai',20,60000)) return res.status(429).json({error:'Tu poses trop de questions. Attends un instant.'});
+  const question=clean(req.body.message,1800);
+  if(!question) return res.status(400).json({error:'Écris une question.'});
+  const knowledge=`Tu es l'assistant général d'Abidjan Life et l'assistant numérique du joueur. Tu peux répondre à des questions de culture générale, sciences, histoire, technologie, actualité, géographie, vie quotidienne et questions sur le jeu. Réponds en français sauf demande contraire. Pour les faits récents, les informations du monde réel, les prix, les lois ou les événements, utilise la recherche web disponible, compare les sources et donne des liens de sources dans ta réponse. Signale clairement les incertitudes et les dates. N'invente jamais de faits, de liens, de fonctions du jeu, de paiements ou de connexions. Distingue toujours ce qui existe réellement dans la version actuelle du jeu, ce qui est seulement simulé et ce qui est proposé pour plus tard. Abidjan Life est un jeu 3D situé à Abidjan avec déplacements, véhicules, PNJ, bâtiments, intérieurs, téléphone, services de vie, comptes et multijoueur. Les paiements Wave, les achats d'argent réel et les retraits ne sont pas encore activés. Tu peux expliquer, analyser, proposer des améliorations et rédiger des rapports, mais tu ne peux pas modifier le jeu ou effectuer une transaction par toi-même. Ne prétends pas apprendre ou modifier tes propres poids : tu peux utiliser le contexte de la conversation et les retours explicitement enregistrés par le système.`;
+  if(!OPENAI_API_KEY) return res.json({answer:'Le service IA génératif n’est pas configuré sur le serveur. Les réponses locales restent limitées.',mode:'local-faq',note:'Configure OPENAI_API_KEY sur Render pour activer l’assistant avancé.'});
+  try {
+    const response=await fetch('https://api.openai.com/v1/responses',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+OPENAI_API_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:OPENAI_MODEL,
+        tools:[{type:'web_search',search_context_size:'medium',user_location:{type:'approximate',country:'CI',city:'Abidjan',region:'Abidjan'}}],
+        tool_choice:'auto',
+        max_output_tokens:1100,
+        input:[{role:'system',content:knowledge},{role:'user',content:question}]
+      })
+    });
     const data=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(data.error?.message||'Service IA indisponible');
-    res.set('Cache-Control','no-store').json({answer:clean(data.choices?.[0]?.message?.content,3000)||'Je n’ai pas trouvé de réponse fiable.',mode:'ai'});
-  }catch(error){res.status(503).json({error:'Assistant temporairement indisponible. '+clean(error.message,180)});}
+    if(!response.ok) throw new Error(data.error?.message||'Service IA indisponible');
+    const answerText=clean(data.output_text||(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n'),5000);
+    const citations=(data.output||[]).flatMap(x=>x.content||[]).flatMap(x=>x.annotations||[]).filter(x=>x.type==='url_citation').map(x=>({title:clean(x.title,180),url:clean(x.url,500)})).filter(x=>/^https:\/\//.test(x.url)).slice(0,8);
+    res.set('Cache-Control','no-store').json({answer:answerText||'Je n’ai pas trouvé de réponse fiable.',mode:'ai-web',citations});
+  } catch(error) {
+    console.error('Assistant IA:',error.message);
+    res.status(503).json({error:'Assistant temporairement indisponible. '+clean(error.message,180)});
+  }
 });
 function localGameAnswer(q){
  const t=q.toLowerCase();
