@@ -834,12 +834,12 @@ async function accountContinue(){
     if(findGameAccount(accounts,phone)){showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».',true);return;}
     if(pass.length<8){showAccountStatus('Choisis un mot de passe d’au moins 8 caractères.',true);return;}
     const email=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
-    if(email && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/.test(email)){showAccountStatus('Adresse e-mail invalide. Tu peux aussi laisser ce champ vide.',true);return;}
+    if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showAccountStatus('Adresse e-mail invalide. Tu peux aussi laisser ce champ vide.',true);return;}
     const emailTaken=email && Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone && String(a&&a.email||'').trim().toLowerCase()===email);
     if(emailTaken){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.',true);return;}
     const confirm=document.getElementById('accountPasswordConfirm').value;
     if(pass!==confirm){showAccountStatus('Les deux mots de passe ne correspondent pas.',true);return;}
-    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
     let response,data;
     try{
       response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
