@@ -1,0 +1,35 @@
+name: Validate Abidjan Life
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [ai-economy-accounts-analysts-v1]
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check server JavaScript syntax
+        run: node --check server/server.js
+      - name: Check inline browser scripts
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const vm = require('vm');
+          const html = fs.readFileSync('client/index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)];
+          if (!scripts.length) throw new Error('No inline scripts found in client/index.html');
+          let checked = 0;
+          for (const [i, match] of scripts.entries()) {
+            const code = match[1].trim();
+            if (!code) continue;
+            try { new vm.Script(code, { filename: `client/index.html:inline-script-${i+1}` }); checked++; }
+            catch (error) { console.error(error); process.exitCode = 1; }
+          }
+          console.log(`Checked ${checked} inline scripts.`);
+          NODE
+      - name: Validate web app manifest
+        run: node -e "const m=require('./client/manifest.webmanifest'); if(!m.name || !m.icons?.length) process.exit(1)"
