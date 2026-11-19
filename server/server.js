@@ -67,7 +67,6 @@ function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.siz
 
 const recoveryTickets = new Map();
 const emailRecoveryTickets = new Map();
-const registrationTickets = new Map();
 const attempts = new Map();
 const worldTelemetry = { npcTotal: 0, npcActive: 0, vehicles: {}, updatedAt: 0 };
 const creatorReports = [];
@@ -452,45 +451,25 @@ app.post('/api/admin/updates/publish', requireUpdateAdmin, (req, res) => {
   });
 });
 
-app.post('/api/auth/register/request-code', async (req,res) => {
-  const phone=phoneOf(req.body.phone), password=String(req.body.password||''), email=clean(req.body.email,120).toLowerCase();
-  if(!rateLimit(req.ip+':register-code',5,60000)) return res.status(429).json({error:'Trop de codes demandés. Attends une minute.'});
-  if(!mailTransport) return res.status(503).json({error:'Inscription par e-mail indisponible : SMTP Brevo doit être configuré sur Render.'});
+app.post('/api/auth/register', async (req,res) => {
+  if (!rateLimit(req.ip + ':register', 5, 60000)) return res.status(429).json({error:'Trop de créations de compte. Réessaie dans une minute.'});
+  const phone=phoneOf(req.body.phone), password=String(req.body.password||'');
+  const email=clean(req.body.email,120).toLowerCase();
   if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
   if(isCreatorPhone(phone)) return res.status(403).json({error:'Ce numéro est réservé au compte créateur officiel.'});
   if(password.length<8||password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
-  if(!/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
+  if(email && !/^\\S+@\\S+\\.\\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
   if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
-  if([...accounts.values()].some(a=>a.email===email)) return res.status(409).json({error:'Cette adresse e-mail est déjà utilisée.'});
-  const code=String(crypto.randomInt(0,1000000)).padStart(6,'0');
-  const codeHash=crypto.createHash('sha256').update(phone+':'+email+':'+code+':'+JWT_SECRET).digest('hex');
-  const passwordHash=await bcrypt.hash(password,12);
-  registrationTickets.set(phone,{email,codeHash,passwordHash,expires:Date.now()+10*60*1000,attempts:0});
-  try {
-    await mailTransport.sendMail({from:SMTP_FROM,to:email,subject:'Vérifie ton adresse e-mail – Abidjan Life',text:'Ton code de vérification Abidjan Life est : '+code+'\nIl expire dans 10 minutes. Ne le partage avec personne.'});
-  } catch(error) {
-    registrationTickets.delete(phone);
-    console.error('Envoi code inscription impossible:',error.message);
-    return res.status(503).json({error:'Le code n’a pas pu être envoyé. Vérifie la configuration Brevo et réessaie.'});
-  }
-  res.set('Cache-Control','no-store').json({ok:true,message:'Code envoyé. Vérifie ta boîte de réception et tes courriers indésirables.'});
-});
-app.post('/api/auth/register/verify-code', async (req,res) => {
-  if(!rateLimit(req.ip+':register-verify',12,60000)) return res.status(429).json({error:'Trop de tentatives. Réessaie dans une minute.'});
-  const phone=phoneOf(req.body.phone), email=clean(req.body.email,120).toLowerCase(), code=String(req.body.code||'').replace(/\D/g,'').slice(0,6);
-  const ticket=phone&&registrationTickets.get(phone);
-  if(!ticket||ticket.email!==email||ticket.expires<Date.now()) {if(phone)registrationTickets.delete(phone);return res.status(400).json({error:'Code expiré ou demande introuvable. Demande un nouveau code.'});}
-  if(++ticket.attempts>5){registrationTickets.delete(phone);return res.status(429).json({error:'Trop de codes incorrects. Demande un nouveau code.'});}
-  const actual=crypto.createHash('sha256').update(phone+':'+email+':'+code+':'+JWT_SECRET).digest('hex');
-  if(!/^\d{6}$/.test(code)||!crypto.timingSafeEqual(Buffer.from(ticket.codeHash),Buffer.from(actual))) return res.status(400).json({error:'Code incorrect.'});
-  if(accounts.has(phone)||[...accounts.values()].some(a=>a.email===email)){registrationTickets.delete(phone);return res.status(409).json({error:'Ce numéro ou cette adresse e-mail est déjà utilisé.'});}
-  const account={phone,email,passwordHash:ticket.passwordHash,security:{},emailVerified:true,emailVerifiedAt:Date.now(),
+  if(email && [...accounts.values()].some(a=>a.email===email)) return res.status(409).json({error:'Cette adresse e-mail est déjà utilisée.'});
+  const account={phone,email:email||null,passwordHash:await bcrypt.hash(password,12),security:{},
     profile:{name:safePlayerName(phone,'Mon personnage'),gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50},
     position:{x:0,z:0,yaw:0},needs:null,save:null,createdAt:Date.now()};
-  try {await persistAccount(account);} catch(error){console.error('Échec enregistrement nouveau compte:',error.message);return res.status(503).json({error:'Impossible de sauvegarder le compte. Réessaie sans fermer cette page.'});}
-  accounts.set(phone,account);registrationTickets.delete(phone);
+  try { await persistAccount(account); }
+  catch(error){ console.error('Échec enregistrement nouveau compte:',error.message); return res.status(503).json({error:'Impossible de sauvegarder le compte. Réessaie.'}); }
+  accounts.set(phone,account);
   res.set('Cache-Control','no-store').status(201).json({token:issueToken(phone),player:{id:phone,profile:account.profile,position:account.position,save:null}});
 });
+
 app.post('/api/auth/migrate-local', async (req, res) => {
   return res.status(403).json({error:'Migration sécurisée momentanément suspendue : vérifie ton adresse e-mail avant de transférer ton compte. Ta sauvegarde locale reste intacte.'});
   const phone = phoneOf(req.body.phone);
