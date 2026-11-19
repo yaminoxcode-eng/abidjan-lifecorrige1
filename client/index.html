@@ -4084,8 +4084,8 @@ function enterBuilding(door) {
   if(interiorAmbientLight)interiorAmbientLight.intensity=.72;
   document.getElementById('interiorHint').style.display='block';
   document.getElementById('interiorHint').textContent=door.adultOnly?'🌙 Le Talon · Club privé 18+ · Bar, piste de danse et salons VIP · Aucun échange d’argent réel':(interior.style==='resident'?'🏢 Immeuble · E à l’ascenseur pour choisir un étage · E à une porte pour entrer dans un appartement':door.isMunicipality?'🏛️ Mairie de '+door.commune+' · Services administratifs au guichet · E près de la porte : sortir':door.buildingType&&door.buildingType.startsWith('store_')?'🏬 '+door.buildingName+' · F : utiliser / interagir · E près de la porte : sortir':door.buildingName&&door.buildingName!=='Maison d’Abidjan'?'🏢 '+door.buildingName+' · F : interagir · E près de la porte : sortir':"🏠 Maison · F : utiliser / déplacer un meuble · Lit : dormir · Douche : se laver · E près de la porte : sortir");
-  document.getElementById('etage').textContent=interior.numFloors>1?'Immeuble · Hall / Rez-de-chaussée':(door.buildingType?'Magasin · Rez-de-chaussée':'Maison · Rez-de-chaussée');
-  showMessage('Bienvenue chez toi. Salon, cuisine, chambre et salle de bain.');
+  document.getElementById('etage').textContent=door.adultOnly?'Le Talon · Club privé':(interior.numFloors>1?'Immeuble · Hall / Rez-de-chaussée':(door.buildingType?'Magasin · Rez-de-chaussée':'Maison · Rez-de-chaussée'));
+  showMessage(door.adultOnly?'Bienvenue au Talon. Profite du bar, de la piste de danse et des salons VIP.':'Bienvenue chez toi. Salon, cuisine, chambre et salle de bain.');
 }
 
 function exitBuilding() {
