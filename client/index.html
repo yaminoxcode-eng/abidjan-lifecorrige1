@@ -3027,7 +3027,7 @@ function addDoor(x, z, rot, bx, bz, bw, bd, bh, buildingColor, style) {
   const numFloors = Math.max(1, Math.floor(bh / 3.1));
   interiors[id] = generateInterior(id, bw, bd, numFloors, buildingColor, style);
   const normal = new THREE.Vector3(Math.sin(rot), 0, Math.cos(rot));
-  doors.push({ x, z, id, rot, normal });
+  doors.push({ x, z, id, rot, normal, home: true, buildingName: 'Bâtiment accessible' });
 }
 
 function generateInterior(id, bw, bd, numFloors, wallColor, style) {
