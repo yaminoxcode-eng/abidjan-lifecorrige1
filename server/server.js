@@ -937,11 +937,14 @@ io.use((socket, next) => {
 });
 
 
-app.get('/api/players', (req, res) => {
+app.get('/api/players', (_req, res) => {
+  // Le carnet public a seulement besoin de l'identifiant de session et du nom.
+  // Ne jamais exposer les positions précises, véhicules ou profils complets via cet endpoint.
   res.set('Cache-Control', 'no-store');
   res.json({ count: activePlayers.size, players: [...activePlayers.values()].map(p => ({
-    id:p.id,name:clean(p.profile?.name,24)||'Citoyen',profile:p.profile,
-    position:p.position,moving:!!p.moving,vehicle:p.vehicle||null
+    id: p.id,
+    name: clean(p.profile?.name, 24) || 'Citoyen',
+    moving: !!p.moving
   })) });
 });
 io.on('connection', (socket) => {
@@ -1021,6 +1024,18 @@ io.on('connection', (socket) => {
     worldTelemetry.npcActive = Math.max(0,Math.min(worldTelemetry.npcTotal,Math.floor(Number(payload.npcActive)||0)));
     worldTelemetry.vehicles = safeVehicles;
     worldTelemetry.updatedAt = Date.now();
+  });
+  socket.on('creator:helicopter', (payload = {}) => {
+    if (!isCreatorPhone(socket.phone)) return;
+    const p=payload.position||{};
+    if (![p.x,p.y,p.z,p.yaw].every(Number.isFinite)) return;
+    if (Math.abs(p.x)>25000||Math.abs(p.z)>25000||p.y<2||p.y>180) return;
+    const helicopter={owner:socket.id,ownerName:clean(state.profile?.name,24)||'Aski',
+      position:{x:p.x,y:p.y,z:p.z,yaw:p.yaw},rotor:Number.isFinite(payload.rotor)?payload.rotor:0,updatedAt:Date.now()};
+    io.emit('creator:helicopter',helicopter);
+  });
+  socket.on('creator:helicopter:stop', () => {
+    if (isCreatorPhone(socket.phone)) io.emit('creator:helicopter:stop',{owner:socket.id});
   });
   socket.on('player:update', (payload = {}) => {
     if (payload.version) {
