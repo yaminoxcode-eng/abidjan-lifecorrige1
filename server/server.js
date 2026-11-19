@@ -1022,6 +1022,18 @@ io.on('connection', (socket) => {
     worldTelemetry.vehicles = safeVehicles;
     worldTelemetry.updatedAt = Date.now();
   });
+  socket.on('creator:helicopter', (payload = {}) => {
+    if (!isCreatorPhone(socket.phone)) return;
+    const p=payload.position||{};
+    if (![p.x,p.y,p.z,p.yaw].every(Number.isFinite)) return;
+    if (Math.abs(p.x)>25000||Math.abs(p.z)>25000||p.y<2||p.y>180) return;
+    const helicopter={owner:socket.id,ownerName:clean(state.profile?.name,24)||'Aski',
+      position:{x:p.x,y:p.y,z:p.z,yaw:p.yaw},rotor:Number.isFinite(payload.rotor)?payload.rotor:0,updatedAt:Date.now()};
+    io.emit('creator:helicopter',helicopter);
+  });
+  socket.on('creator:helicopter:stop', () => {
+    if (isCreatorPhone(socket.phone)) io.emit('creator:helicopter:stop',{owner:socket.id});
+  });
   socket.on('player:update', (payload = {}) => {
     if (payload.version) {
       state.version = clean(payload.version, 32) || state.version;
