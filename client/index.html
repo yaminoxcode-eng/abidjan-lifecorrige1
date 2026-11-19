@@ -307,6 +307,9 @@
     <div id="accountRegisterFields" style="display:none">
       <label for="accountEmail">Adresse e-mail</label>
       <input id="accountEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com">
+      <label for="accountRegisterCode">Code de vérification (6 chiffres)</label>
+      <input id="accountRegisterCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Code reçu par e-mail">
+      <p id="accountRegisterCodeNotice" style="font-size:11px;color:#ffe0a0">Un code sera envoyé avant la création du compte.</p>
       <label for="accountPasswordConfirm">Confirmer le mot de passe</label>
       <div style="display:flex;gap:6px;align-items:center">
         <input id="accountPasswordConfirm" type="password" placeholder="Retape le mot de passe" autocomplete="new-password" style="flex:1">
@@ -731,7 +734,7 @@ function setAccountFieldVisibility(){
     cont.disabled=false;
     cont.style.display=accountFlow==='recoverEmail'?'none':'block';
     if(accountFlow==='login')cont.textContent='Se connecter';
-    else if(accountFlow==='register')cont.textContent='Créer mon compte';
+    else if(accountFlow==='register')cont.textContent='Envoyer / vérifier le code';
     else if(accountFlow==='reset')cont.textContent='Vérifier le code et changer le mot de passe';
     else cont.textContent='Continuer';
   }
@@ -748,7 +751,7 @@ function openAccountGate(){
   const conf=document.getElementById('accountPasswordConfirm'); if(conf){conf.value='';conf.type='password';}
   const np=document.getElementById('accountNewPassword'); if(np){np.value='';np.type='password';}
   const npc=document.getElementById('accountNewPasswordConfirm'); if(npc){npc.value='';npc.type='password';}
-  ['accountEmail','accountRecoverEmail','accountRecoveryCode','accountParentName','accountPetName','accountSport','accountRecoverParent','accountRecoverPet','accountRecoverSport'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['accountEmail','accountRegisterCode','accountRegisterCodeNotice','accountRecoverEmail','accountRecoveryCode','accountParentName','accountPetName','accountSport','accountRecoverParent','accountRecoverPet','accountRecoverSport'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const bd=document.getElementById('accountBirthDay'); if(bd) bd.value='';
   const bm=document.getElementById('accountBirthMonth'); if(bm) bm.value='';
   document.getElementById('accountTitle').textContent='Connexion';
@@ -842,11 +845,19 @@ async function accountContinue(){
     if(emailTaken){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.', true);return;}
     const confirm=document.getElementById('accountPasswordConfirm').value;
     if(pass!==confirm){showAccountStatus('Les deux mots de passe ne correspondent pas.', true);return;}
-    const security={};
-    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+    const code=String(document.getElementById('accountRegisterCode').value||'').replace(/\\D/g,'');
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
     let response,data;
     try{
-      response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
+      if(code.length!==6){
+        response=await fetch(api+'/api/auth/register/request-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
+        data=await response.json().catch(()=>({}));
+        if(!response.ok){showAccountStatus(data.error||'Impossible d’envoyer le code.',true);return;}
+        document.getElementById('accountRegisterCodeNotice').textContent='Code envoyé. Saisis-le ici (valable 10 minutes), puis appuie de nouveau sur Créer mon compte.';
+        showAccountStatus('Code envoyé à '+email+'. Vérifie aussi les courriers indésirables.',false);
+        return;
+      }
+      response=await fetch(api+'/api/auth/register/verify-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email,code})});
       data=await response.json().catch(()=>({}));
     }catch(registrationError){
       // La connexion peut être coupée après l'enregistrement côté serveur.
