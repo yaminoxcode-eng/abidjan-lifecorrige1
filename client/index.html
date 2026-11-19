@@ -7528,7 +7528,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
  const downloadedAppMeta={contacts:{name:'Contacts',emoji:'👥'},messages:{name:'Messages',emoji:'💬'},appels:{name:'Appels',emoji:'📞'},offrescreateur:{name:'Offres spéciales',emoji:'🎁'},cheats:{name:'Codes',emoji:'⌨️'},recompenses:{name:'Récompenses',emoji:'🏆'},yango:{name:'Yango',emoji:'🚕'},achats:{name:'Achats & livraisons',emoji:'🛍️'},finances:{name:'Finances',emoji:'💳'},communication:{name:'Communication',emoji:'💬'},medias:{name:'Médias',emoji:'📸'},viepratique:{name:'Vie pratique',emoji:'🏙️'},monsuccess:{name:'Mon Success',emoji:'🏆'},immoabj:{name:'Immo ABJ',emoji:'🏘️'},proemploi:{name:'Pro Emploi',emoji:'🧰'},inventaire:{name:'Inventaire',emoji:'🎒'},afgamer:{name:'AF GAMER CI',emoji:'🎮'},google:{name:'Recherche',emoji:'🔎'}};
  function restoreDownloadedPhoneApps(){const host=document.getElementById('phoneApps');if(!host)return;const ids=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];ids.forEach(id=>{const a=downloadedAppMeta[id];if(!a||host.querySelector('[data-app="'+id+'"]'))return;let target=host.querySelector('.phoneAppsPage:last-child');if(!target||target.querySelectorAll('.phoneApp').length>=9){target=document.createElement('div');target.className='phoneAppsPage';host.appendChild(target);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+a.emoji+'</span>'+a.name;b.addEventListener('click',()=>openPhoneApp(id));target.appendChild(b);});}
  const activateBeforePhoneRestore=activateGameAccount;
- activateGameAccount=async function(phone){await activateBeforePhoneRestore(phone);if(lifeState){lifeState.v19=lifeState.v19||{};lifeState.v19.installedApps=Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];['contacts','messages','appels'].forEach(id=>{if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);});if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('recompenses'))lifeState.v19.installedApps.push('recompenses');saveLifeProgress(false);}setTimeout(()=>{restoreDownloadedPhoneApps();window.ABJ_CONNECT_ONLINE&&window.ABJ_CONNECT_ONLINE();},350);};
+ activateGameAccount=async function(phone){await activateBeforePhoneRestore(phone);if(lifeState){lifeState.v19=lifeState.v19||{};lifeState.v19.installedApps=Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];['contacts','messages','appels','offrescreateur','cheats'].forEach(id=>{if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);});if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('recompenses'))lifeState.v19.installedApps.push('recompenses');saveLifeProgress(false);}setTimeout(()=>{restoreDownloadedPhoneApps();window.ABJ_CONNECT_ONLINE&&window.ABJ_CONNECT_ONLINE();},350);};
  window.ABJ_RESTORE_PHONE_APPS=restoreDownloadedPhoneApps;
  const countBtn=document.createElement('button');countBtn.id='abjOnlineCount';countBtn.type='button';countBtn.innerHTML='👥 <b id="abjOnlineNumber">0</b>';
  countBtn.style.cssText='display:none;position:relative;z-index:2;margin-left:auto;padding:6px 9px;border:1px solid #f0d18d;border-radius:18px;background:#081827;color:#fff;font:700 12px system-ui;cursor:pointer;box-shadow:0 2px 8px #0008';
@@ -8514,5 +8514,59 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  async function refreshCount(){try{const r=await fetch(apiBase()+'/api/players',{cache:'no-store'});if(!r.ok)return;const d=await r.json();count.textContent='👥 '+(Number(d.count)||0)+' joueur'+(d.count===1?'':'s')+' en ligne';}catch(e){}}
  refreshCount();setInterval(refreshCount,15000);
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureRewardsIcon);else ensureRewardsIcon();
+})();
+</script>
+
+
+<script>
+(function(){
+ 'use strict';
+ const onlineApi=()=>String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+ const authHeaders=()=>{const p=activeGameAccount?normalizeIvorianMobile(activeGameAccount):'';return p?{Authorization:'Bearer '+(safeGet('abj-online-token:'+p)||'')}:{ };};
+ function toast(text){
+  let el=document.getElementById('abjSocialToast');
+  if(!el){el=document.createElement('div');el.id='abjSocialToast';el.style.cssText='position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:99990;width:min(390px,92vw);padding:12px 15px;border:1px solid #e5c47a;border-radius:13px;background:#102735f2;color:#fff;box-shadow:0 12px 35px #0009;font:13px system-ui;display:none';document.body.appendChild(el);}
+  el.textContent=text;el.style.display='block';clearTimeout(el._hide);el._hide=setTimeout(()=>el.style.display='none',5200);
+ }
+ window.addEventListener('abj-online-message',e=>{
+  const m=e.detail||{};lifeState.onlineMessages=lifeState.onlineMessages||[];lifeState.onlineMessages.push(m);lifeState.onlineMessages=lifeState.onlineMessages.slice(-100);saveLifeProgress(false);
+  toast('💬 '+(m.fromName||'Joueur')+' : '+(m.text||'Nouveau message'));
+ });
+ window.addEventListener('abj-online-call',e=>{
+  const m=e.detail||{};window.__ABJ_PENDING_CALL=m;toast('📞 Appel entrant de '+(m.fromName||'un joueur')+' · ouvre Appels');
+ });
+ window.renderContactsApp=function(){
+  const content=document.getElementById('phoneAppContent');if(!content)return;
+  const npc=lifeState.contacts||[];
+  const local=npc.map(c=>'<div style="padding:9px;border-bottom:1px solid #ffffff22"><b>'+escapeHTML(c.name)+'</b><div style="font-size:11px;color:#bcd0dc">Habitant rencontré · '+escapeHTML(c.firstMet||'Abidjan')+'</div></div>').join('');
+  content.innerHTML='<button id="phoneBack">← Applications</button><h3>👥 Carnet de contacts</h3><p style="font-size:12px;color:#c6d8e5">Tes rencontres et les joueurs actuellement connectés apparaissent ici.</p><div id="abjLiveContacts">Recherche des joueurs connectés…</div><h4>Habitants rencontrés</h4>'+(local||'<p class="muted">Aucun contact habitant enregistré.</p>');
+  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
+  fetch(onlineApi()+'/api/players',{cache:'no-store'}).then(r=>r.json()).then(d=>{
+   const box=document.getElementById('abjLiveContacts');if(!box)return;
+   const players=(d.players||[]).filter(p=>p.name);
+   box.innerHTML='<h4>🌐 Joueurs en ligne ('+players.length+')</h4>'+(players.length?players.map(p=>'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px;margin:6px 0;border:1px solid #ffffff25;border-radius:10px"><div><b>'+escapeHTML(p.name)+'</b><div style="font-size:10px;color:#a9c1cf">En ligne · '+(p.moving?'En déplacement':'Disponible')+'</div></div><button data-player-message="'+escapeHTML(p.id)+'" data-player-name="'+escapeHTML(p.name)+'">Message</button><button data-player-call="'+escapeHTML(p.id)+'" data-player-name="'+escapeHTML(p.name)+'">Appeler</button></div>').join(''):'<p>Aucun autre joueur connecté pour le moment.</p>');
+   box.querySelectorAll('[data-player-message]').forEach(b=>b.onclick=()=>{const socket=window.ABJ_GAME_SOCKET;if(!socket?.connected){toast('Connexion multijoueur indisponible.');return;}const text=prompt('Message à '+b.dataset.playerName+' :');if(!text?.trim())return;socket.emit('social:message',{to:b.dataset.playerMessage,text:text.trim()},r=>toast(r?.ok?'Message envoyé.':(r?.error||'Envoi impossible.')));});
+   box.querySelectorAll('[data-player-call]').forEach(b=>b.onclick=()=>{const socket=window.ABJ_GAME_SOCKET;if(!socket?.connected){toast('Connexion multijoueur indisponible.');return;}socket.emit('social:call',{to:b.dataset.playerCall},r=>toast(r?.ok?'Appel envoyé à '+b.dataset.playerName+'.':(r?.error||'Appel impossible.')));});
+  }).catch(()=>{const box=document.getElementById('abjLiveContacts');if(box)box.textContent='La liste des joueurs est momentanément indisponible.';});
+ };
+ function renderCalls(){
+  const content=document.getElementById('phoneAppContent');if(!content)return;
+  const incoming=window.__ABJ_PENDING_CALL;
+  content.innerHTML='<button id="phoneBack">← Applications</button><h3>📞 Appels</h3><p style="font-size:12px;color:#c6d8e5">Appelle un joueur actuellement connecté. Les appels sont des demandes dans le jeu, sans audio externe.</p><div id="abjIncomingCall">'+(incoming?'<b>Appel entrant de '+escapeHTML(incoming.fromName||'Joueur')+'</b><button id="abjDismissCall">Ignorer</button>':'Aucun appel entrant.')+'</div><div id="abjCallPlayers">Chargement…</div>';
+  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
+  const dismiss=document.getElementById('abjDismissCall');if(dismiss)dismiss.onclick=()=>{window.__ABJ_PENDING_CALL=null;renderCalls();};
+  fetch(onlineApi()+'/api/players',{cache:'no-store'}).then(r=>r.json()).then(d=>{
+   const box=document.getElementById('abjCallPlayers');if(!box)return;
+   const players=(d.players||[]).filter(p=>p.id&&p.id!==window.ABJ_GAME_SOCKET?.id);
+   box.innerHTML=players.length?players.map(p=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:9px;border-bottom:1px solid #ffffff22"><b>'+escapeHTML(p.name)+'</b><button data-call="'+escapeHTML(p.id)+'">Appeler</button></div>').join(''):'<p>Aucun autre joueur en ligne.</p>';
+   box.querySelectorAll('[data-call]').forEach(b=>b.onclick=()=>{const socket=window.ABJ_GAME_SOCKET;if(!socket?.connected){toast('Connexion multijoueur indisponible.');return;}socket.emit('social:call',{to:b.dataset.call},r=>toast(r?.ok?'Demande d’appel envoyée.':(r?.error||'Appel impossible.')));});
+  }).catch(()=>{const box=document.getElementById('abjCallPlayers');if(box)box.textContent='Impossible de charger les joueurs.';});
+ }
+ const priorOpen=window.openPhoneApp;
+ window.openPhoneApp=function(app){
+  if(app==='appels'){const apps=document.getElementById('phoneApps'),content=document.getElementById('phoneAppContent');if(apps)apps.style.display='none';if(content)content.style.display='block';renderCalls();return;}
+  if(app==='recompenses'&&creatorRoleVerified)return priorOpen(app);
+  return priorOpen(app);
+ };
 })();
 </script>
