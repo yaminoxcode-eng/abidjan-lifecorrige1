@@ -766,7 +766,10 @@ app.post('/api/game/report', auth, async (req,res) => {
 app.post('/api/game/assistant', auth, async (req,res) => {
   if(!rateLimit(req.phone+':game-ai',20,60000)) return res.status(429).json({error:'Tu poses trop de questions. Attends un instant.'});
   const question=clean(req.body.message,1800);
-  const history=Array.isArray(req.body.history)?req.body.history.slice(-8).map(m=>({role:m?.role==='assistant'?'assistant':'user',content:clean(m?.content,1200)})).filter(m=>m.content):[];
+  const account=accounts.get(req.phone);
+  const storedHistory=Array.isArray(account?.profile?.assistantMemory)?account.profile.assistantMemory:[];
+  const clientHistory=Array.isArray(req.body.history)?req.body.history:[];
+  const history=(storedHistory.length?storedHistory:clientHistory).slice(-8).map(m=>({role:m?.role==='assistant'?'assistant':'user',content:clean(m?.content,1200)})).filter(m=>m.content);
   if(!question) return res.status(400).json({error:'Écris une question.'});
   const knowledge=`Tu es l'assistant général d'Abidjan Life et l'assistant numérique du joueur. Tu peux répondre à des questions de culture générale, sciences, histoire, technologie, actualité, géographie, vie quotidienne et questions sur le jeu. Réponds en français sauf demande contraire. Pour les faits récents, les informations du monde réel, les prix, les lois ou les événements, utilise la recherche web disponible, compare les sources et donne des liens de sources dans ta réponse. Signale clairement les incertitudes et les dates. N'invente jamais de faits, de liens, de fonctions du jeu, de paiements ou de connexions. Distingue toujours ce qui existe réellement dans la version actuelle du jeu, ce qui est seulement simulé et ce qui est proposé pour plus tard. Abidjan Life est un jeu 3D situé à Abidjan avec déplacements, véhicules, PNJ, bâtiments, intérieurs, téléphone, services de vie, comptes et multijoueur. Les paiements Wave, les achats d'argent réel et les retraits ne sont pas encore activés. Tu peux expliquer, analyser, proposer des améliorations et rédiger des rapports, mais tu ne peux pas modifier le jeu ou effectuer une transaction par toi-même. Ne prétends pas apprendre ou modifier tes propres poids : tu peux utiliser le contexte de la conversation et les retours explicitement enregistrés par le système.`;
   if(!OPENAI_API_KEY) return res.json({answer:'Le service IA génératif n’est pas configuré sur le serveur. Les réponses locales restent limitées.',mode:'local-faq',note:'Configure OPENAI_API_KEY sur Render pour activer l’assistant avancé.'});
@@ -786,7 +789,9 @@ app.post('/api/game/assistant', auth, async (req,res) => {
     if(!response.ok) throw new Error(data.error?.message||'Service IA indisponible');
     const answerText=clean(data.output_text||(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n'),5000);
     const citations=(data.output||[]).flatMap(x=>x.content||[]).flatMap(x=>x.annotations||[]).filter(x=>x.type==='url_citation').map(x=>({title:clean(x.title,180),url:clean(x.url,500)})).filter(x=>/^https:\/\//.test(x.url)).slice(0,8);
-    res.set('Cache-Control','no-store').json({answer:answerText||'Je n’ai pas trouvé de réponse fiable.',mode:'ai-web',citations});
+    const finalAnswer=answerText||'Je n’ai pas trouvé de réponse fiable.';
+    if(account){account.profile=account.profile||{};account.profile.assistantMemory=[...history,{role:'user',content:question},{role:'assistant',content:finalAnswer}].slice(-16);try{await persistAccount(account);}catch(memoryError){console.warn('Mémoire IA non persistée:',memoryError.message);}}
+    res.set('Cache-Control','no-store').json({answer:finalAnswer,mode:'ai-web',citations});
   } catch(error) {
     console.error('Assistant IA:',error.message);
     res.status(503).json({error:'Assistant temporairement indisponible. '+clean(error.message,180)});
