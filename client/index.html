@@ -1217,7 +1217,7 @@ function openCharacterCreator(){
   const saved=lifeState.playerProfile||{},overlay=document.getElementById('creatorOverlay');
   if(!overlay){showAccountStatus('Impossible d\'ouvrir la création de personnage.', true);return;}
   const set=(id,value)=>{const el=document.getElementById(id);if(el&&value!==undefined)el.value=String(value);};
-  set('creatorName',isCreatorAccount(activeGameAccount)?'Créateur':saved.name||'Mon personnage');
+  set('creatorName',isCreatorAccount(activeGameAccount)?'Aski':saved.name||'Mon personnage');
   set('creatorGender',saved.gender||'homme');
   // Normalise les couleurs hex (toString(16) sans padding cassait les options)
   const hex=v=>'0x'+Number(v||0).toString(16);
@@ -1266,7 +1266,7 @@ function updateCreatorPreview(){renderIdentityPreview();syncCreatorOptionLabels(
 
 function launchGameFromCreator(){
   const value=id=>document.getElementById(id).value;
-  lifeState.playerProfile={name:isCreatorAccount(activeGameAccount)?'Créateur':value('creatorName').trim().slice(0,24)||'Mon personnage',gender:value('creatorGender'),skin:parseInt(value('creatorSkin')),hair:parseInt(value('creatorHair')),shirt:parseInt(value('creatorShirt')),pants:parseInt(value('creatorPants')),bodyType:value('creatorBodyType'),hairstyle:value('creatorHairstyle'),outfit:value('creatorOutfit')};
+  lifeState.playerProfile={name:isCreatorAccount(activeGameAccount)?'Aski':value('creatorName').trim().slice(0,24)||'Mon personnage',gender:value('creatorGender'),skin:parseInt(value('creatorSkin')),hair:parseInt(value('creatorHair')),shirt:parseInt(value('creatorShirt')),pants:parseInt(value('creatorPants')),bodyType:value('creatorBodyType'),hairstyle:value('creatorHairstyle'),outfit:value('creatorOutfit')};
   if(creatorEditMode&&player&&scene){
     const pos=player.position.clone(),rot=player.rotation.y,old=player;
     player=createCharacter(lifeState.playerProfile);player.position.copy(pos);player.rotation.y=rot;player.userData.displayName='Créateur';scene.add(player);scene.remove(old);
@@ -8568,5 +8568,52 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   if(app==='recompenses'&&creatorRoleVerified)return priorOpen(app);
   return priorOpen(app);
  };
+})();
+</script>
+
+
+<script>
+(function(){
+ const section=document.getElementById('creatorLifeChoices'),start=document.getElementById('creatorStart'),back=document.getElementById('creatorChoicesBack');
+ if(!section||!start)return;
+ const layout=document.querySelector('#creatorCard .creatorLayout');
+ const traits=[
+  ['grouilleur','Débrouillard','Trouve plus facilement des occasions de gagner de l’argent.'],
+  ['sportif','Sportif','Dépense moins d’énergie en travaillant et en courant.'],
+  ['beau-parleur','Sociable','Améliore les échanges et les relations.'],
+  ['toujours-propre','Soigné','Préserve plus longtemps son hygiène.'],
+  ['ambitieux','Ambitieux','Progresse plus vite dans les activités professionnelles.'],
+  ['calme','Calme','Récupère mieux après les journées difficiles.']
+ ];
+ const dreams=[
+  ['entrepreneur','Créer une entreprise','Construire une activité prospère à Abidjan.'],
+  ['maison','Devenir propriétaire','Acheter et aménager sa propre maison.'],
+  ['voyageur','Voyager','Découvrir les villes et les destinations.'],
+  ['celebrite','Devenir célèbre','Développer sa réputation et son réseau.'],
+  ['famille','Fonder une famille','Construire une vie sociale et familiale.'],
+  ['carriere','Réussir sa carrière','Obtenir un métier et évoluer.']
+ ];
+ let selected=[],dream='';
+ const host=document.getElementById('creatorTraitChoices'),dreamHost=document.getElementById('creatorDreamChoices');
+ function draw(){
+  host.innerHTML=traits.map(t=>'<button type="button" data-trait="'+t[0]+'" style="text-align:left;padding:10px;border:1px solid '+(selected.includes(t[0])?'#e8c16f':'#ffffff30')+';border-radius:10px;background:'+(selected.includes(t[0])?'#604b25':'#ffffff0d')+';color:#fff"><b>'+t[1]+'</b><div style="font-size:11px;color:#c5d5df;margin-top:4px">'+t[2]+'</div></button>').join('');
+  dreamHost.innerHTML=dreams.map(d=>'<button type="button" data-dream="'+d[0]+'" style="text-align:left;padding:10px;border:1px solid '+(dream===d[0]?'#e8c16f':'#ffffff30')+';border-radius:10px;background:'+(dream===d[0]?'#604b25':'#ffffff0d')+';color:#fff"><b>'+d[1]+'</b><div style="font-size:11px;color:#c5d5df;margin-top:4px">'+d[2]+'</div></button>').join('');
+  document.getElementById('creatorTraitCount').textContent='Traits choisis : '+selected.length+'/2';
+  document.getElementById('creatorChoiceSummary').textContent='Traits : '+(selected.map(id=>traits.find(t=>t[0]===id)?.[1]).join(' et ')||'à choisir')+' · Rêve : '+(dreams.find(d=>d[0]===dream)?.[1]||'à choisir');
+ }
+ host.addEventListener('click',e=>{const b=e.target.closest('[data-trait]');if(!b)return;const id=b.dataset.trait;if(selected.includes(id))selected=selected.filter(x=>x!==id);else if(selected.length<2)selected.push(id);else showMessage('Choisis exactement deux traits.');draw();});
+ dreamHost.addEventListener('click',e=>{const b=e.target.closest('[data-dream]');if(!b)return;dream=b.dataset.dream;draw();});
+ let step=0;
+ start.addEventListener('click',e=>{
+  if(step===0){
+   e.preventDefault();e.stopImmediatePropagation();
+   step=1;if(layout)layout.style.display='none';section.style.display='block';start.textContent='VALIDER ET COMMENCER';draw();return;
+  }
+  if(selected.length!==2||!dream){e.preventDefault();e.stopImmediatePropagation();showMessage('Choisis exactement deux traits et un rêve avant de commencer.');return;}
+  lifeState.playerProfile=lifeState.playerProfile||{};
+  lifeState.playerProfile.traits=selected.slice(0,2);lifeState.playerProfile.dream=dream;
+  saveLifeProgress(false);
+ },true);
+ if(back)back.addEventListener('click',()=>{step=0;section.style.display='none';if(layout)layout.style.display='';start.textContent='Continuer';});
 })();
 </script>
