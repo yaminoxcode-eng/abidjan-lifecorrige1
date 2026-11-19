@@ -8453,6 +8453,129 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
 })();
 </script>
 
+
+<script>
+/* ABJ_PHONE_CONTACTS_ONLINE_PATCH — restauration robuste des applis et carnet multijoueur */
+(function(){
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const apiBase=()=>String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+ const phoneHost=()=> $('phoneApps');
+ const appMeta={
+  contacts:['👥','Contacts'],messages:['💬','Messages'],appels:['📞','Appels'],
+  offrescreateur:['🎁','Offres spéciales'],cheats:['⌨️','Codes'],
+  recompenses:['🏆','Récompenses'],helicoptere:['🚁','Hélicoptère']
+ };
+ function installCoreApps(){
+  if(!window.lifeState && typeof lifeState==='undefined')return;
+  try{
+   lifeState.v19=lifeState.v19||{};
+   lifeState.v19.installedApps=Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];
+   ['contacts','messages','appels','offrescreateur','cheats'].forEach(id=>{
+    if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);
+   });
+   if(typeof creatorRoleVerified!=='undefined'&&creatorRoleVerified){
+    ['recompenses','helicoptere'].forEach(id=>{if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);});
+   }
+   if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+  }catch(e){console.warn('Applications du téléphone non sauvegardées',e);}
+ }
+ function ensurePhoneIcons(){
+  const host=phoneHost();if(!host)return;
+  installCoreApps();
+  Object.entries(appMeta).forEach(([id,meta])=>{
+   if((id==='recompenses'||id==='helicoptere')&&!(typeof creatorRoleVerified!=='undefined'&&creatorRoleVerified))return;
+   if(host.querySelector('[data-app="'+id+'"]'))return;
+   let page=host.querySelector('.phoneAppsPage:last-child');
+   if(!page||page.querySelectorAll('.phoneApp').length>=9){
+    page=document.createElement('div');page.className='phoneAppsPage';host.appendChild(page);
+   }
+   const b=document.createElement('button');b.type='button';b.className='phoneApp';b.dataset.app=id;
+   b.innerHTML='<span>'+meta[0]+'</span><b>'+meta[1]+'</b>';
+   b.addEventListener('click',()=>window.openPhoneApp&&window.openPhoneApp(id));
+   page.appendChild(b);
+  });
+ }
+ let onlinePlayers=[];
+ async function refreshOnlinePlayers(){
+  if(!activeGameAccount)return;
+  try{
+   const r=await fetch(apiBase()+'/api/players',{cache:'no-store'});
+   if(!r.ok)return;
+   const d=await r.json();
+   const own=window.ABJ_GAME_SOCKET&&window.ABJ_GAME_SOCKET.id;
+   onlinePlayers=(Array.isArray(d.players)?d.players:[]).filter(p=>p&&p.id&&p.id!==own);
+   window.ABJ_ONLINE_CONTACTS=onlinePlayers;
+   if($('abjOnlineContactsList'))renderOnlineContacts();
+  }catch(e){/* le carnet reste utilisable hors ligne */}
+ }
+ function renderOnlineContacts(){
+  const host=$('abjOnlineContactsList');if(!host)return;
+  if(!onlinePlayers.length){host.innerHTML='<p style="font-size:12px;color:#c6d8e5">Aucun autre joueur connecté pour le moment. Les joueurs apparaîtront ici dès leur connexion.</p>';return;}
+  host.innerHTML=onlinePlayers.map(p=>'<article style="padding:10px;margin:7px 0;border:1px solid #ffffff28;border-radius:10px;background:#ffffff0d"><b>🟢 '+esc(p.name||p.profile&&p.profile.name||'Citoyen')+'</b><div style="font-size:11px;color:#b9d6e7">Joueur en ligne · '+(p.moving?'En déplacement':'Disponible')+'</div><input data-online-draft="'+esc(p.id)+'" maxlength="500" placeholder="Écrire un message…" style="width:100%;padding:9px;margin-top:7px;border-radius:8px"><button data-online-send="'+esc(p.id)+'">Envoyer</button><button data-online-call="'+esc(p.id)+'">Appeler</button><p data-online-status="'+esc(p.id)+'" style="font-size:11px;color:#ffe0a0"></p></article>').join('');
+  host.querySelectorAll('[data-online-send]').forEach(b=>b.onclick=()=>{
+   const id=b.dataset.onlineSend,input=host.querySelector('[data-online-draft="'+id+'"]'),status=host.querySelector('[data-online-status="'+id+'"]');
+   const text=input&&input.value.trim(),sock=window.ABJ_GAME_SOCKET;
+   if(!text){if(status)status.textContent='Écris un message avant de l’envoyer.';return;}
+   if(!sock||!sock.connected){if(status)status.textContent='Connexion multijoueur indisponible.';return;}
+   sock.emit('social:message',{to:id,text},ack=>{if(status)status.textContent=ack&&ack.ok?'Message envoyé.':(ack&&ack.error||'Envoi impossible.');if(ack&&ack.ok&&input)input.value='';});
+  });
+  host.querySelectorAll('[data-online-call]').forEach(b=>b.onclick=()=>{
+   const id=b.dataset.onlineCall,status=host.querySelector('[data-online-status="'+id+'"]'),sock=window.ABJ_GAME_SOCKET;
+   if(!sock||!sock.connected){if(status)status.textContent='Connexion multijoueur indisponible.';return;}
+   sock.emit('social:call',{to:id},ack=>{if(status)status.textContent=ack&&ack.ok?'Appel envoyé.':(ack&&ack.error||'Appel impossible.');});
+  });
+ }
+ function renderOnlineAwareContacts(){
+  const content=$('phoneAppContent');if(!content)return;
+  const local=(typeof lifeState!=='undefined'&&Array.isArray(lifeState.contacts))?lifeState.contacts:[];
+  const localHtml=local.map(c=>'<article style="padding:9px;margin:7px 0;border:1px solid #ffffff28;border-radius:10px;background:#ffffff0d"><b>👤 '+esc(c.name)+'</b><div style="font-size:11px;color:#c6d8e5">Habitant rencontré · relation '+(Number(c.relation)||1)+'/100</div><button data-local-chat="'+esc(c.id)+'">Conversation</button></article>').join('');
+  content.innerHTML='<button id="phoneBack">← Applications</button><h3>👥 Contacts</h3><p style="font-size:12px;color:#c6d8e5">Retrouve les habitants rencontrés et les joueurs connectés. Les messages et appels entre joueurs nécessitent une connexion au serveur.</p><h4>🌐 Joueurs en ligne</h4><div id="abjOnlineContactsList">Chargement des joueurs…</div><h4>🏙️ Habitants rencontrés</h4>'+(localHtml||'<p style="font-size:12px;color:#c6d8e5">Tu n’as pas encore rencontré d’habitant.</p>');
+  $('phoneBack').onclick=()=>{content.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();};
+  content.querySelectorAll('[data-local-chat]').forEach(b=>b.onclick=()=>{lifeState.activeContact=b.dataset.localChat;if(typeof saveLifeProgress==='function')saveLifeProgress(false);if(typeof renderMessagesApp==='function')renderMessagesApp();});
+  refreshOnlinePlayers();
+  renderOnlineContacts();
+ }
+ const priorOpen=window.openPhoneApp;
+ if(typeof priorOpen==='function'&&!window.__ABJ_PHONE_CONTACTS_PATCHED){
+  window.__ABJ_PHONE_CONTACTS_PATCHED=true;
+  window.openPhoneApp=function(app){
+   if(app==='contacts'){
+    if(typeof openPhone==='function')openPhone();
+    const shell=$('phoneHomeShell'),apps=phoneHost(),content=$('phoneAppContent');
+    if(shell)shell.style.display='none';if(apps)apps.style.display='none';if(content)content.style.display='block';
+    renderOnlineAwareContacts();return;
+   }
+   return priorOpen.apply(this,arguments);
+  };
+ }
+ window.addEventListener('abj-online-message',e=>{
+  const m=e.detail||{};
+  if(typeof showMessage==='function')showMessage('💬 '+esc(m.fromName||'Un joueur')+' : '+esc(m.text||'Nouveau message'));
+ });
+ window.addEventListener('abj-online-call',e=>{
+  const m=e.detail||{};
+  if(typeof showMessage==='function')showMessage('📞 Appel entrant de '+esc(m.fromName||'un joueur')+'.');
+ });
+ function boot(){
+  ensurePhoneIcons();
+  if(typeof activeGameAccount!=='undefined'&&activeGameAccount)refreshOnlinePlayers();
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+ const originalActivate=window.activateGameAccount;
+ if(typeof originalActivate==='function'&&!window.__ABJ_PHONE_CONTACTS_ACTIVATE_PATCHED){
+  window.__ABJ_PHONE_CONTACTS_ACTIVATE_PATCHED=true;
+  window.activateGameAccount=async function(phone){
+   const result=await originalActivate.apply(this,arguments);
+   setTimeout(()=>{ensurePhoneIcons();refreshOnlinePlayers();},500);
+   return result;
+  };
+ }
+ setInterval(()=>{if(typeof activeGameAccount!=='undefined'&&activeGameAccount){ensurePhoneIcons();refreshOnlinePlayers();}},12000);
+})();
+</script>
+
 </body>
 </html>
 
