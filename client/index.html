@@ -1892,7 +1892,7 @@ function abjOpenOSMCache(){
 async function abjReadOSMCache(){
  const db=await abjOpenOSMCache();
  try{return await new Promise((resolve,reject)=>{
-  const tx=db.transaction('snapshots','readonly'),req=tx.objectStore('snapshots').get('abidjan-district-v1');
+  const tx=db.transaction('snapshots','readonly'),req=tx.objectStore('snapshots').get('abidjan-district-v2');
   req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error||new Error('Lecture cache impossible'));
  });}finally{db.close();}
 }
@@ -1900,7 +1900,7 @@ async function abjWriteOSMCache(data){
  const db=await abjOpenOSMCache();
  try{await new Promise((resolve,reject)=>{
   const tx=db.transaction('snapshots','readwrite');
-  tx.objectStore('snapshots').put({savedAt:Date.now(),data},'abidjan-district-v1');
+  tx.objectStore('snapshots').put({savedAt:Date.now(),data},'abidjan-district-v2');
   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Écriture cache impossible'));tx.onabort=()=>reject(tx.error||new Error('Cache annulé'));
  });}finally{db.close();}
 }
