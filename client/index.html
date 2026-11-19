@@ -8553,7 +8553,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
 (function(){
  const analysts=[
   {name:'Structure 3D',run:ctx=>ctx.meshes.filter(o=>!o.position||![o.position.x,o.position.y,o.position.z].every(Number.isFinite)).map(o=>'Objet '+(o.name||'sans nom')+' avec position non numérique.')},
-  {name:'Géométrie',run:ctx=>ctx.meshes.filter(o=>!o.geometry||(o.isMesh&&!o.geometry.getAttribute('position'))).map(o=>(o.name||'Mesh')+' sans géométrie exploitable.')},
+  {name:'Géométrie',run:ctx=>ctx.meshes.filter(o=>o.isMesh&&(!o.geometry||!o.geometry.getAttribute('position'))).map(o=>(o.name||'Mesh')+' sans géométrie exploitable.')},
   {name:'Limites de la carte',run:ctx=>{const limit=(typeof CITY_SIZE!=='undefined'?CITY_SIZE:30000)*.65;return ctx.meshes.filter(o=>Math.abs(o.position.x)>limit||Math.abs(o.position.z)>limit).slice(0,20).map(o=>(o.name||'Objet')+' hors zone ('+Math.round(o.position.x)+','+Math.round(o.position.z)+').');}},
   {name:'Collisions',run:ctx=>ctx.obstacles.filter(o=>![o.x,o.z,o.w,o.d].every(Number.isFinite)||o.w<=0||o.d<=0).slice(0,30).map(o=>'Obstacle invalide : '+JSON.stringify(o).slice(0,120))},
   {name:'Portes et entrées',run:ctx=>{const ids=new Set(),out=[];for(const d of ctx.doors){if(!d||!d.id)out.push('Porte sans identifiant.');else if(ids.has(String(d.id)))out.push('Identifiant de porte dupliqué : '+d.id);else ids.add(String(d.id));if(d?.home&&ctx.interiors&&!ctx.interiors[d.id])out.push('Logement '+d.id+' sans intérieur associé.');}return out;}},
