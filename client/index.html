@@ -4064,6 +4064,7 @@ function startPlayerAtHome(){
 
 function enterBuilding(door) {
   if(!door || !door.home || currentInterior || !player || (door.creatorOnly&&!isCreatorAccount(activeGameAccount))) return;
+  if(door.adultOnly&&door.buildingType==='nightclub'&&!window.__ABJ_ADULT_CONFIRMED){const ok=window.confirm('LE TALON — établissement fictif réservé aux personnes de 18 ans et plus. Les interactions sont sociales et non explicites. Aucun échange d’argent réel ni transaction sexuelle n’est proposé. Confirmer que tu as 18 ans ou plus ?');if(!ok)return;window.__ABJ_ADULT_CONFIRMED=true;}
   const interior=interiors[door.id]; if(!interior) return;
   lastExteriorPosition={x:door.x+door.normal.x*3.6,z:door.z+door.normal.z*3.6,y:terrainHeight(door.x+door.normal.x*3.6,door.z+door.normal.z*3.6)+0.02,rotation:Math.atan2(door.normal.x,door.normal.z),door};
   currentInterior=interior;currentApartment=null;interior.group.visible=true;interior.currentFloor=0;currentFloor=0;restoreHomeDecor(interior);
@@ -4081,7 +4082,7 @@ function enterBuilding(door) {
   scene.background=new THREE.Color(0x25313a);scene.fog=null;
   if(interiorAmbientLight)interiorAmbientLight.intensity=.72;
   document.getElementById('interiorHint').style.display='block';
-  document.getElementById('interiorHint').textContent=(interior.style==='resident'?'🏢 Immeuble · E à l’ascenseur pour choisir un étage · E à une porte pour entrer dans un appartement':door.isMunicipality?'🏛️ Mairie de '+door.commune+' · Services administratifs au guichet · E près de la porte : sortir':door.buildingType&&door.buildingType.startsWith('store_')?'🏬 '+door.buildingName+' · F : utiliser / interagir · E près de la porte : sortir':door.buildingName&&door.buildingName!=='Maison d’Abidjan'?'🏢 '+door.buildingName+' · F : interagir · E près de la porte : sortir':"🏠 Maison · F : utiliser / déplacer un meuble · Lit : dormir · Douche : se laver · E près de la porte : sortir");
+  document.getElementById('interiorHint').textContent=door.adultOnly?'🌙 Le Talon · Club privé 18+ · Bar, piste de danse et salons VIP · Aucun échange d’argent réel':(interior.style==='resident'?'🏢 Immeuble · E à l’ascenseur pour choisir un étage · E à une porte pour entrer dans un appartement':door.isMunicipality?'🏛️ Mairie de '+door.commune+' · Services administratifs au guichet · E près de la porte : sortir':door.buildingType&&door.buildingType.startsWith('store_')?'🏬 '+door.buildingName+' · F : utiliser / interagir · E près de la porte : sortir':door.buildingName&&door.buildingName!=='Maison d’Abidjan'?'🏢 '+door.buildingName+' · F : interagir · E près de la porte : sortir':"🏠 Maison · F : utiliser / déplacer un meuble · Lit : dormir · Douche : se laver · E près de la porte : sortir");
   document.getElementById('etage').textContent=interior.numFloors>1?'Immeuble · Hall / Rez-de-chaussée':(door.buildingType?'Magasin · Rez-de-chaussée':'Maison · Rez-de-chaussée');
   showMessage('Bienvenue chez toi. Salon, cuisine, chambre et salle de bain.');
 }
@@ -8568,6 +8569,52 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  window.ABJ_RUN_WORLD_AUDIT=runAudit;
  function schedule(){if(window.__ABJ_ANALYSTS_STARTED)return;window.__ABJ_ANALYSTS_STARTED=true;setTimeout(()=>{runAudit();setInterval(runAudit,5*60*1000);},45000);}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule);else schedule();
+})();
+</script>
+
+<script>
+/* Le Talon : club nocturne fictif 18+, sans contenu sexuel explicite ni transactions réelles. */
+(function(){
+ let built=false,attempts=0;
+ function buildTalon(){
+  if(built||!scene||!osmLoaded||!osmRoadSegments.length||typeof generateInterior!=='function')return false;
+  const roads=osmRoadSegments.filter(r=>r&&r.a&&r.b&&['primary','secondary','tertiary','residential','living_street','service'].includes(r.type)&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>35);
+  let best=null,bestScore=Infinity;
+  for(const r of roads){
+   const mx=(r.a.x+r.b.x)/2,mz=(r.a.z+r.b.z)/2,dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,len=Math.hypot(dx,dz)||1;
+   const nx=-dz/len,nz=dx/len;
+   for(const side of [-1,1]){
+    const x=mx+nx*side*25,z=mz+nz*side*25;
+    if(Math.hypot(x,z)>2600||isOnRoad(x,z,5)||overlapsExisting(x,z,28,22,4))continue;
+    const score=Math.hypot(x,z)+Math.random()*2;
+    if(score<bestScore){bestScore=score;best={x,z,nx:-nx*side,nz:-nz*side,yaw:Math.atan2(-nx*side,-nz*side)};}
+   }
+  }
+  if(!best)return false;
+  const x=best.x,z=best.z,h=10,w=28,d=22,g=new THREE.Group();
+  const wall=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:0x20242f,roughness:.72}));wall.position.y=h/2;wall.castShadow=true;wall.receiveShadow=true;g.add(wall);
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(w+1,.65,d+1),new THREE.MeshStandardMaterial({color:0x10151f,metalness:.3,roughness:.6}));roof.position.y=h+.3;roof.castShadow=true;g.add(roof);
+  const facade=new THREE.Mesh(new THREE.BoxGeometry(w*.72,4,.22),new THREE.MeshStandardMaterial({color:0x142b3d,metalness:.25,roughness:.28,emissive:0x0b2335}));facade.position.set(0,6,d/2+.12);g.add(facade);
+  const windowMat=new THREE.MeshStandardMaterial({color:0x5a1d51,emissive:0x9d1c83,emissiveIntensity:.8});
+  for(const side of [-1,1]){const win=new THREE.Mesh(new THREE.BoxGeometry(3.6,3,.18),windowMat);win.position.set(side*8,5,d/2+.15);g.add(win);}
+  const signCanvas=document.createElement('canvas');signCanvas.width=512;signCanvas.height=160;const ctx=signCanvas.getContext('2d');ctx.fillStyle='#111522';ctx.fillRect(0,0,512,160);ctx.strokeStyle='#d64bb5';ctx.lineWidth=8;ctx.strokeRect(8,8,496,144);ctx.fillStyle='#ffe0fa';ctx.font='bold 78px Arial';ctx.textAlign='center';ctx.fillText('LE TALON',256,104);
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(15,4.5),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signCanvas),transparent:true,side:THREE.DoubleSide}));sign.position.set(0,8.4,d/2+.3);g.add(sign);
+  const canopy=new THREE.Mesh(new THREE.BoxGeometry(8,.45,3.2),new THREE.MeshStandardMaterial({color:0x7a285f,emissive:0x4b123c,emissiveIntensity:.55}));canopy.position.set(0,3.2,d/2+1.2);g.add(canopy);
+  g.position.set(x,terrainHeight(x,z),z);g.rotation.y=best.yaw;scene.add(g);registerDistanceManagedBuilding(g);addObstacle(x,z,w,d,h+1);allBuildings.push({x,z,w,d,h:h+1,type:'nightclub',name:'Le Talon'});addPOI(x,z,'loisir','Le Talon',{category:'club',age:'18+'});
+  const id='talon-1',doorX=x-best.nx*10,doorZ=z-best.nz*10;
+  const interior=generateInterior(id,w,d,1,0x303344,'maquis');interiors[id]=interior;
+  const floor=interior.floors&&interior.floors[0];
+  if(floor){
+   const dance=new THREE.Mesh(new THREE.BoxGeometry(10,.12,7),new THREE.MeshStandardMaterial({color:0x292c48,metalness:.45,roughness:.3,emissive:0x241044,emissiveIntensity:.35}));dance.position.set(0,.18,-1);floor.add(dance);
+   const bar=new THREE.Mesh(new THREE.BoxGeometry(9,1.1,1.5),new THREE.MeshStandardMaterial({color:0x4a293d,roughness:.4}));bar.position.set(-7,.72,-7);floor.add(bar);
+   for(const px of [-8,8])for(const pz of [-7,7]){const booth=new THREE.Mesh(new THREE.BoxGeometry(4,.8,2.8),new THREE.MeshStandardMaterial({color:0x492d49,roughness:.6}));booth.position.set(px,.58,pz);floor.add(booth);}
+   const lampMat=new THREE.MeshStandardMaterial({color:0x9e4fc0,emissive:0x7b22a5,emissiveIntensity:1.4});
+   for(const px of [-6,0,6]){const lamp=new THREE.Mesh(new THREE.SphereGeometry(.28,8,6),lampMat);lamp.position.set(px,3,-2);floor.add(lamp);}
+  }
+  doors.push({x:doorX,z:doorZ,id,rot:0,normal:new THREE.Vector3(best.nx,0,best.nz),home:true,buildingType:'nightclub',buildingName:'Le Talon',adultOnly:true});
+  built=true;window.ABJ_LE_TALON={id,x,z,name:'Le Talon',ageLimit:18};console.info('Le Talon construit dans Abidjan Life.',window.ABJ_LE_TALON);return true;
+ }
+ const timer=setInterval(()=>{attempts++;if(buildTalon()||attempts>180)clearInterval(timer);},1000);
 })();
 </script>
 </body>
