@@ -2428,7 +2428,22 @@ function openCreatorAssistantPanel(){
  let p=document.getElementById('creatorAssistantPanel');if(!p){p=document.createElement('div');p.id='creatorAssistantPanel';p.style.cssText='position:fixed;right:16px;top:155px;z-index:130;width:min(390px,94vw);max-height:68vh;overflow:auto;padding:14px;background:#102a37;border:1px solid #65d9ee;border-radius:15px;color:white;box-shadow:0 15px 55px #000b';document.body.appendChild(p);}
  p.innerHTML='<div style="display:flex;justify-content:space-between"><b>✦ Assistant Abidjan Life</b><button id="creatorAssistantClose">✕</button></div><div id="creatorAssistantLog" style="height:230px;overflow:auto;background:#07131c;padding:9px;margin:9px 0;border-radius:9px;font-size:12px">Je suis l’assistant du jeu. Demande-moi comment fonctionnent ses systèmes ou comment les améliorer.</div><form id="creatorAssistantForm" style="display:flex;gap:6px"><input id="creatorAssistantInput" placeholder="Ta question…" style="flex:1;min-width:0;padding:10px;background:#091a25;color:white;border:1px solid #ffffff44;border-radius:8px"><button>Envoyer</button></form>';
  p.querySelector('#creatorAssistantClose').onclick=()=>p.remove();
- p.querySelector('#creatorAssistantForm').onsubmit=async e=>{e.preventDefault();const input=p.querySelector('#creatorAssistantInput'),log=p.querySelector('#creatorAssistantLog'),q=input.value.trim();if(!q)return;input.value='';log.innerHTML+='<p><b>Créateur :</b> '+escapeHTML(q)+'</p><p>Assistant : réponse en cours…</p>';try{const r=await fetch(creatorApi()+'/api/game/assistant',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({message:q})});const d=await r.json();log.innerHTML+='<p><b>Assistant :</b> '+escapeHTML(d.answer||d.error||'Pas de réponse.')+'</p>';}catch(err){log.innerHTML+='<p style="color:#ff8b91">Service IA indisponible.</p>';}log.scrollTop=log.scrollHeight;};
+ const memoryKey='abj-creator-ai-memory:'+normalizeIvorianMobile(activeGameAccount);
+ let history=[];try{history=JSON.parse(safeGet(memoryKey)||'[]');if(!Array.isArray(history))history=[];}catch(e){history=[];}
+ const log=p.querySelector('#creatorAssistantLog');
+ if(history.length)log.innerHTML=history.slice(-10).map(m=>'<p><b>'+(m.role==='assistant'?'Assistant':'Créateur')+':</b> '+escapeHTML(m.content)+'</p>').join('');
+ p.querySelector('#creatorAssistantForm').onsubmit=async e=>{
+  e.preventDefault();const input=p.querySelector('#creatorAssistantInput'),q=input.value.trim();if(!q)return;input.value='';
+  history.push({role:'user',content:q});log.innerHTML+='<p><b>Créateur :</b> '+escapeHTML(q)+'</p><p>Assistant : recherche et réflexion…</p>';
+  try{
+   const r=await fetch(creatorApi()+'/api/game/assistant',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({message:q,history:history.slice(-8)})});
+   const d=await r.json();if(!r.ok)throw new Error(d.error||'Service IA indisponible');
+   const answer=String(d.answer||'Pas de réponse.');history.push({role:'assistant',content:answer});history=history.slice(-16);safeSet(memoryKey,JSON.stringify(history));
+   log.innerHTML+='<p><b>Assistant :</b> '+escapeHTML(answer)+'</p>';
+   (d.citations||[]).forEach(x=>{if(/^https:\/\//.test(x.url||''))log.innerHTML+='<p style="font-size:11px"><a href="'+escapeHTML(x.url)+'" target="_blank" rel="noopener noreferrer">'+escapeHTML(x.title||x.url)+'</a></p>';});
+  }catch(err){log.innerHTML+='<p style="color:#ff8b91">'+escapeHTML(err.message||'Service IA indisponible.')+'</p>';}
+  log.scrollTop=log.scrollHeight;
+ };
 }
 
 function creatorToken(){return activeGameAccount?safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount)):null;}
@@ -2504,7 +2519,18 @@ async function renderCreatorWorldTab(tab){
   }catch(e){box.textContent=e.message||'Impossible de charger les comptes.';}
   return;
  }
- if(tab==='reports'){body.innerHTML='<h3>Signalements des joueurs</h3><div id="creatorReportsList">Chargement…</div>';try{const r=await fetch(creatorApi()+'/api/creator/reports',{headers:{Authorization:'Bearer '+creatorToken()}});const d=await r.json();const list=document.getElementById('creatorReportsList');if(!r.ok)throw new Error(d.error);list.innerHTML=(d.items||[]).map(x=>'<article style="padding:10px;margin:8px 0;background:#091a25;border-left:3px solid #e66;border-radius:8px"><b>'+escapeHTML(x.player)+' · '+escapeHTML(x.kind)+'</b><small style="display:block;color:#a8bdc8">'+escapeHTML(x.createdAt)+' · '+escapeHTML(x.district)+'</small><p>'+escapeHTML(x.message)+'</p></article>').join('')||'Aucun signalement pour le moment.';creatorOrbAlert=false;}catch(e){document.getElementById('creatorReportsList').textContent=e.message||'Impossible de charger les signalements.';}return;
+ if(tab==='reports'){
+  body.innerHTML='<h3>Signalements et rapports des 12 analystes</h3><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="creatorReportsCopy">Copier le rapport complet</button><button id="creatorReportsDownload">Télécharger le rapport</button></div><div id="creatorReportsList">Chargement…</div>';
+  try{
+   const r=await fetch(creatorApi()+'/api/creator/reports',{headers:{Authorization:'Bearer '+creatorToken()}});const d=await r.json();const list=document.getElementById('creatorReportsList');if(!r.ok)throw new Error(d.error);
+   const items=d.items||[];window.ABJ_CREATOR_REPORT_EXPORT={generatedAt:new Date().toISOString(),reports:items};
+   list.innerHTML=items.map(x=>'<article style="padding:10px;margin:8px 0;background:#091a25;border-left:3px solid '+(String(x.kind).startsWith('analyst')?'#59d7cb':'#e66')+';border-radius:8px"><b>'+escapeHTML(x.player)+' · '+escapeHTML(x.kind)+'</b><small style="display:block;color:#a8bdc8">'+escapeHTML(x.createdAt)+' · '+escapeHTML(x.district)+'</small><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font:12px system-ui">'+escapeHTML(x.message)+'</pre></article>').join('')||'Aucun rapport pour le moment.';
+   const exportText=()=>JSON.stringify(window.ABJ_CREATOR_REPORT_EXPORT,null,2);
+   document.getElementById('creatorReportsCopy').onclick=async()=>{try{await navigator.clipboard.writeText(exportText());showMessage('Rapport copié.');}catch(e){showMessage('Copie indisponible dans ce navigateur.');}};
+   document.getElementById('creatorReportsDownload').onclick=()=>{const blob=new Blob([exportText()],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='abidjan-life-rapport-analystes.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+   creatorOrbAlert=false;
+  }catch(e){document.getElementById('creatorReportsList').textContent=e.message||'Impossible de charger les signalements.';}
+  return;
  }
  body.innerHTML='<h3>État du monde en direct</h3><div id="creatorWorldStats">Actualisation…</div><button id="creatorWorldRefresh">Actualiser</button>';
  const refresh=async()=>{const box=document.getElementById('creatorWorldStats');if(!box)return;try{const r=await fetch(creatorApi()+'/api/creator/world',{headers:{Authorization:'Bearer '+creatorToken()}});const d=await r.json();if(!r.ok)throw new Error(d.error);const v=d.vehicles||{};box.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:9px">'+[['Joueurs connectés',d.playersOnline],['PNJ total',d.npcTotal],['PNJ actifs',d.npcActive],['PNJ inactifs',d.npcInactive],...Object.entries(v).map(([k,n])=>['Véhicules · '+k,n])].map(([k,n])=>'<article style="padding:13px;background:#0a202b;border:1px solid #ffffff20;border-radius:10px"><small style="color:#9db8c5">'+escapeHTML(k)+'</small><div style="font-size:25px;font-weight:800;color:#f2d18d">'+Number(n||0).toLocaleString('fr-FR')+'</div></article>').join('')+'</div><p style="color:#a9bdc8;font-size:11px">Dernière télémétrie : '+(d.telemetryUpdatedAt?new Date(d.telemetryUpdatedAt).toLocaleTimeString():'en attente')+'</p>'; }catch(e){box.textContent=e.message||'Données indisponibles.';}};
@@ -2512,7 +2538,7 @@ async function renderCreatorWorldTab(tab){
 }
 async function reportGameIssue(kind,message){
  if(!activeGameAccount||!creatorToken())return;
- try{await fetch(creatorApi()+'/api/game/report',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({kind,message:String(message||'').slice(0,500),version:window.ABJ_BUILD_VERSION||'',district:currentQuartier||''})});}catch(e){console.warn('Signalement non transmis',e);}
+ try{await fetch(creatorApi()+'/api/game/report',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({kind,message:String(message||'').slice(0,5000),version:window.ABJ_BUILD_VERSION||'',district:currentQuartier||''})});}catch(e){console.warn('Signalement non transmis',e);}
 }
 function openCreatorAppearanceRoom(){
  if(!isCreatorAccount(activeGameAccount)||!currentInterior?.creatorHQ||currentFloor!==2)return;
@@ -8519,6 +8545,31 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
 })();
 </script>
 
+
+<script>
+/* 12 analystes spécialisés du monde : audit déterministe, rapport agrégé et exportable. */
+(function(){
+ const analysts=[
+  {name:'Structure 3D',run:ctx=>ctx.meshes.filter(o=>!o.position||![o.position.x,o.position.y,o.position.z].every(Number.isFinite)).map(o=>'Objet '+(o.name||'sans nom')+' avec position non numérique.')},
+  {name:'Géométrie',run:ctx=>ctx.meshes.filter(o=>!o.geometry||(o.isMesh&&!o.geometry.getAttribute('position'))).map(o=>(o.name||'Mesh')+' sans géométrie exploitable.')},
+  {name:'Limites de la carte',run:ctx=>{const limit=(typeof CITY_SIZE!=='undefined'?CITY_SIZE:30000)*.65;return ctx.meshes.filter(o=>Math.abs(o.position.x)>limit||Math.abs(o.position.z)>limit).slice(0,20).map(o=>(o.name||'Objet')+' hors zone ('+Math.round(o.position.x)+','+Math.round(o.position.z)+').');}},
+  {name:'Collisions',run:ctx=>ctx.obstacles.filter(o=>![o.x,o.z,o.w,o.d].every(Number.isFinite)||o.w<=0||o.d<=0).slice(0,30).map(o=>'Obstacle invalide : '+JSON.stringify(o).slice(0,120))},
+  {name:'Portes et entrées',run:ctx=>{const ids=new Set(),out=[];for(const d of ctx.doors){if(!d||!d.id)out.push('Porte sans identifiant.');else if(ids.has(String(d.id)))out.push('Identifiant de porte dupliqué : '+d.id);else ids.add(String(d.id));if(d?.home&&ctx.interiors&&!ctx.interiors[d.id])out.push('Logement '+d.id+' sans intérieur associé.');}return out;}},
+  {name:'Intérieurs',run:ctx=>Object.keys(ctx.interiors||{}).filter(id=>!ctx.doors.some(d=>d&&String(d.id)===id)).slice(0,30).map(id=>'Intérieur sans porte correspondante : '+id)},
+  {name:'Réseau routier',run:ctx=>ctx.roads.filter(r=>!r?.a||!r?.b||![r.a.x,r.a.z,r.b.x,r.b.z].every(Number.isFinite)||Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)<.25).slice(0,40).map(r=>'Segment routier invalide : '+String(r?.id||r?.type||'sans identifiant'))},
+  {name:'Trottoirs et terrain',run:()=>{const out=[];if(typeof terrainHeight==='function'){for(let i=0;i<40;i++){const x=Math.sin(i*12.9898)*1000,z=Math.cos(i*7.233)*1000;if(!Number.isFinite(terrainHeight(x,z)))out.push('Hauteur de terrain non finie près de '+Math.round(x)+','+Math.round(z));}}return out;}},
+  {name:'Circulation',run:ctx=>ctx.vehicles.filter(v=>{const p=v?.position||v;return !p||!Number.isFinite(p.x)||!Number.isFinite(p.z);}).slice(0,30).map(v=>'Véhicule sans position valide : '+String(v?.name||v?.id||'inconnu'))},
+  {name:'Trajets des véhicules',run:ctx=>ctx.vehicles.filter(v=>Array.isArray(v?.route)&&v.route.some(s=>!s?.a||!s?.b||![s.a.x,s.a.z,s.b.x,s.b.z].every(Number.isFinite))).slice(0,30).map(v=>'Trajet incomplet pour '+String(v?.name||v?.id||'un véhicule'))},
+  {name:'Habitants et PNJ',run:ctx=>ctx.npcs.filter(n=>{const p=n?.position||n;return !p||!Number.isFinite(p.x)||!Number.isFinite(p.z);}).slice(0,30).map(n=>'PNJ sans position valide : '+String(n?.name||n?.id||'inconnu'))},
+  {name:'Cohérence générale',run:ctx=>{const out=[];if(ctx.roads.length===0)out.push('Aucun segment routier OSM chargé au moment du contrôle.');if(ctx.meshes.length===0)out.push('La scène 3D ne contient aucun objet inspectable.');if(ctx.doors.length&&Object.keys(ctx.interiors||{}).length===0)out.push('Des portes existent mais aucun intérieur n’est enregistré.');return out;}}
+ ];
+ function snapshot(){const root=typeof scene!=='undefined'?scene:null;if(!root)return null;const ctx={meshes:[],obstacles:typeof obstacles!=='undefined'?obstacles:[],doors:typeof doors!=='undefined'?doors:[],interiors:typeof interiors!=='undefined'?interiors:{},roads:typeof osmRoadSegments!=='undefined'?osmRoadSegments:[],vehicles:typeof vehicles!=='undefined'?vehicles:[],npcs:typeof npcs!=='undefined'?npcs:[]};root.traverse(o=>{if(o&&o.position)ctx.meshes.push(o);});return ctx;}
+ async function runAudit(){if(!activeGameAccount||!creatorToken()||!creatorRoleVerified)return;const ctx=snapshot();if(!ctx)return;const results=analysts.map(a=>{try{return {agent:a.name,findings:a.run(ctx).slice(0,25)}}catch(e){return {agent:a.name,findings:['Contrôle interrompu : '+String(e.message||e).slice(0,140)]}}});const findings=results.flatMap(r=>r.findings.map(message=>({agent:r.agent,message})));const report={title:'Rapport d’audit Abidjan Life — 12 analystes',createdAt:new Date().toISOString(),version:window.ABJ_BUILD_VERSION||'inconnue',district:typeof currentQuartier!=='undefined'?currentQuartier:'Ville entière',sceneObjects:ctx.meshes.length,roads:ctx.roads.length,obstacles:ctx.obstacles.length,doors:ctx.doors.length,interiors:Object.keys(ctx.interiors||{}).length,vehicles:ctx.vehicles.length,npcs:ctx.npcs.length,analysts:results,summary:{agents:analysts.length,agentsWithFindings:results.filter(r=>r.findings.length).length,totalFindings:findings.length}};window.ABJ_LAST_WORLD_AUDIT=report;if(!findings.length)return report;const signature=JSON.stringify(findings).slice(0,1200),key='abj-world-audit:'+signature;if(safeGet(key))return report;safeSet(key,'1');try{await fetch(creatorApi()+'/api/game/report',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({kind:'analyst-12-world-audit',message:JSON.stringify(report,null,2).slice(0,4900),version:window.ABJ_BUILD_VERSION||'',district:report.district})});}catch(e){console.warn('Rapport des analystes non transmis',e);}return report;}
+ window.ABJ_RUN_WORLD_AUDIT=runAudit;
+ function schedule(){if(window.__ABJ_ANALYSTS_STARTED)return;window.__ABJ_ANALYSTS_STARTED=true;setTimeout(()=>{runAudit();setInterval(runAudit,5*60*1000);},45000);}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule);else schedule();
+})();
+</script>
 </body>
 </html>
 
