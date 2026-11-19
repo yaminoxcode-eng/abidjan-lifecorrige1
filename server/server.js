@@ -847,7 +847,7 @@ app.post('/api/creator/rewards', auth, requireCreator, async (req,res)=>{
 });
 app.get('/api/rewards/me',auth,(req,res)=>{
   const account=accounts.get(req.phone);account.profile=account.profile||{};
-  res.set('Cache-Control','no-store').json({gems:refreshCreatorGemBalance(account),rewards:(account.profile.rewardInbox||[]),vault:(account.profile.rewardVault||[])});
+  res.set('Cache-Control','no-store').json({gems:refreshCreatorGemBalance(account),gemRewards:(account.profile.creatorRewards||[]),rewards:(account.profile.rewardInbox||[]),vault:(account.profile.rewardVault||[])});
 });
 app.post('/api/rewards/claim',auth,async(req,res)=>{
   const account=accounts.get(req.phone);account.profile=account.profile||{};
