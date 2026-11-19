@@ -765,7 +765,7 @@ app.post('/api/game/afgamer-message', auth, async (req,res) => {
 });
 app.post('/api/game/report', auth, async (req,res) => {
   if (!rateLimit(req.phone+':game-report',12,60000)) return res.status(429).json({error:'Trop de signalements. Réessaie plus tard.'});
-  const message=clean(req.body.message,500),kind=clean(req.body.kind,40)||'client-error';
+  const message=clean(req.body.message,5000),kind=clean(req.body.kind,40)||'client-error';
   if(!message)return res.status(400).json({error:'Signalement vide.'});
   const report={id:crypto.randomUUID(),kind,message,player:clean(accounts.get(req.phone)?.profile?.name,24)||'Citoyen',phone:req.phone,version:clean(req.body.version,32),district:clean(req.body.district,80),createdAt:new Date().toISOString(),status:'nouveau'};
   if(persistentStorageEnabled){
@@ -779,6 +779,7 @@ app.post('/api/game/report', auth, async (req,res) => {
 app.post('/api/game/assistant', auth, async (req,res) => {
   if(!rateLimit(req.phone+':game-ai',20,60000)) return res.status(429).json({error:'Tu poses trop de questions. Attends un instant.'});
   const question=clean(req.body.message,1800);
+  const history=Array.isArray(req.body.history)?req.body.history.slice(-8).map(m=>({role:m?.role==='assistant'?'assistant':'user',content:clean(m?.content,1200)})).filter(m=>m.content):[];
   if(!question) return res.status(400).json({error:'Écris une question.'});
   const knowledge=`Tu es l'assistant général d'Abidjan Life et l'assistant numérique du joueur. Tu peux répondre à des questions de culture générale, sciences, histoire, technologie, actualité, géographie, vie quotidienne et questions sur le jeu. Réponds en français sauf demande contraire. Pour les faits récents, les informations du monde réel, les prix, les lois ou les événements, utilise la recherche web disponible, compare les sources et donne des liens de sources dans ta réponse. Signale clairement les incertitudes et les dates. N'invente jamais de faits, de liens, de fonctions du jeu, de paiements ou de connexions. Distingue toujours ce qui existe réellement dans la version actuelle du jeu, ce qui est seulement simulé et ce qui est proposé pour plus tard. Abidjan Life est un jeu 3D situé à Abidjan avec déplacements, véhicules, PNJ, bâtiments, intérieurs, téléphone, services de vie, comptes et multijoueur. Les paiements Wave, les achats d'argent réel et les retraits ne sont pas encore activés. Tu peux expliquer, analyser, proposer des améliorations et rédiger des rapports, mais tu ne peux pas modifier le jeu ou effectuer une transaction par toi-même. Ne prétends pas apprendre ou modifier tes propres poids : tu peux utiliser le contexte de la conversation et les retours explicitement enregistrés par le système.`;
   if(!OPENAI_API_KEY) return res.json({answer:'Le service IA génératif n’est pas configuré sur le serveur. Les réponses locales restent limitées.',mode:'local-faq',note:'Configure OPENAI_API_KEY sur Render pour activer l’assistant avancé.'});
@@ -791,7 +792,7 @@ app.post('/api/game/assistant', auth, async (req,res) => {
         tools:[{type:'web_search',search_context_size:'medium',user_location:{type:'approximate',country:'CI',city:'Abidjan',region:'Abidjan'}}],
         tool_choice:'auto',
         max_output_tokens:1100,
-        input:[{role:'system',content:knowledge},{role:'user',content:question}]
+        input:[{role:'system',content:knowledge},...history,{role:'user',content:question}]
       })
     });
     const data=await response.json().catch(()=>({}));
