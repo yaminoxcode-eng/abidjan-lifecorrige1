@@ -458,6 +458,7 @@ app.post('/api/auth/register', async (req, res) => {
 
   if (!rateLimit(req.ip + ':register', 6)) return res.status(429).json({error:'Trop de créations de comptes. Réessaie dans une minute.'});
   if (!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
+  if (isCreatorPhone(phone)) return res.status(403).json({error:'Ce numéro est réservé au compte créateur officiel. Sa création doit être effectuée par une procédure sécurisée.'});
   if (password.length < 8 || password.length > 128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
   if (!/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
   if (accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte.'});
@@ -488,6 +489,9 @@ app.post('/api/auth/migrate-local', async (req, res) => {
     });
   }
 
+  if (isCreatorPhone(phone)) {
+    return res.status(403).json({error:'Le numéro créateur ne peut pas être revendiqué par une migration locale.'});
+  }
   if (!phone || password.length < 8 || accounts.has(phone)) {
     return res.status(400).json({
       error: 'Migration impossible ou compte déjà présent sur le serveur.'
