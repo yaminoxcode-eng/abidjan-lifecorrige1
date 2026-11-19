@@ -253,6 +253,78 @@
 #creator3DPreview canvas{max-width:100%;height:auto!important;border-radius:18px}
 @media(max-width:760px){.creatorLayout{grid-template-columns:1fr}.creatorOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.creatorCenter #creatorPreview{width:min(100%,260px);height:300px;min-height:260px}.creatorDetail{min-height:0}.creatorActions{position:sticky;bottom:0;background:#101d2a;padding:10px 0;z-index:3}}
 </style>
+
+<style id="abj-babylife-inspired-ui-refresh">
+/* Abidjan Life — interface mobile premium, inspirée des codes de lisibilité des jeux de vie modernes */
+:root{--abj-ink:#172a31;--abj-muted:#60747a;--abj-paper:rgba(250,250,246,.97);--abj-soft:#e8efed;--abj-line:#cbd9d5;--abj-orange:#ed760d;--abj-green:#188454;--abj-shadow:0 22px 65px rgba(4,16,22,.28)}
+button,input,select{font:inherit}
+#lifeHud{background:rgba(250,250,246,.94)!important;border:1px solid rgba(255,255,255,.8)!important;border-radius:24px!important;box-shadow:0 8px 28px #06151d38!important;color:var(--abj-ink)!important;text-shadow:none!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+#lifeMood{filter:none!important}
+#moneyLabel{color:var(--abj-green)!important;font-weight:900!important}
+#lifeClock{background:rgba(250,250,246,.94)!important;color:var(--abj-ink)!important;border:1px solid #ffffff!important;border-radius:22px!important;box-shadow:0 6px 20px #06151d25!important;text-shadow:none!important;backdrop-filter:blur(14px)}
+#needPanel,#panel,#dialog{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:24px!important;box-shadow:var(--abj-shadow)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+#needPanel h3,#panel h2,#dialog .npcName{color:var(--abj-ink)!important}
+#needPanel p,#panel p,#dialog .npcText{color:var(--abj-muted)!important}
+#needPanel .needTrack{background:#dce7e3!important}
+#needPanel .needRow{font-size:13px!important}
+#needPanel button,#panel button,#dialog .choices button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:15px!important;padding:11px 15px!important;font-weight:800!important;min-height:42px}
+#accountOverlay,#creatorOverlay{background:rgba(8,22,28,.62)!important;backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important}
+#accountCard,#creatorCard{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid #fff!important;border-radius:28px!important;box-shadow:var(--abj-shadow)!important;scrollbar-color:#9aaca6 transparent!important}
+#accountCard h2,#creatorCard h2,#creatorCard h3{color:var(--abj-ink)!important}
+#accountCard p,#creatorCard p,#creatorCard .creatorDetail p{color:var(--abj-muted)!important}
+#accountCard label,#creatorCard .creatorColumnLabel{color:#52686d!important}
+#accountCard input,#accountCard select,#creatorCard input,#creatorCard select{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:14px!important;min-height:46px}
+#accountCard button,#creatorCard button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:16px!important;min-height:44px;font-weight:800}
+#accountCard button.primary,#creatorCard .creatorActions #creatorStart{background:var(--abj-orange)!important;color:#fff!important;border-color:var(--abj-orange)!important}
+#accountStatus{color:var(--abj-green)!important}
+#accountActions{background:linear-gradient(180deg,rgba(250,250,246,0),var(--abj-paper) 22%,var(--abj-paper))!important}
+#creatorOptions,#creatorDetail{background:#edf2ef!important;border:1px solid var(--abj-line)!important;border-radius:18px!important}
+#creatorDetail h3{color:var(--abj-ink)!important}
+.creatorOptionBtn{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important}
+.creatorOptionBtn small{color:var(--abj-muted)!important}
+.creatorOptionBtn.active{border-color:var(--abj-orange)!important;background:#fff7ed!important;box-shadow:inset 3px 0 var(--abj-orange)!important}
+.creatorCenter #creatorPreview{border-color:#d6e0dc!important;box-shadow:0 12px 32px #172a311c!important}
+#phone{border:1px solid #fff!important;border-radius:32px!important;background:var(--abj-paper)!important;color:var(--abj-ink)!important;box-shadow:0 26px 80px #0007!important;padding:12px!important}
+#phoneTop{color:var(--abj-ink)!important;border-bottom:1px solid var(--abj-line)!important}
+#phoneClock{color:var(--abj-muted)!important}
+#phoneClose{background:#e8efed!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important}
+#phoneScreen{background:#f2f5f2!important;color:var(--abj-ink)!important;border:1px solid #e0e8e4!important;box-shadow:none!important}
+#phoneScreen h3{color:var(--abj-ink)!important}
+#phoneScreen h3:after{color:#7a8c8d!important}
+.phoneApp{background:#fff!important;color:var(--abj-ink)!important;border:1px solid #dce6e1!important;box-shadow:0 5px 14px #172a3110!important;border-radius:18px!important}
+.phoneApp span{background:#edf2ef!important;box-shadow:none!important}
+.phoneApp:before{display:none}
+.phoneApp[data-app="localisation"]{background:#e8f4f1!important}.phoneApp[data-app="transport"],.phoneApp[data-app="yango"]{background:#fff2df!important}.phoneApp[data-app="banque"]{background:#eaf1fb!important}.phoneApp[data-app="wave"]{background:#e7f7ef!important}.phoneApp[data-app="mairie"],.phoneApp[data-app="sante"]{background:#edf3fa!important}.phoneApp[data-app="messages"],.phoneApp[data-app="contacts"]{background:#f1edfa!important}.phoneApp[data-app="camera"],.phoneApp[data-app="gallery"]{background:#f8edf1!important}
+#phoneAppContent{color:var(--abj-ink)!important}
+#phoneAppContent button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:14px!important;min-height:42px;font-weight:750}
+#phoneHome{background:#28363a!important}
+#phonePageDots span{background:#bdcbc6!important}#phonePageDots span.on{background:var(--abj-orange)!important;box-shadow:0 0 0 3px #ed760d22!important}
+#touchControls button{background:rgba(250,250,246,.9)!important;color:var(--abj-ink)!important;border:1px solid #fff!important;box-shadow:0 5px 18px #0003!important;backdrop-filter:blur(10px)}
+#touchControls button:active,#touchControls button.pressed{background:var(--abj-orange)!important;color:#fff!important}
+#cameraOverlay,#elevatorMenu{background:rgba(8,22,28,.66)!important;backdrop-filter:blur(12px)!important}
+#cameraPhone,#elevatorCard{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid #fff!important;border-radius:28px!important;box-shadow:var(--abj-shadow)!important}
+#cameraPhone button,#elevatorCard button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:14px!important;min-height:42px}
+#elevatorCard h2{color:var(--abj-ink)!important}#elevatorCard p{color:var(--abj-muted)!important}
+#elevatorFloors button{background:#edf2ef!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important}
+#elevatorFloors button.current{background:var(--abj-orange)!important;color:#fff!important}
+#phoneNotification{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:18px!important;box-shadow:var(--abj-shadow)!important}
+#phoneNotificationBody{color:var(--abj-muted)!important}
+@media(max-width:760px){
+ #lifeHud{left:8px!important;right:8px!important;max-width:none!important;gap:7px!important;padding:7px 10px!important;border-radius:22px!important}
+ #lifeMood{font-size:23px!important}
+ #moneyLabel{font-size:11px!important}
+ #lifeClock{top:8px!important;right:8px!important;padding:6px 9px!important}
+ #needPanel{top:64px!important;max-height:calc(100dvh - 84px)!important;overflow:auto!important;width:calc(100vw - 20px)!important;padding:18px!important}
+ #panel{top:62px!important;max-height:calc(100dvh - 80px)!important;overflow:auto!important;width:calc(100vw - 20px)!important;padding:18px!important}
+ #dialog{bottom:112px!important;width:calc(100vw - 20px)!important;padding:16px!important}
+ #accountCard,#creatorCard{max-height:calc(100dvh - 22px)!important;padding:18px!important;border-radius:25px!important}
+ #phone{width:min(390px,calc(100vw - 18px))!important;height:min(720px,calc(100dvh - 18px))!important;border-radius:30px!important}
+ #phoneApps .phoneApp{min-height:76px!important}
+ #touchControls{padding-left:12px!important;padding-right:12px!important}
+}
+@media(prefers-reduced-motion:reduce){#phone *,#accountCard *,#creatorCard *,#needPanel *{scroll-behavior:auto!important;transition:none!important}}
+</style>
+
 </head>
 <body>
 
@@ -2956,6 +3028,64 @@ function createTypedBuilding(x, z, q, w, d) {
   addDoor(doorX, doorZ, rot, x, z, w, d, h, color, q.style);
 }
 
+
+/* Abidjan Life — architectural detail pass: facades, balconies and shopfronts */
+(function installAbjArchitecturalDetails(){
+  if(window.__abjArchitecturalDetailsV1)return;
+  window.__abjArchitecturalDetailsV1=true;
+  const original=createTypedBuilding;
+  const matCache={
+    trim:new THREE.MeshLambertMaterial({color:0xf0e5d0}),
+    dark:new THREE.MeshLambertMaterial({color:0x24363c}),
+    glass:new THREE.MeshLambertMaterial({color:0x5c8490,emissive:0x101f24}),
+    rail:new THREE.MeshLambertMaterial({color:0x56666a}),
+    warm:new THREE.MeshLambertMaterial({color:0xd9ad68}),
+    sign:new THREE.MeshLambertMaterial({color:0x245b68})
+  };
+  let decorated=0;
+  const maxDetails=(typeof mobilePerformanceMode!=='undefined'&&mobilePerformanceMode)?420:1000;
+  function addBox(parent,geo,mat,x,y,z,cast=true){
+    const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=true;parent.add(m);return m;
+  }
+  createTypedBuilding=function(x,z,q,w,d){
+    const before=scene.children.length;
+    original.apply(this,arguments);
+    if(decorated>=maxDetails)return;
+    decorated++;
+    const style=q&&q.style||'';
+    const height=style==='plateau'?14:style==='villa'?4:style==='populaire'?3.2:style==='commerce'?4.5:style==='marche'?3:5;
+    const facadeZ=z+d/2+.105;
+    const edge=Math.max(1.1,w/2-.55);
+    // Encadrements discrets qui donnent de la profondeur aux façades.
+    addBox(scene,new THREE.BoxGeometry(.12,Math.min(height-0.5,Math.max(2.4,height*.78)),.12),matCache.trim,x-edge,Math.min(height*.42,3.8),facadeZ);
+    addBox(scene,new THREE.BoxGeometry(.12,Math.min(height-0.5,Math.max(2.4,height*.78)),.12),matCache.trim,x+edge,Math.min(height*.42,3.8),facadeZ);
+    if(style==='plateau'||style==='commerce'||style==='populaire'){
+      const floors=Math.min(3,Math.max(1,Math.floor(height/4.2)));
+      for(let n=0;n<floors;n++){
+        const y=3.1+n*3.15;
+        if(y>height-1.4)continue;
+        const balconyZ=facadeZ+.34;
+        addBox(scene,new THREE.BoxGeometry(Math.min(2.8,w*.62),.12,.72),matCache.trim,x,y-.45,balconyZ,false);
+        addBox(scene,new THREE.BoxGeometry(Math.min(2.8,w*.62),.10,.10),matCache.rail,x,y+.12,balconyZ+.30,false);
+        for(let p=-1;p<=1;p++)addBox(scene,new THREE.BoxGeometry(.07,.52,.07),matCache.rail,x+p*Math.min(1.25,w*.27),y-.14,balconyZ+.30,false);
+      }
+    }
+    if(style==='commerce'||style==='marche'){
+      const signW=Math.max(1.8,Math.min(w-0.5,5.2));
+      addBox(scene,new THREE.BoxGeometry(signW,.72,.16),matCache.sign,x,2.85,facadeZ+.18,false);
+      addBox(scene,new THREE.BoxGeometry(signW*.82,.08,.18),matCache.warm,x,2.45,facadeZ+.19,false);
+      // Vitrine basse avec verre légèrement teinté.
+      addBox(scene,new THREE.BoxGeometry(Math.max(1.2,w*.55),1.25,.07),matCache.glass,x,1.45,facadeZ+.14,false);
+    }
+    if(style==='villa'){
+      // Auvent d'entrée et encadrement de porte.
+      addBox(scene,new THREE.BoxGeometry(2.0,.16,.85),matCache.trim,x,2.55,facadeZ+.35);
+      addBox(scene,new THREE.BoxGeometry(.13,2.5,.14),matCache.warm,x-1.08,1.25,facadeZ+.20,false);
+      addBox(scene,new THREE.BoxGeometry(.13,2.5,.14),matCache.warm,x+1.08,1.25,facadeZ+.20,false);
+    }
+  };
+})();
+
 function addDoor(x, z, rot, bx, bz, bw, bd, bh, buildingColor, style) {
   const door = new THREE.Mesh(new THREE.BoxGeometry(1.35, 2.4, 0.14), new THREE.MeshLambertMaterial({ color: 0x5d4037 }));
   door.position.set(x, 1.2, z);
@@ -4376,6 +4506,7 @@ function loadLifeProgress(){
   try{
     const raw=safeGet(LIFE_SAVE_KEY); if(!raw)return;
     const saved=JSON.parse(raw);
+    if(saved.v19&&typeof saved.v19==='object'&&!Array.isArray(saved.v19)){lifeState.v19={...(lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{}),...saved.v19,installedApps:Array.isArray(saved.v19.installedApps)?[...new Set(saved.v19.installedApps.filter(x=>typeof x==='string'&&x.length<=48))].slice(0,80):[]};}
     if(saved.gameSettings&&typeof saved.gameSettings==='object')lifeState.gameSettings={graphics:['auto','performance','quality'].includes(saved.gameSettings.graphics)?saved.gameSettings.graphics:'auto',cameraSensitivity:Math.max(.5,Math.min(1.8,Number(saved.gameSettings.cameraSensitivity)||1)),showHints:saved.gameSettings.showHints!==false,controlMode:['auto','pc','touch'].includes(saved.gameSettings.controlMode)?saved.gameSettings.controlMode:'auto'};
     if(saved.worldPosition && Number.isFinite(saved.worldPosition.x) && Number.isFinite(saved.worldPosition.z)) pendingSavedWorldPosition={x:saved.worldPosition.x,z:saved.worldPosition.z,yaw:Number.isFinite(saved.worldPosition.yaw)?saved.worldPosition.yaw:0};
     if(Number.isFinite(saved.bankBalance))lifeState.bankBalance=Math.max(0,saved.bankBalance);if(Number.isFinite(saved.waveBalance))lifeState.waveBalance=Math.max(0,saved.waveBalance);if(Number.isFinite(saved.waveDailyWithdrawn))lifeState.waveDailyWithdrawn=Math.max(0,saved.waveDailyWithdrawn);if(typeof saved.waveDayKey==='string')lifeState.waveDayKey=saved.waveDayKey;if(Array.isArray(saved.waveNotifs))lifeState.waveNotifs=saved.waveNotifs.slice(0,12);if(saved.phoneSkin&&typeof saved.phoneSkin==='object'){lifeState.phoneSkin=saved.phoneSkin;try{applyPhoneSkin(lifeState.phoneSkin);}catch(e){}}['hunger','energy','social','hygiene','respect','health','money','hour','minute','workXP'].forEach(k=>{
@@ -4410,6 +4541,7 @@ function saveLifeProgress(show=true){
       hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,hygiene:lifeState.hygiene,respect:lifeState.respect,health:lifeState.health,
       money:lifeState.money,bankBalance:lifeState.bankBalance,waveBalance:lifeState.waveBalance||0,gameSettings:lifeState.gameSettings||{},waveDailyWithdrawn:lifeState.waveDailyWithdrawn,waveDayKey:lifeState.waveDayKey,waveNotifs:lifeState.waveNotifs,phoneSkin:lifeState.phoneSkin,hour:lifeState.hour,minute:lifeState.minute,documents:lifeState.documents,education:lifeState.education,cheats:lifeState.cheats,creatorTier:lifeState.creatorTier||'none',playerProfile:lifeState.playerProfile,
       job:lifeState.job,workXP:lifeState.workXP,bankTransactions:lifeState.bankTransactions,contacts:lifeState.contacts,messages:lifeState.messages,inventory:lifeState.inventory,homeDecor:lifeState.homeDecor,delivery:lifeState.delivery,creator:lifeState.creator,housing:lifeState.housing,projects:lifeState.projects||[],
+      v19:lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{},
       worldPosition:__worldPosition,
       savedAt:new Date().toISOString()
     };
