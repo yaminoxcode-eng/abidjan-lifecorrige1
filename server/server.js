@@ -190,9 +190,17 @@ function safePlayerName(phone, value) {
   const name = clean(value,24) || 'Citoyen';
   return isReservedCreatorName(name) ? 'Citoyen' : name;
 }
+function refreshCreatorGemBalance(account) {
+  account.profile = account.profile || {};
+  const now=Date.now();
+  account.profile.creatorRewards=(account.profile.creatorRewards||[]).filter(x=>Number(x.expiresAt)>now);
+  account.profile.gems=account.profile.creatorRewards.reduce((sum,x)=>sum+Math.max(0,Math.floor(Number(x.gems)||0)),0);
+  return account.profile.gems;
+}
 function publicPlayer(account, id) {
   account.profile = account.profile || {};
   account.profile.name = safePlayerName(id, account.profile.name || 'Citoyen');
+  refreshCreatorGemBalance(account);
   return {
     id,
     profile: account.profile,
@@ -884,11 +892,10 @@ app.get('/api/account/role', auth, (req,res)=>{
 
 app.get('/api/creator/rewards', auth, requireCreator, (_req,res)=>{
   const now=Date.now();
-  const accountsList=[...accounts.values()].map(a=>({
-    name:a.profile?.name||'Citoyen',
-    phone:a.phone,
-    rewards:(a.profile?.creatorRewards||[]).filter(x=>Number(x.expiresAt)>now)
-  }));
+  const accountsList=[...accounts.values()].map(a=>{
+    refreshCreatorGemBalance(a);
+    return {name:a.profile?.name||'Citoyen',phone:a.phone,rewards:a.profile.creatorRewards,gems:a.profile.gems};
+  });
   res.set('Cache-Control','no-store').json({ok:true,accounts:accountsList});
 });
 app.post('/api/creator/rewards', auth, requireCreator, async (req,res)=>{
@@ -901,9 +908,12 @@ app.post('/api/creator/rewards', auth, requireCreator, async (req,res)=>{
   if(!gems)return res.status(400).json({error:'Indique un nombre de gemmes supérieur à zéro.'});
   const reward={id:crypto.randomBytes(10).toString('hex'),label,gems,grantedAt:Date.now(),expiresAt:Date.now()+days*86400000,grantedBy:'Aski'};
   target.profile=target.profile||{};
-  target.profile.creatorRewards=[...(target.profile.creatorRewards||[]).filter(x=>Number(x.expiresAt)>Date.now()),reward].slice(-30);
-  try{await persistAccount(target);}catch(error){target.profile.creatorRewards=target.profile.creatorRewards.filter(x=>x.id!==reward.id);return res.status(503).json({error:'La récompense n’a pas pu être sauvegardée.'});}
-  res.json({ok:true,reward,target:{name:target.profile.name,phone:target.phone}});
+  const previousRewards=target.profile.creatorRewards||[];
+  const previousGems=Number(target.profile.gems)||0;
+  target.profile.creatorRewards=[...previousRewards.filter(x=>Number(x.expiresAt)>Date.now()),reward].slice(-30);
+  refreshCreatorGemBalance(target);
+  try{await persistAccount(target);}catch(error){target.profile.creatorRewards=previousRewards;target.profile.gems=previousGems;return res.status(503).json({error:'La récompense n’a pas pu être sauvegardée.'});}
+  res.json({ok:true,reward,target:{name:target.profile.name,phone:target.phone,gems:target.profile.gems}});
 });
 
 app.get('/api/creator/status', auth, requireCreator, (_req,res)=>res.json({ok:true,creator:true,configuredAI:!!OPENAI_API_KEY}));
