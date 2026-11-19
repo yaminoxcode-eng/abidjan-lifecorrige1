@@ -8431,3 +8431,72 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
 
 </body>
 </html>
+
+<script>
+/* AF GAMER CI — compte créateur officiel et espace Récompenses */
+(function(){
+ const style=document.createElement('style');
+ style.textContent=`
+ .abjCreatorApp{border:1px solid #d8b45f!important;background:linear-gradient(145deg,#273a35,#111f27)!important;color:#ffe4a3!important}
+ .abjCreatorApp span{filter:drop-shadow(0 2px 5px #d9ad55aa)}
+ #abjCreatorRewards{padding:12px;color:#f2f5f5}
+ #abjCreatorRewards .rewardPanel{padding:13px;margin:10px 0;border:1px solid #d7b66a55;border-radius:14px;background:#142b31}
+ #abjCreatorRewards input,#abjCreatorRewards select{width:100%;padding:10px;margin:5px 0 10px;border-radius:8px;border:1px solid #ffffff35;background:#0c1b24;color:#fff}
+ #abjCreatorRewards button{padding:10px 14px;border:1px solid #e0c078;border-radius:9px;background:#d4ad5b;color:#18242a;font-weight:800}
+ #abjCreatorRewards .muted{font-size:12px;color:#bdcbd0}
+ #onlinePlayerCount{position:fixed;right:14px;top:12px;z-index:55;padding:7px 10px;border:1px solid #ffffff35;border-radius:10px;background:#10212ddd;color:#f6e2ad;font:700 12px system-ui}
+ `;
+ document.head.appendChild(style);
+ function creatorToken(){try{return safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount))||'';}catch(e){return '';}}
+ function apiBase(){return String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');}
+ function ensureRewardsIcon(){
+  const pages=document.querySelectorAll('#phoneApps .phoneAppsPage');
+  const page=pages[pages.length-1];if(!page||!creatorRoleVerified||!activeGameAccount)return;
+  if(page.querySelector('[data-app="recompenses"]'))return;
+  const b=document.createElement('button');b.className='phoneApp abjCreatorApp';b.dataset.app='recompenses';
+  b.innerHTML='<span>🎁</span><b>Récompenses</b>';
+  b.addEventListener('click',()=>window.openPhoneApp('recompenses'));
+  page.appendChild(b);
+ }
+ async function renderRewards(){
+  const c=document.getElementById('phoneAppContent');if(!c)return;
+  c.innerHTML='<button id="rewardBack">← Applications</button><div id="abjCreatorRewards"><h3>🎁 Récompenses du créateur</h3><p class="muted">Attribue des gemmes temporaires aux joueurs. Les privilèges de créateur restent réservés à ton compte.</p><div class="rewardPanel"><label>Numéro du compte joueur</label><input id="rewardPhone" placeholder="Numéro ivoirien du joueur" inputmode="tel"><label>Nombre de gemmes</label><input id="rewardGems" type="number" min="1" max="1000000" value="100"><label>Durée de validité (jours)</label><input id="rewardDays" type="number" min="1" max="365" value="7"><label>Message de récompense</label><input id="rewardLabel" maxlength="60" value="Récompense AF GAMER CI"><button id="rewardGrant">Attribuer la récompense</button><p id="rewardStatus" class="muted"></p></div><div class="rewardPanel"><b>Récompenses actives</b><div id="rewardList" class="muted">Chargement…</div></div></div>';
+  document.getElementById('rewardBack').onclick=()=>{c.style.display='none';showPhoneHome();};
+  const status=document.getElementById('rewardStatus'),list=document.getElementById('rewardList');
+  const headers={'Authorization':'Bearer '+creatorToken(),'Content-Type':'application/json'};
+  async function load(){
+   try{const r=await fetch(apiBase()+'/api/creator/rewards',{headers,cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Accès refusé');const active=(d.accounts||[]).flatMap(a=>(a.rewards||[]).map(x=>({name:a.name,phone:a.phone,...x})));list.innerHTML=active.length?active.map(x=>'<p>⭐ '+escapeHTML(x.name)+' · '+escapeHTML(x.phone)+'<br>'+Number(x.gems).toLocaleString('fr-FR')+' gemmes · '+escapeHTML(x.label)+'<br><small>Expire le '+new Date(x.expiresAt).toLocaleDateString('fr-FR')+'</small></p>').join(''):'Aucune récompense active.';}
+   catch(e){list.textContent=e.message;}
+  }
+  document.getElementById('rewardGrant').onclick=async()=>{
+   status.textContent='Enregistrement…';
+   try{const r=await fetch(apiBase()+'/api/creator/rewards',{method:'POST',headers,body:JSON.stringify({phone:document.getElementById('rewardPhone').value,gems:document.getElementById('rewardGems').value,days:document.getElementById('rewardDays').value,label:document.getElementById('rewardLabel').value})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Attribution impossible');status.textContent='Récompense enregistrée pour '+d.target.name+'.';await load();}
+   catch(e){status.textContent=e.message;}
+  };
+  await load();
+ }
+ const originalActivate=window.activateGameAccount||activateGameAccount;
+ if(typeof originalActivate==='function'&&!window.__ABJ_CREATOR_ACCOUNT_WRAPPED){
+  window.__ABJ_CREATOR_ACCOUNT_WRAPPED=true;
+  window.activateGameAccount=async function(phone){await originalActivate(phone);ensureRewardsIcon();};
+ }
+ const originalOpen=window.openPhoneApp||openPhoneApp;
+ if(typeof originalOpen==='function'&&!window.__ABJ_CREATOR_APP_WRAPPED){
+  window.__ABJ_CREATOR_APP_WRAPPED=true;
+  window.openPhoneApp=function(app){
+   if(app==='recompenses'){
+    if(!creatorRoleVerified){showMessage('Accès réservé au compte créateur.');return;}
+    openPhone();const home=document.getElementById('phoneHomeShell'),apps=document.getElementById('phoneApps'),content=document.getElementById('phoneAppContent');
+    if(home)home.style.display='none';if(apps)apps.style.display='none';if(content)content.style.display='block';
+    renderRewards();return;
+   }
+   return originalOpen(app);
+  };
+ }
+ const oldCount=document.getElementById('onlinePlayerCount');
+ const count=oldCount||document.createElement('div');count.id='onlinePlayerCount';count.textContent='👥 0 joueur en ligne';if(!oldCount)document.body.appendChild(count);
+ async function refreshCount(){try{const r=await fetch(apiBase()+'/api/players',{cache:'no-store'});if(!r.ok)return;const d=await r.json();count.textContent='👥 '+(Number(d.count)||0)+' joueur'+(d.count===1?'':'s')+' en ligne';}catch(e){}}
+ refreshCount();setInterval(refreshCount,15000);
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureRewardsIcon);else ensureRewardsIcon();
+})();
+</script>
