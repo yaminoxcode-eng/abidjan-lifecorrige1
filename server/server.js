@@ -169,11 +169,26 @@ function rateLimit(key, max = 12, windowMs = 60000) {
   return old.count <= max;
 }
 
+function normalizePlayerName(value) {
+  return clean(value, 24).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+function nameDistance(a,b) {
+  const row=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    let prev=row[0];row[0]=i;
+    for(let j=1;j<=b.length;j++){const cur=row[j];row[j]=Math.min(row[j]+1,row[j-1]+1,prev+(a[i-1]===b[j-1]?0:1));prev=cur;}
+  }
+  return row[b.length];
+}
+function isReservedCreatorName(value) {
+  const n=normalizePlayerName(value), reserved='aski';
+  return !n || n.includes('createur') || n.includes('creator') || n.includes(reserved) ||
+    nameDistance(n,reserved)<=1 || (n.length>=5 && nameDistance(n,reserved)<=2);
+}
 function safePlayerName(phone, value) {
-  if (isCreatorPhone(phone)) return 'Créateur';
+  if (isCreatorPhone(phone)) return 'Aski';
   const name = clean(value,24) || 'Citoyen';
-  const normalized = name.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
-  return normalized.includes('createur') || normalized.includes('creator') ? 'Citoyen' : name;
+  return isReservedCreatorName(name) ? 'Citoyen' : name;
 }
 function publicPlayer(account, id) {
   return {
@@ -870,6 +885,30 @@ function localGameAnswer(q){
 app.get('/api/account/role', auth, (req,res)=>{
   const creator=isCreatorPhone(req.phone);
   res.set('Cache-Control','no-store').json({ok:true,creator,title:creator?'Créateur du jeu':'Citoyen',privileges:creator?['creator_dashboard','account_management','moderation','world_management','creator_tools']:[]});
+});
+
+app.get('/api/creator/rewards', auth, requireCreator, (_req,res)=>{
+  const now=Date.now();
+  const accountsList=[...accounts.values()].map(a=>({
+    name:a.profile?.name||'Citoyen',
+    phone:a.phone,
+    rewards:(a.profile?.creatorRewards||[]).filter(x=>Number(x.expiresAt)>now)
+  }));
+  res.set('Cache-Control','no-store').json({ok:true,accounts:accountsList});
+});
+app.post('/api/creator/rewards', auth, requireCreator, async (req,res)=>{
+  const targetPhone=phoneOf(req.body.phone);
+  const gems=Math.max(0,Math.min(1000000,Math.floor(Number(req.body.gems)||0)));
+  const days=Math.max(1,Math.min(365,Math.floor(Number(req.body.days)||1)));
+  const label=clean(req.body.label,60)||'Récompense du créateur';
+  const target=targetPhone&&accounts.get(targetPhone);
+  if(!target)return res.status(404).json({error:'Compte joueur introuvable.'});
+  if(!gems)return res.status(400).json({error:'Indique un nombre de gemmes supérieur à zéro.'});
+  const reward={id:crypto.randomBytes(10).toString('hex'),label,gems,grantedAt:Date.now(),expiresAt:Date.now()+days*86400000,grantedBy:'Aski'};
+  target.profile=target.profile||{};
+  target.profile.creatorRewards=[...(target.profile.creatorRewards||[]).filter(x=>Number(x.expiresAt)>Date.now()),reward].slice(-30);
+  try{await persistAccount(target);}catch(error){target.profile.creatorRewards=target.profile.creatorRewards.filter(x=>x.id!==reward.id);return res.status(503).json({error:'La récompense n’a pas pu être sauvegardée.'});}
+  res.json({ok:true,reward,target:{name:target.profile.name,phone:target.phone}});
 });
 
 app.get('/api/creator/status', auth, requireCreator, (_req,res)=>res.json({ok:true,creator:true,configuredAI:!!OPENAI_API_KEY}));
