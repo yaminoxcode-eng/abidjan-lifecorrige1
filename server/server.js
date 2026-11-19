@@ -191,16 +191,11 @@ function safePlayerName(phone, value) {
   return isReservedCreatorName(name) ? 'Citoyen' : name;
 }
 function publicPlayer(account, id) {
+  account.profile = account.profile || {};
+  account.profile.name = safePlayerName(id, account.profile.name || 'Citoyen');
   return {
     id,
-    profile: account.profile || {
-      name: 'Citoyen',
-      gender: 'homme',
-      skin: 0x7a4a24,
-      hair: 0x17120f,
-      shirt: 0xe74c3c,
-      pants: 0x2c3e50
-    },
+    profile: account.profile,
     position: account.position || { x: 0, z: 0, yaw: 0 },
     needs: account.needs || null
   };
