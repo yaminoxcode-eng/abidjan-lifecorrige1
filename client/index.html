@@ -5450,17 +5450,17 @@ function renderCheatApp(){
 }
 
 function renderCreatorOffersApp(){
-  const content=document.getElementById('phoneAppContent');if(!content)return;
-  const creator=!!(activeGameAccount&&(isCreatorAccount(activeGameAccount)||getCreatorTier()!=='none'));
-  const offers=[
-    {name:'Creator Starter',price:2500,detail:'Badge Creator, cadre de profil exclusif et 3 tenues de créateur.'},
-    {name:'Creator Pro',price:7500,detail:'Avantages Starter, pack de décoration studio et animations sociales supplémentaires.'},
-    {name:'Creator Studio',price:15000,detail:'Avantages Pro, studio personnel amélioré et pack cosmétique premium.'}
-  ];
-  content.innerHTML='<button id="phoneBack">← Applications</button><h3>✨ Offres Creator</h3>'+(creator?'<p style="font-size:12px;color:#c6d8e5">Offres réservées aux comptes créateur. Prix indicatifs en francs CFA (XOF), paiement en argent réel.</p>'+offers.map(o=>'<article style="padding:13px;margin:10px 0;border:1px solid #e9c77b66;border-radius:13px;background:linear-gradient(135deg,#ffffff12,#ffffff05)"><b>'+o.name+'</b><div style="font-size:20px;font-weight:900;color:#ffe0a0;margin:7px 0">'+o.price.toLocaleString('fr-FR')+' FCFA</div><p style="font-size:12px;color:#d2e0e8">'+o.detail+'</p><button disabled style="opacity:.55;cursor:not-allowed">Paiement sécurisé bientôt disponible</button></article>').join('')+'<p style="font-size:11px;color:#ffdf9a">Les paiements réels ne sont pas encore activés : aucun débit ne sera effectué. La connexion d’un prestataire de paiement et d’un serveur sécurisé est nécessaire avant toute vente.</p>':'<p>Cette application est réservée aux comptes créateur. Connecte-toi avec un compte autorisé pour consulter les offres.</p>');
-  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
+ const content=document.getElementById('phoneAppContent');if(!content)return;
+ const creator=!!(activeGameAccount&&(isCreatorAccount(activeGameAccount)||getCreatorTier()!=='none'));
+ const plans=[
+  {code:'Z',name:'Z · Mensuel',detail:'Badge Z, bonus mensuel de monnaie de jeu, tenues exclusives et récompenses quotidiennes.'},
+  {code:'S',name:'S · Mensuel',detail:'Tous les avantages Z, bonus mensuel renforcé, objets rares et réductions dans les boutiques du jeu.'},
+  {code:'SZ',name:'SZ · Mensuel',detail:'Tous les avantages S, véhicule exclusif, décoration premium et accès aux événements VIP.'},
+  {code:'ZS',name:'ZS · Mensuel',detail:'Tous les avantages SZ, objets de collection légendaires, bonus supérieur et avantages de créateur.'}
+ ];
+ content.innerHTML='<button id="phoneBack">← Applications</button><h3>✨ Abonnements et offres spéciales</h3>'+(creator?'<p style="font-size:12px;color:#c6d8e5">Abonnements mensuels réservés aux comptes créateur déjà autorisés. Les bonus définitifs et les tarifs seront affichés avant tout paiement.</p>'+plans.map(o=>'<article style="padding:13px;margin:10px 0;border:1px solid #e9c77b66;border-radius:13px;background:linear-gradient(135deg,#ffffff12,#ffffff05)"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+o.name+'</b><b style="color:#ffe0a0">30 jours</b></div><p style="font-size:12px;color:#d2e0e8">'+o.detail+'</p><small style="color:#ffe0a0">Tarif et quantités des bonus à confirmer</small><button disabled style="opacity:.55;cursor:not-allowed;width:100%;margin-top:8px">Paiement Wave bientôt disponible</button></article>').join('')+'<div style="padding:12px;border:1px solid #ffffff25;border-radius:12px"><b>Comptes administrateur</b><p style="font-size:12px;color:#c6d8e5">Les droits administrateur restent attribués manuellement par AF GAMER. Aucun abonnement ni achat ne peut donner les pouvoirs d’administration.</p></div><p style="font-size:11px;color:#ffdf9a">Aucun paiement réel n’est actif pour le moment. Les boutons resteront désactivés tant que le compte Wave Business, les tarifs et la confirmation serveur des paiements ne sont pas configurés.</p>':'<p>Les offres Creator sont réservées aux comptes créateur déjà autorisés. Le statut créateur et les droits administrateur ne peuvent pas être achetés.</p>');
+ document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
 }
-
 function openPhoneApp(app){
   const apps=document.getElementById('phoneApps'),content=document.getElementById('phoneAppContent');
   const shell=document.getElementById('phoneHomeShell');
