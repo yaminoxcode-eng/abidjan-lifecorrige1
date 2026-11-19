@@ -66,7 +66,8 @@ function publicPlayer(p){return {id:p.id,profile:p.profile,position:p.position,n
 function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.size});}
 
 const recoveryTickets = new Map();
-const emailRecoveryTickets = new Map();\nconst registrationTickets = new Map();
+const emailRecoveryTickets = new Map();
+const registrationTickets = new Map();
 const attempts = new Map();
 const worldTelemetry = { npcTotal: 0, npcActive: 0, vehicles: {}, updatedAt: 0 };
 const creatorReports = [];
