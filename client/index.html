@@ -1907,7 +1907,7 @@ async function abjWriteOSMCache(data){
 
 async function loadAbidjanOSM() {
   const b = ABIDJAN_BBOX;
-  const query = `[out:json][timeout:90];(way[highway](${b.south},${b.west},${b.north},${b.east});way[building](${b.south},${b.west},${b.north},${b.east});way[natural=water](${b.south},${b.west},${b.north},${b.east});way[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});way[leisure=park](${b.south},${b.west},${b.north},${b.east});node[shop](${b.south},${b.west},${b.north},${b.east});node[amenity](${b.south},${b.west},${b.north},${b.east});node[office](${b.south},${b.west},${b.north},${b.east});node[tourism](${b.south},${b.west},${b.north},${b.east});node[public_transport](${b.south},${b.west},${b.north},${b.east});node[highway=bus_stop](${b.south},${b.west},${b.north},${b.east});relation[route=bus](${b.south},${b.west},${b.north},${b.east}););out body;>;out skel qt;`;
+  const query = `[out:json][timeout:90];(way[highway](${b.south},${b.west},${b.north},${b.east});way[building](${b.south},${b.west},${b.north},${b.east});way[natural=water](${b.south},${b.west},${b.north},${b.east});way[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});way[leisure=park](${b.south},${b.west},${b.north},${b.east});relation[natural=water](${b.south},${b.west},${b.north},${b.east});relation[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});node[shop](${b.south},${b.west},${b.north},${b.east});node[amenity](${b.south},${b.west},${b.north},${b.east});node[office](${b.south},${b.west},${b.north},${b.east});node[tourism](${b.south},${b.west},${b.north},${b.east});node[public_transport](${b.south},${b.west},${b.north},${b.east});node[highway=bus_stop](${b.south},${b.west},${b.north},${b.east});relation[route=bus](${b.south},${b.west},${b.north},${b.east}););out body;>;out skel qt;`;
   let data = null;
   let loadedFromCache = false;
   // Une copie locale récente évite de retélécharger toute la carte des 13 communes à chaque connexion.
@@ -1940,6 +1940,10 @@ async function loadAbidjanOSM() {
   const roadWays = ways.filter(w => w.tags && w.tags.highway);
   const buildingWays = ways.filter(w => w.tags && w.tags.building);
   const waterWays = ways.filter(w => w.tags && (w.tags.natural === 'water' || w.tags.waterway === 'riverbank' || w.tags.leisure === 'park'));
+  const waysById=new Map(ways.map(w=>[w.id,w]));
+  for(const rel of data.elements.filter(e=>e.type==='relation'&&e.tags&&(e.tags.natural==='water'||e.tags.waterway==='riverbank'))){
+    for(const member of rel.members||[]){if(member.type!=='way'||member.role==='inner')continue;const memberWay=waysById.get(member.ref);if(memberWay&&!waterWays.some(w=>w.id===memberWay.id))waterWays.push({...memberWay,tags:{...(memberWay.tags||{}),...rel.tags,natural:'water'}});}
+  }
   buildOSMTransitRoutes(data.elements.filter(e=>e.type==='relation'&&e.tags&&e.tags.route==='bus'),ways,nodes);
   buildOSMRoads(roadWays, nodes);
   buildTrafficGraph();
@@ -2639,8 +2643,10 @@ function buildOSMWaterAndParks(ways,nodes) {
     for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);pos.setY(i,terrainHeight(x,z)-.045);}
     pos.needsUpdate=true;geo.computeVertexNormals();
     const isWater=w.tags.natural==='water'||w.tags.waterway==='riverbank';
-    const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:isWater?0x4a9ab1:0x71865b,side:THREE.DoubleSide}));
-    mesh.renderOrder=-1;mesh.receiveShadow=true;mesh.name=isWater?'osm-water-surface':'osm-park-ground';scene.add(mesh);if(isWater){window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));}if(isWater){window.ABJ_WATER_POLYGONS=window.ABJ_WATER_POLYGONS||[];window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));}
+    const isLagoon=isWater&&String(w.tags.water||w.tags.name||'').toLowerCase().match(/lagune|ebri|lagoon/);
+    const waterColor=isLagoon?0x318da6:0x267caa;
+    const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:isWater?waterColor:0x71865b,side:THREE.DoubleSide,transparent:isWater,opacity:isWater?.94:1}));
+    mesh.renderOrder=-1;mesh.receiveShadow=true;mesh.name=isWater?(isLagoon?'lagune-ebrie':'abidjan-water'):'osm-park-ground';scene.add(mesh);if(isWater){window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));const cx=pts.reduce((v,p)=>v+p.x,0)/pts.length,cz=pts.reduce((v,p)=>v+p.z,0)/pts.length;const label=String(w.tags.name||'').toLowerCase().includes('ebri')?'LAGUNE ÉBRIÉ':(w.tags.name||'PLAN D’EAU');if(typeof makeStreetLabel==='function'&&w.tags.name)makeStreetLabel(cx,cz,label);}if(isWater){window.ABJ_WATER_POLYGONS=window.ABJ_WATER_POLYGONS||[];window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));}
   });
 }
 
