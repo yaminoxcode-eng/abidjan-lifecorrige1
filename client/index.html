@@ -1021,10 +1021,10 @@ document.getElementById('accountForgot').addEventListener('click',openRecoverFlo
  document.getElementById('accountSendRecoveryCode').addEventListener('click',async()=>{
    const phone=normalizeIvorianMobile(document.getElementById('accountPhone').value);
    const email=String(document.getElementById('accountRecoverEmail').value||'').trim().toLowerCase();
-   if(!phone||phone!==pendingAccountPhone||!/^\\S+@\\S+\\.\\S{2,}$/.test(email)){showAccountStatus('Vérifie le numéro et l’adresse e-mail.',true);return;}
+   if(!phone||phone!==pendingAccountPhone||!/^\S+@\S+\.\S{2,}$/.test(email)){showAccountStatus('Vérifie le numéro et l’adresse e-mail.',true);return;}
    const btn=document.getElementById('accountSendRecoveryCode');btn.disabled=true;btn.textContent='Envoi…';
    try{
-     const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+     const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
      const response=await fetch(api+'/api/auth/recover-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,email})});
      const data=await response.json().catch(()=>({}));
      if(!response.ok)throw new Error(data.error||'Envoi impossible.');
