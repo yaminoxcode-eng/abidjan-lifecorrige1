@@ -458,7 +458,7 @@ app.post('/api/auth/register', async (req,res) => {
   if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
   if(isCreatorPhone(phone)) return res.status(403).json({error:'Ce numéro est réservé au compte créateur officiel.'});
   if(password.length<8||password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
-  if(email && !/^\\S+@\\S+\\.\\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
+  if(email && !/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
   if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
   if(email && [...accounts.values()].some(a=>a.email===email)) return res.status(409).json({error:'Cette adresse e-mail est déjà utilisée.'});
   const account={phone,email:email||null,passwordHash:await bcrypt.hash(password,12),security:{},
