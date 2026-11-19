@@ -458,7 +458,7 @@ app.post('/api/auth/register/request-code', async (req,res) => {
   if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
   if(isCreatorPhone(phone)) return res.status(403).json({error:'Ce numéro est réservé au compte créateur officiel.'});
   if(password.length<8||password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
-  if(!/^\\S+@\\S+\\.\\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
+  if(!/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
   if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
   if([...accounts.values()].some(a=>a.email===email)) return res.status(409).json({error:'Cette adresse e-mail est déjà utilisée.'});
   const code=String(crypto.randomInt(0,1000000)).padStart(6,'0');
@@ -466,7 +466,7 @@ app.post('/api/auth/register/request-code', async (req,res) => {
   const passwordHash=await bcrypt.hash(password,12);
   registrationTickets.set(phone,{email,codeHash,passwordHash,expires:Date.now()+10*60*1000,attempts:0});
   try {
-    await mailTransport.sendMail({from:SMTP_FROM,to:email,subject:'Vérifie ton adresse e-mail – Abidjan Life',text:'Ton code de vérification Abidjan Life est : '+code+'\\nIl expire dans 10 minutes. Ne le partage avec personne.'});
+    await mailTransport.sendMail({from:SMTP_FROM,to:email,subject:'Vérifie ton adresse e-mail – Abidjan Life',text:'Ton code de vérification Abidjan Life est : '+code+'\nIl expire dans 10 minutes. Ne le partage avec personne.'});
   } catch(error) {
     registrationTickets.delete(phone);
     console.error('Envoi code inscription impossible:',error.message);
@@ -476,12 +476,12 @@ app.post('/api/auth/register/request-code', async (req,res) => {
 });
 app.post('/api/auth/register/verify-code', async (req,res) => {
   if(!rateLimit(req.ip+':register-verify',12,60000)) return res.status(429).json({error:'Trop de tentatives. Réessaie dans une minute.'});
-  const phone=phoneOf(req.body.phone), email=clean(req.body.email,120).toLowerCase(), code=String(req.body.code||'').replace(/\\D/g,'').slice(0,6);
+  const phone=phoneOf(req.body.phone), email=clean(req.body.email,120).toLowerCase(), code=String(req.body.code||'').replace(/\D/g,'').slice(0,6);
   const ticket=phone&&registrationTickets.get(phone);
   if(!ticket||ticket.email!==email||ticket.expires<Date.now()) {if(phone)registrationTickets.delete(phone);return res.status(400).json({error:'Code expiré ou demande introuvable. Demande un nouveau code.'});}
   if(++ticket.attempts>5){registrationTickets.delete(phone);return res.status(429).json({error:'Trop de codes incorrects. Demande un nouveau code.'});}
   const actual=crypto.createHash('sha256').update(phone+':'+email+':'+code+':'+JWT_SECRET).digest('hex');
-  if(!/^\\d{6}$/.test(code)||!crypto.timingSafeEqual(Buffer.from(ticket.codeHash),Buffer.from(actual))) return res.status(400).json({error:'Code incorrect.'});
+  if(!/^\d{6}$/.test(code)||!crypto.timingSafeEqual(Buffer.from(ticket.codeHash),Buffer.from(actual))) return res.status(400).json({error:'Code incorrect.'});
   if(accounts.has(phone)||[...accounts.values()].some(a=>a.email===email)){registrationTickets.delete(phone);return res.status(409).json({error:'Ce numéro ou cette adresse e-mail est déjà utilisé.'});}
   const account={phone,email,passwordHash:ticket.passwordHash,security:{},emailVerified:true,emailVerifiedAt:Date.now(),
     profile:{name:safePlayerName(phone,'Mon personnage'),gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50},
@@ -492,7 +492,6 @@ app.post('/api/auth/register/verify-code', async (req,res) => {
 });
 app.post('/api/auth/migrate-local', async (req, res) => {
   return res.status(403).json({error:'Migration sécurisée momentanément suspendue : vérifie ton adresse e-mail avant de transférer ton compte. Ta sauvegarde locale reste intacte.'});
-/* Ancienne migration conservée temporairement pour audit, mais inaccessible. */
   const phone = phoneOf(req.body.phone);
   const password = String(req.body.password || '');
   const legacyHash = String(req.body.legacyPasswordHash || '');
