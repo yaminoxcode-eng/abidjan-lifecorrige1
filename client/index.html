@@ -8952,3 +8952,48 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  const socketReady=setInterval(()=>{if(typeof socket!=='undefined'&&socket&&socket.on&&!window.__abjHeliSocketBound){window.__abjHeliSocketBound=true;socket.on('creator:helicopter',d=>window.dispatchEvent(new CustomEvent('creator:helicopter',{detail:d})));socket.on('creator:helicopter:stop',d=>window.dispatchEvent(new CustomEvent('creator:helicopter:stop',{detail:d})));}},1000);
 })();
 </script>
+
+<script>
+/* ABIDJAN LIFE — installation PWA (Android, ordinateur et iOS) */
+(function(){
+  if(window.__ABJ_PWA_INIT__) return;
+  window.__ABJ_PWA_INIT__=true;
+  var deferredPrompt=null;
+  var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  var isStandalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+  function makeButton(){
+    if(isStandalone || document.getElementById('abjInstallApp')) return;
+    var b=document.createElement('button');
+    b.id='abjInstallApp'; b.type='button'; b.textContent='⬇ Installer';
+    b.setAttribute('aria-label','Installer Abidjan Life sur cet appareil');
+    b.style.cssText='position:fixed;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:99999;padding:11px 15px;border:1px solid #ffe19a;border-radius:24px;background:linear-gradient(135deg,#f4d18a,#c58c39);color:#172630;font:800 13px system-ui;box-shadow:0 4px 18px #0008;cursor:pointer';
+    b.addEventListener('click',async function(){
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        try { await deferredPrompt.userChoice; } catch(e) {}
+        deferredPrompt=null; b.remove(); return;
+      }
+      var msg=isIOS
+        ? 'Pour installer Abidjan Life sur ton iPhone : touche Partager (le carré avec la flèche vers le haut), puis « Sur l’écran d’accueil », et confirme avec Ajouter.'
+        : 'Dans le menu de ton navigateur, choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».';
+      if(typeof window.showMessage==='function') window.showMessage(msg); else alert(msg);
+    });
+    document.body.appendChild(b);
+  }
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault(); deferredPrompt=e; makeButton();
+    var b=document.getElementById('abjInstallApp'); if(b) b.textContent='⬇ Installer le jeu';
+  });
+  window.addEventListener('appinstalled',function(){
+    var b=document.getElementById('abjInstallApp'); if(b) b.remove();
+    deferredPrompt=null;
+  });
+  if(!isStandalone){ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',makeButton,{once:true}); else makeButton(); }
+  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+    window.addEventListener('load',function(){
+      navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(function(err){console.warn('Abidjan Life : service worker non activé',err);});
+    },{once:true});
+  }
+})();
+</script>
+
