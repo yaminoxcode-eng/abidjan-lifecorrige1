@@ -937,11 +937,14 @@ io.use((socket, next) => {
 });
 
 
-app.get('/api/players', (req, res) => {
+app.get('/api/players', (_req, res) => {
+  // Le carnet public a seulement besoin de l'identifiant de session et du nom.
+  // Ne jamais exposer les positions précises, véhicules ou profils complets via cet endpoint.
   res.set('Cache-Control', 'no-store');
   res.json({ count: activePlayers.size, players: [...activePlayers.values()].map(p => ({
-    id:p.id,name:clean(p.profile?.name,24)||'Citoyen',profile:p.profile,
-    position:p.position,moving:!!p.moving,vehicle:p.vehicle||null
+    id: p.id,
+    name: clean(p.profile?.name, 24) || 'Citoyen',
+    moving: !!p.moving
   })) });
 });
 io.on('connection', (socket) => {
