@@ -508,15 +508,8 @@ app.post('/api/auth/migrate-local', async (req, res) => {
   const email = clean(req.body.email, 120).toLowerCase();
   const s = req.body.security || {};
 
-  if (
-    !/^\S+@\S+\.\S{2,}$/.test(email) ||
-    answer(s.parentName).length < 2 ||
-    !answer(s.petName) ||
-    answer(s.sport).length < 2
-  ) {
-    return res.status(400).json({
-      error: 'Les informations de récupération du compte local sont incomplètes.'
-    });
+  if (!/^\S+@\S+\.\S{2,}$/.test(email)) {
+    return res.status(400).json({error:'Adresse e-mail invalide.'});
   }
 
   if ([...accounts.values()].some(a => a.email === email)) {
@@ -535,13 +528,7 @@ app.post('/api/auth/migrate-local', async (req, res) => {
     phone,
     email,
     passwordHash: await bcrypt.hash(password, 12),
-    security: {
-      birthDay: Number(s.birthDay) || 1,
-      birthMonth: Number(s.birthMonth) || 1,
-      parentName: answer(s.parentName),
-      petName: answer(s.petName),
-      sport: answer(s.sport)
-    },
+    security: {},
     profile: {
       name: safePlayerName(phone, profile.name || 'Mon personnage'),
       gender: profile.gender === 'femme' ? 'femme' : 'homme',
