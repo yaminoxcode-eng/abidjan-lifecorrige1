@@ -300,24 +300,8 @@
     </div>
 
     <div id="accountRegisterFields" style="display:none">
-      <label for="accountEmail">Adresse e-mail de récupération (Gmail ou iCloud)</label>
+      <label for="accountEmail">Adresse e-mail</label>
       <input id="accountEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com">
-      <label for="accountBirthDay">Jour de naissance</label>
-      <select id="accountBirthDay"></select>
-      <label for="accountBirthMonth">Mois de naissance</label>
-      <select id="accountBirthMonth">
-        <option value="">— Mois —</option>
-        <option value="1">Janvier</option><option value="2">Février</option><option value="3">Mars</option>
-        <option value="4">Avril</option><option value="5">Mai</option><option value="6">Juin</option>
-        <option value="7">Juillet</option><option value="8">Août</option><option value="9">Septembre</option>
-        <option value="10">Octobre</option><option value="11">Novembre</option><option value="12">Décembre</option>
-      </select>
-      <label for="accountParentName">Prénom de ta mère ou de ton père</label>
-      <input id="accountParentName" type="text" maxlength="40" placeholder="Prénom d’un parent" autocomplete="off">
-      <label for="accountPetName">Nom de ton animal de compagnie (ou « aucun »)</label>
-      <input id="accountPetName" type="text" maxlength="40" placeholder="Ex. Rex ou aucun" autocomplete="off">
-      <label for="accountSport">Sport préféré</label>
-      <input id="accountSport" type="text" maxlength="40" placeholder="Ex. Football, basketball…" autocomplete="off">
       <label for="accountPasswordConfirm">Confirmer le mot de passe</label>
       <div style="display:flex;gap:6px;align-items:center">
         <input id="accountPasswordConfirm" type="password" placeholder="Retape le mot de passe" autocomplete="new-password" style="flex:1">
@@ -325,24 +309,14 @@
       </div>
     </div>
 
-    <div id="accountRecoverFields" style="display:none">
-      <p style="font-size:12px;color:#c5d8e4">Méthode 1 : réponds aux questions enregistrées lors de la création du compte. Les accents, majuscules et espaces superflus sont ignorés.</p>
-      <label for="accountRecoverParent">Prénom de ta mère ou de ton père</label>
-      <input id="accountRecoverParent" type="text" maxlength="40" autocomplete="off">
-      <label for="accountRecoverPet">Nom de ton animal de compagnie</label>
-      <input id="accountRecoverPet" type="text" maxlength="40" autocomplete="off">
-      <label for="accountRecoverSport">Sport préféré</label>
-      <input id="accountRecoverSport" type="text" maxlength="40" autocomplete="off">
-      <button type="button" id="accountOtherRecovery">Autre méthode : vérifier mon e-mail</button>
-    </div>
     <div id="accountEmailRecoverFields" style="display:none">
-      <p style="font-size:12px;color:#c5d8e4">Méthode 2 : saisis exactement l'adresse Gmail ou iCloud associée à ce compte.</p>
-      <label for="accountRecoverEmail">Adresse e-mail enregistrée</label>
+      <p style="font-size:12px;color:#c5d8e4">Saisis le numéro et l'adresse e-mail liés à ton compte. Un code sera envoyé à cette adresse si elle correspond.</p>
+      <label for="accountRecoverEmail">Adresse e-mail du compte</label>
       <input id="accountRecoverEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com">
-      <p id="accountRecoveryCodeNotice" style="font-size:11px;color:#ffe0a0"></p>
-      <label for="accountRecoveryCode">Code de vérification</label>
+      <button type="button" id="accountSendRecoveryCode">Envoyer le code de vérification</button>
+      <label for="accountRecoveryCode">Code reçu par e-mail</label>
       <input id="accountRecoveryCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Code à 6 chiffres">
-      <button type="button" id="accountSendRecoveryCode">Vérifier l'adresse et préparer un code</button>
+      <p id="accountRecoveryCodeNotice" style="font-size:11px;color:#ffe0a0"></p>
     </div>
 
     <div id="accountNewPasswordWrap" style="display:none">
@@ -361,14 +335,12 @@
     <div id="accountActions">
     <div id="accountStatus" role="status" aria-live="polite"></div>
 
-    <button class="primary" id="accountContinue" type="button">Continuer</button>
-    <button type="button" id="accountForgot">Mot de passe oublié</button>
-    <button id="accountSwitchRegister" type="button">Créer un compte</button>
-    <button id="abjExportSave" type="button">Exporter ma sauvegarde</button>
-    <button id="abjImportSave" type="button">Importer une sauvegarde</button>
-    <input id="abjImportFile" type="file" accept="application/json,.json" style="display:none">
-    <button type="button" id="accountBack" style="display:none">Retour</button>
-    <p style="font-size:10px;color:#a9bbc5;width:100%;margin:6px 0 0">Mode local : export/import de sauvegarde disponible. L’espace Cloud est séparé et accessible avec le bouton ci-dessus.</p>
+    <button class="primary" id="accountContinue" type="button">Se connecter</button>
+    <div class="accountSecondaryActions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button id="accountSwitchRegister" type="button" style="flex:1">Créer un nouveau compte</button>
+      <button type="button" id="accountForgot" style="flex:1">Mot de passe oublié ?</button>
+    </div>
+    <button type="button" id="accountBack" style="display:none">Retour à la connexion</button>
     </div>
   </div>
 </div>
@@ -728,7 +700,6 @@ function togglePasswordField(inputId,buttonId){
 function setAccountFieldVisibility(){
   const login=document.getElementById('accountLoginFields');
   const reg=document.getElementById('accountRegisterFields');
-  const rec=document.getElementById('accountRecoverFields');
   const emailRec=document.getElementById('accountEmailRecoverFields');
   const npw=document.getElementById('accountNewPasswordWrap');
   const cont=document.getElementById('accountContinue');
@@ -736,36 +707,27 @@ function setAccountFieldVisibility(){
   const switchReg=document.getElementById('accountSwitchRegister');
   const back=document.getElementById('accountBack');
   const passLabel=document.querySelector('label[for="accountPassword"]');
-  if(login) login.style.display=(accountFlow==='login'||accountFlow==='register')?'block':'none';
-  if(reg) reg.style.display=accountFlow==='register'?'block':'none';
-  if(rec) rec.style.display=accountFlow==='recover'?'block':'none';
-  if(emailRec) emailRec.style.display=accountFlow==='recoverEmail'?'block':'none';
-  if(npw) npw.style.display=accountFlow==='reset'?'block':'none';
-  // En mode recover, afficher seulement le numéro
-  const phoneInput=document.getElementById('accountPhone');
+  const recovery=accountFlow==='recoverEmail'||accountFlow==='reset';
+  if(login)login.style.display=['login','register','recoverEmail','reset'].includes(accountFlow)?'block':'none';
+  if(reg)reg.style.display=accountFlow==='register'?'block':'none';
+  if(emailRec)emailRec.style.display=recovery?'block':'none';
+  if(npw)npw.style.display=accountFlow==='reset'?'block':'none';
   const passInput=document.getElementById('accountPassword');
-  if(accountFlow==='recover'||accountFlow==='recoverEmail'||accountFlow==='reset'){
-    if(login) login.style.display='block';
-    if(passInput) passInput.style.display='none';
-    if(passLabel) passLabel.style.display='none';
-    const toggle=document.getElementById('togglePassword');
-    if(toggle) toggle.style.display='none';
-  } else {
-    if(passInput) passInput.style.display='';
-    if(passLabel) passLabel.style.display='';
-    const toggle=document.getElementById('togglePassword');
-    if(toggle) toggle.style.display='';
-  }
-  if(forgot) forgot.style.display=accountFlow==='login'?'inline-block':'none';
-  if(switchReg) switchReg.style.display=accountFlow==='login'?'inline-block':'none';
-  if(back) back.style.display=accountFlow==='login'?'none':'inline-block';
+  const toggle=document.getElementById('togglePassword');
+  if(passInput)passInput.style.display=recovery?'none':'';
+  if(passLabel)passLabel.style.display=recovery?'none':'';
+  if(toggle)toggle.style.display=recovery?'none':'';
+  if(forgot)forgot.style.display=accountFlow==='login'?'inline-block':'none';
+  if(switchReg)switchReg.style.display=accountFlow==='login'?'inline-block':'none';
+  if(back)back.style.display=accountFlow==='login'?'none':'inline-block';
+  const send=document.getElementById('accountSendRecoveryCode');
+  if(send)send.style.display=accountFlow==='recoverEmail'?'block':'none';
   if(cont){
     cont.disabled=false;
-    if(accountFlow==='login') cont.textContent='Se connecter';
-    else if(accountFlow==='register') cont.textContent='Créer mon compte';
-    else if(accountFlow==='recover') cont.textContent='Vérifier mes réponses';
-    else if(accountFlow==='recoverEmail') cont.textContent='Confirmer le code';
-    else if(accountFlow==='reset') cont.textContent='Enregistrer le nouveau mot de passe';
+    cont.style.display=accountFlow==='recoverEmail'?'none':'block';
+    if(accountFlow==='login')cont.textContent='Se connecter';
+    else if(accountFlow==='register')cont.textContent='Créer mon compte';
+    else if(accountFlow==='reset')cont.textContent='Vérifier le code et changer le mot de passe';
     else cont.textContent='Continuer';
   }
 }
@@ -794,7 +756,7 @@ function openRegisterFlow(){
   fillBirthDaySelect();
   accountFlow='register';
   document.getElementById('accountTitle').textContent='Créer un compte';
-  document.getElementById('accountIntro').textContent='Renseigne ton numéro, ton e-mail Gmail/iCloud, ton mot de passe, ta date de naissance et tes questions de sécurité. Les données restent sur cet appareil dans cette version.';
+  document.getElementById('accountIntro').textContent='Crée ton compte avec ton numéro de téléphone, ton adresse e-mail et ton mot de passe.';
   showAccountStatus('Remplis tous les champs, puis appuie sur « Créer mon compte ».', false);
   document.getElementById('accountPassword').value='';
   const conf=document.getElementById('accountPasswordConfirm'); if(conf) conf.value='';
@@ -803,17 +765,15 @@ function openRegisterFlow(){
 }
 function openRecoverFlow(){
   const phone=normalizeIvorianMobile(document.getElementById('accountPhone').value);
-  const status=document.getElementById('accountStatus');
-  if(!phone){status.textContent='Saisis d’abord un numéro mobile ivoirien valide (01, 05 ou 07).';return;}
-  if(!findGameAccount(readGameAccounts(),phone)){status.textContent='Aucun compte trouvé avec ce numéro.';return;}
+  if(!phone){showAccountStatus('Saisis d’abord ton numéro mobile ivoirien.',true);return;}
   pendingAccountPhone=phone;
-  accountFlow='recover';
+  accountFlow='recoverEmail';
   document.getElementById('accountTitle').textContent='Mot de passe oublié';
-  document.getElementById('accountIntro').textContent='Réponds aux questions de sécurité liées à ce numéro pour pouvoir changer ton mot de passe.';
-  document.getElementById('accountStatus').textContent='';
-  document.getElementById('accountRecoverParent').value='';
-  document.getElementById('accountRecoverPet').value='';
-  document.getElementById('accountRecoverSport').value='';
+  document.getElementById('accountIntro').textContent='Vérifie ton identité avec le numéro et l’adresse e-mail enregistrés.';
+  document.getElementById('accountRecoverEmail').value='';
+  document.getElementById('accountRecoveryCode').value='';
+  document.getElementById('accountRecoveryCodeNotice').textContent='';
+  showAccountStatus('Un code sera envoyé à ton adresse si elle correspond au compte.',false);
   setAccountFieldVisibility();
 }
 function showAccountStatus(msg, isError){
@@ -877,24 +837,11 @@ async function accountContinue(){
     if(emailTaken){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.', true);return;}
     const confirm=document.getElementById('accountPasswordConfirm').value;
     if(pass!==confirm){showAccountStatus('Les deux mots de passe ne correspondent pas.', true);return;}
-    const day=Number(document.getElementById('accountBirthDay').value);
-    const month=Number(document.getElementById('accountBirthMonth').value);
-    if(!day||!month||day<1||day>31||month<1||month>12){
-      showAccountStatus('Indique ton jour et ton mois de naissance.', true);
-      return;
-    }
-    const parent=document.getElementById('accountParentName').value.trim();
-    const pet=document.getElementById('accountPetName').value.trim();
-    const sport=document.getElementById('accountSport').value.trim();
-    if(parent.length<2||pet.length<1||sport.length<2){
-      showAccountStatus('Remplis les trois questions de sécurité (parent, animal, sport).', true);
-      return;
-    }
-    const security={birthDay:day,birthMonth:month,parentName:normalizeSecurityAnswer(parent),petName:normalizeSecurityAnswer(pet),sport:normalizeSecurityAnswer(sport)};
+    const security={};
     const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
     let response,data;
     try{
-      response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email,birthDay:day,birthMonth:month,security})});
+      response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
       data=await response.json().catch(()=>({}));
     }catch(registrationError){
       // La connexion peut être coupée après l'enregistrement côté serveur.
@@ -911,7 +858,7 @@ async function accountContinue(){
     }
     if(!response.ok){showAccountStatus(data.error||'Création du compte impossible sur le serveur.',true);return;}
     if(!data||!data.token){showAccountStatus('Le serveur n’a pas confirmé la session. Essaie de te connecter avec les mêmes identifiants.',true);return;}
-    accounts[phone]={email,passwordHash:await passwordDigest(pass),createdAt:new Date().toISOString(),isCreator:false,security};
+    accounts[phone]={email,passwordHash:await passwordDigest(pass),createdAt:new Date().toISOString(),isCreator:false,security:{}};
     writeGameAccounts(accounts);
     safeSet('abj-online-token:'+phone,data.token);
     await activateGameAccount(phone);
@@ -947,49 +894,25 @@ async function accountContinue(){
     return;
   }
 
-  if(accountFlow==='recoverEmail'){
-    const code=String(document.getElementById('accountRecoveryCode').value||'').replace(/\D/g,'');
-    if(!pendingRecoveryCode||Date.now()>pendingRecoveryExpiry){showAccountStatus('Le code a expiré. Prépare un nouveau code.',true);return;}
-    if(++pendingRecoveryAttempts>5){pendingRecoveryCode='';showAccountStatus('Trop de tentatives. Recommence la vérification par e-mail.',true);return;}
-    if(code!==pendingRecoveryCode){showAccountStatus('Code incorrect. Vérifie les 6 chiffres saisis.',true);return;}
-    const account=findGameAccount(accounts,pendingAccountPhone);
-    if(!account||String(account.email||'').trim().toLowerCase()!==String(document.getElementById('accountRecoverEmail').value||'').trim().toLowerCase()){
-      showAccountStatus('Le compte ou l’adresse e-mail ne correspond plus. Recommence.',true);return;
-    }
-    pendingRecoveryCode='';
-    accountFlow='reset';
-    document.getElementById('accountTitle').textContent='Nouveau mot de passe';
-    document.getElementById('accountIntro').textContent='Adresse et code vérifiés sur cet appareil. Choisis un nouveau mot de passe.';
-    document.getElementById('accountNewPassword').value='';
-    document.getElementById('accountNewPasswordConfirm').value='';
-    showAccountStatus('Vérification réussie. Définis ton nouveau mot de passe.',false);
-    setAccountFieldVisibility();
-    return;
-  }
 
   if(accountFlow==='reset'){
     const np=document.getElementById('accountNewPassword').value;
     const npc=document.getElementById('accountNewPasswordConfirm').value;
-    if(np.length<8){showAccountStatus('Le nouveau mot de passe doit contenir au moins 8 caractères.', true);return;}
-    if(np!==npc){showAccountStatus('Les deux mots de passe ne correspondent pas.', true);return;}
-    const account=findGameAccount(accounts,pendingAccountPhone);
-    if(!account){showAccountStatus('Compte introuvable. Recommence la procédure.', true);return;}
-    account.passwordHash=await passwordDigest(np);
-    accounts[pendingAccountPhone]=account;
-    // Si la clé stockée n’était pas la forme canonique, synchroniser
-    for(const key of Object.keys(accounts)){
-      if(normalizeIvorianMobile(key)===pendingAccountPhone && key!==pendingAccountPhone){
-        accounts[pendingAccountPhone]=accounts[key];
-        accounts[pendingAccountPhone].passwordHash=account.passwordHash;
-        delete accounts[key];
-      }
-    }
-    writeGameAccounts(accounts);
-    showAccountStatus('Mot de passe mis à jour. Connecte-toi avec ton numéro et le nouveau mot de passe.', false);
-    document.getElementById('accountPassword').value='';
-    openAccountGate();
-    document.getElementById('accountPhone').value=pendingAccountPhone;
-    showAccountStatus('Mot de passe changé. Entre ton nouveau mot de passe pour continuer.', false);
+    const email=String(document.getElementById('accountRecoverEmail').value||'').trim().toLowerCase();
+    const code=String(document.getElementById('accountRecoveryCode').value||'').replace(/\D/g,'');
+    if(np.length<8){showAccountStatus('Le nouveau mot de passe doit contenir au moins 8 caractères.',true);return;}
+    if(np!==npc){showAccountStatus('Les deux mots de passe ne correspondent pas.',true);return;}
+    if(!email||code.length!==6){showAccountStatus('Saisis l’adresse e-mail et le code à 6 chiffres.',true);return;}
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+    const response=await fetch(api+'/api/auth/reset-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:pendingAccountPhone,email,code,password:np})});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok){showAccountStatus(data.error||'La récupération a échoué.',true);return;}
+    const login=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:pendingAccountPhone,password:np})});
+    const logged=await login.json().catch(()=>({}));
+    if(!login.ok||!logged.token){showAccountStatus('Mot de passe modifié. Reconnecte-toi avec tes nouveaux identifiants.',false);openAccountGate();document.getElementById('accountPhone').value=pendingAccountPhone;return;}
+    safeSet('abj-online-token:'+pendingAccountPhone,logged.token);
+    showAccountStatus('Mot de passe modifié. Connexion en cours…',false);
+    await activateGameAccount(pendingAccountPhone);
     return;
   }
   }catch(err){
@@ -1001,8 +924,7 @@ async function accountContinue(){
       contBtn.disabled=false;
       if(accountFlow==='login') contBtn.textContent='Se connecter';
       else if(accountFlow==='register') contBtn.textContent='Créer mon compte';
-      else if(accountFlow==='recover') contBtn.textContent='Vérifier mes réponses';
-      else if(accountFlow==='recoverEmail') contBtn.textContent='Confirmer le code';
+      else if(accountFlow==='recoverEmail') contBtn.style.display='none';
       else if(accountFlow==='reset') contBtn.textContent='Enregistrer le nouveau mot de passe';
       else contBtn.textContent='Continuer';
     }
@@ -1096,8 +1018,24 @@ if(__abjImportFile)__abjImportFile.addEventListener('change',e=>{abjImportSaveFi
 
 document.getElementById('accountContinue').addEventListener('click',accountContinue);
 document.getElementById('accountForgot').addEventListener('click',openRecoverFlow);
- document.getElementById('accountOtherRecovery').addEventListener('click',()=>{accountFlow='recoverEmail';document.getElementById('accountTitle').textContent='Récupération par e-mail';document.getElementById('accountIntro').textContent='Vérifie l’adresse e-mail enregistrée sur ton compte.';document.getElementById('accountRecoverEmail').value='';document.getElementById('accountRecoveryCode').value='';document.getElementById('accountRecoveryCodeNotice').textContent='';showAccountStatus('Saisis ton adresse e-mail, puis demande un code.',false);setAccountFieldVisibility();});
- document.getElementById('accountSendRecoveryCode').addEventListener('click',()=>{const a=findGameAccount(readGameAccounts(),pendingAccountPhone);const email=String(document.getElementById('accountRecoverEmail').value||'').trim().toLowerCase();if(!a||!a.email||email!==String(a.email).trim().toLowerCase()){showAccountStatus('Cette adresse ne correspond pas à celle enregistrée pour ce numéro.',true);return;}if(!window.crypto||!crypto.getRandomValues){showAccountStatus('Génération sécurisée indisponible sur ce navigateur. Utilise les questions de sécurité.',true);return;}const bytes=new Uint32Array(1);crypto.getRandomValues(bytes);pendingRecoveryCode=String(bytes[0]%1000000).padStart(6,'0');pendingRecoveryExpiry=Date.now()+5*60*1000;pendingRecoveryAttempts=0;document.getElementById('accountRecoveryCodeNotice').textContent='Code local de test : '+pendingRecoveryCode+' (valable 5 minutes). Dans cette version HTML sans serveur, il n’est pas envoyé par e-mail.';showAccountStatus('Adresse reconnue. Pour ce prototype local, le code de test apparaît ci-dessus. La vraie livraison par e-mail nécessitera le serveur du jeu.',false);});
+ document.getElementById('accountSendRecoveryCode').addEventListener('click',async()=>{
+   const phone=normalizeIvorianMobile(document.getElementById('accountPhone').value);
+   const email=String(document.getElementById('accountRecoverEmail').value||'').trim().toLowerCase();
+   if(!phone||phone!==pendingAccountPhone||!/^\\S+@\\S+\\.\\S{2,}$/.test(email)){showAccountStatus('Vérifie le numéro et l’adresse e-mail.',true);return;}
+   const btn=document.getElementById('accountSendRecoveryCode');btn.disabled=true;btn.textContent='Envoi…';
+   try{
+     const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+     const response=await fetch(api+'/api/auth/recover-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,email})});
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok)throw new Error(data.error||'Envoi impossible.');
+     accountFlow='reset';
+     document.getElementById('accountRecoveryCodeNotice').textContent='Si les informations correspondent, le code arrive par e-mail. Vérifie aussi les courriers indésirables.';
+     document.getElementById('accountTitle').textContent='Changer le mot de passe';
+     document.getElementById('accountIntro').textContent='Saisis le code reçu et choisis ton nouveau mot de passe.';
+     showAccountStatus(data.message||'Demande traitée.',false);setAccountFieldVisibility();
+   }catch(error){showAccountStatus(error.message||'Service e-mail indisponible.',true);}
+   finally{btn.disabled=false;btn.textContent='Envoyer le code de vérification';}
+ });
 document.getElementById('accountSwitchRegister').addEventListener('click',openRegisterFlow);
 document.getElementById('accountBack').addEventListener('click',backAccountLogin);
 
