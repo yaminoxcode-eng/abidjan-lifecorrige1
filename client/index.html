@@ -305,11 +305,8 @@
     </div>
 
     <div id="accountRegisterFields" style="display:none">
-      <label for="accountEmail">Adresse e-mail</label>
-      <input id="accountEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com">
-      <label for="accountRegisterCode">Code de vérification (6 chiffres)</label>
-      <input id="accountRegisterCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Code reçu par e-mail">
-      <p id="accountRegisterCodeNotice" style="font-size:11px;color:#ffe0a0">Un code sera envoyé avant la création du compte.</p>
+      <label for="accountEmail">Adresse e-mail (facultative, pour récupérer le compte)</label>
+      <input id="accountEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com — facultatif">
       <label for="accountPasswordConfirm">Confirmer le mot de passe</label>
       <div style="display:flex;gap:6px;align-items:center">
         <input id="accountPasswordConfirm" type="password" placeholder="Retape le mot de passe" autocomplete="new-password" style="flex:1">
@@ -734,7 +731,7 @@ function setAccountFieldVisibility(){
     cont.disabled=false;
     cont.style.display=accountFlow==='recoverEmail'?'none':'block';
     if(accountFlow==='login')cont.textContent='Se connecter';
-    else if(accountFlow==='register')cont.textContent='Envoyer / vérifier le code';
+    else if(accountFlow==='register')cont.textContent='Créer mon compte';
     else if(accountFlow==='reset')cont.textContent='Vérifier le code et changer le mot de passe';
     else cont.textContent='Continuer';
   }
@@ -751,7 +748,7 @@ function openAccountGate(){
   const conf=document.getElementById('accountPasswordConfirm'); if(conf){conf.value='';conf.type='password';}
   const np=document.getElementById('accountNewPassword'); if(np){np.value='';np.type='password';}
   const npc=document.getElementById('accountNewPasswordConfirm'); if(npc){npc.value='';npc.type='password';}
-  ['accountEmail','accountRegisterCode','accountRegisterCodeNotice','accountRecoverEmail','accountRecoveryCode','accountParentName','accountPetName','accountSport','accountRecoverParent','accountRecoverPet','accountRecoverSport'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['accountEmail','accountRecoverEmail','accountRecoveryCode','accountParentName','accountPetName','accountSport','accountRecoverParent','accountRecoverPet','accountRecoverSport'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const bd=document.getElementById('accountBirthDay'); if(bd) bd.value='';
   const bm=document.getElementById('accountBirthMonth'); if(bm) bm.value='';
   document.getElementById('accountTitle').textContent='Connexion';
@@ -764,7 +761,7 @@ function openRegisterFlow(){
   fillBirthDaySelect();
   accountFlow='register';
   document.getElementById('accountTitle').textContent='Créer un compte';
-  document.getElementById('accountIntro').textContent='Crée ton compte avec ton numéro de téléphone, ton adresse e-mail et ton mot de passe.';
+  document.getElementById('accountIntro').textContent='Crée ton compte avec ton numéro de téléphone et ton mot de passe. L’adresse e-mail est facultative.';
   showAccountStatus('Remplis tous les champs, puis appuie sur « Créer mon compte ».', false);
   document.getElementById('accountPassword').value='';
   const conf=document.getElementById('accountPasswordConfirm'); if(conf) conf.value='';
@@ -834,51 +831,28 @@ async function accountContinue(){
   }
 
   if(accountFlow==='register'){
-    if(findGameAccount(accounts,phone)){
-      showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».', true);
-      return;
-    }
-    if(pass.length<8){showAccountStatus('Choisis un mot de passe d’au moins 8 caractères.', true);return;}
+    if(findGameAccount(accounts,phone)){showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».',true);return;}
+    if(pass.length<8){showAccountStatus('Choisis un mot de passe d’au moins 8 caractères.',true);return;}
     const email=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showAccountStatus('Saisis une adresse Gmail ou iCloud valide pour la récupération.', true);return;}
-    const emailTaken=Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone && String(a&&a.email||'').trim().toLowerCase()===email);
-    if(emailTaken){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.', true);return;}
+    if(email && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/.test(email)){showAccountStatus('Adresse e-mail invalide. Tu peux aussi laisser ce champ vide.',true);return;}
+    const emailTaken=email && Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone && String(a&&a.email||'').trim().toLowerCase()===email);
+    if(emailTaken){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.',true);return;}
     const confirm=document.getElementById('accountPasswordConfirm').value;
-    if(pass!==confirm){showAccountStatus('Les deux mots de passe ne correspondent pas.', true);return;}
-    const code=String(document.getElementById('accountRegisterCode').value||'').replace(/\D/g,'');
-    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+    if(pass!==confirm){showAccountStatus('Les deux mots de passe ne correspondent pas.',true);return;}
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
     let response,data;
     try{
-      if(code.length!==6){
-        response=await fetch(api+'/api/auth/register/request-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
-        data=await response.json().catch(()=>({}));
-        if(!response.ok){showAccountStatus(data.error||'Impossible d’envoyer le code.',true);return;}
-        document.getElementById('accountRegisterCodeNotice').textContent='Code envoyé. Saisis-le ici (valable 10 minutes), puis appuie de nouveau sur Créer mon compte.';
-        showAccountStatus('Code envoyé à '+email+'. Vérifie aussi les courriers indésirables.',false);
-        return;
-      }
-      response=await fetch(api+'/api/auth/register/verify-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email,code})});
+      response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
       data=await response.json().catch(()=>({}));
     }catch(registrationError){
-      // La connexion peut être coupée après l'enregistrement côté serveur.
-      // Vérifier le compte avant de demander à la personne de recommencer.
       console.warn('Réponse de création de compte interrompue, vérification de la session…',registrationError);
-      try{
-        response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});
-        data=await response.json().catch(()=>({}));
-      }catch(verificationError){
-        console.error('Vérification du compte après interruption impossible:',verificationError);
-        showAccountStatus('La connexion au serveur a été interrompue. Ton compte n’a pas été confirmé : ne recommence pas immédiatement la création. Réessaie de te connecter avec les mêmes identifiants.',true);
-        return;
-      }
+      try{response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});data=await response.json().catch(()=>({}));}
+      catch(verificationError){console.error('Connexion après création interrompue:',verificationError);showAccountStatus('Connexion interrompue. Réessaie de te connecter avec les mêmes identifiants.',true);return;}
     }
     if(!response.ok){showAccountStatus(data.error||'Création du compte impossible sur le serveur.',true);return;}
     if(!data||!data.token){showAccountStatus('Le serveur n’a pas confirmé la session. Essaie de te connecter avec les mêmes identifiants.',true);return;}
-    accounts[phone]={email,passwordHash:await passwordDigest(pass),createdAt:new Date().toISOString(),isCreator:false,security:{}};
-    writeGameAccounts(accounts);
-    safeSet('abj-online-token:'+phone,data.token);
-    await activateGameAccount(phone);
-    return;
+    accounts[phone]={email:email||'',passwordHash:await passwordDigest(pass),createdAt:new Date().toISOString(),isCreator:false,security:{}};
+    writeGameAccounts(accounts);safeSet('abj-online-token:'+phone,data.token);await activateGameAccount(phone);return;
   }
 
   if(accountFlow==='recover'){
@@ -5093,7 +5067,7 @@ function renderJumiaApp(){
 
 function renderShopApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
- const cards=ABJ_SHOP_ITEMS.map(it=>{const emoji=it.category==='Boisson'?'🥤':it.category==='Alimentation'?'🥖':it.category==='Repas'?'🍲':it.category==='Pharmacie'?'💊':'🧴';return '<div style="display:flex;gap:10px;padding:10px;margin:8px 0;border:1px solid #ffffff28;border-radius:10px;background:#ffffff0d"><div style="width:54px;height:54px;border-radius:12px;background:#ffffff14;display:grid;place-items:center;font-size:26px">'+emoji+'</div><div style="flex:1"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+escapeHTML(it.name)+'</b><b style="color:#ffe0a0;white-space:nowrap">'+it.price.toLocaleString('fr-FR')+' F</b></div><div style="font-size:11px;color:#c6d8e5;margin:5px 0">'+escapeHTML(it.category)+' · '+escapeHTML(it.description)+'</div><button data-buy="'+it.id+'">Acheter (Wave)</button></div></div>';}).join('');
+ const cards=ABJ_SHOP_ITEMS.map(it=>{const emoji=it.category==='Boisson'?'🥤':it.category==='Alimentation'?'🥖':it.category==='Repas'?'🍲':it.category==='Pharmacie'?'💊':'🧴';return '<div style="display:flex;gap:10px;padding:10px;margin:8px 0;border:1px solid #ffffff28;border-radius:10px;background:#ffffff0d"><div style="width:54px;height:54px;border-radius:12px;background:#ffffff14;display:grid;place-items:center;font-size:26px">'+emoji+'</div><div style="flex:1"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+escapeHTML(it.name)+'</b><b style="color:#ffe0a0;white-space:nowrap">'+it.price.toLocaleString('fr-FR')+' F</b></div><div style="font-size:11px;color:#c6d8e5;margin:5px 0">'+escapeHTML(it.category)+' · '+escapeHTML(it.description)+'</div><button data-buy="'+it.id+'">Acheter avec l’argent du jeu</button></div></div>';}).join('');
  content.innerHTML='<button id="phoneBack">← Applications</button><h3>🛍️ Boutique ABJ</h3><p>Portefeuille : <b>'+Math.floor(lifeState.money).toLocaleString('fr-FR')+' FCFA</b></p><p style="font-size:11px;color:#c6d8e5">Catalogue de simulation. Les achats sont débités du portefeuille du jeu et ajoutés à ton sac.</p><button id="openInventory">🎒 Voir mon sac ('+Object.values(lifeState.inventory||{}).reduce((a,n)=>a+n,0)+')</button>'+cards+'<p id="shopStatus" style="font-size:12px;color:#ffe0a0"></p>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
  document.getElementById('openInventory').onclick=()=>renderInventoryApp();
@@ -5467,16 +5441,10 @@ function renderCheatApp(){
 
 function renderCreatorOffersApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
- const creator=!!(activeGameAccount&&(isCreatorAccount(activeGameAccount)||getCreatorTier()!=='none'));
- const plans=[
-  {code:'Z',name:'Z · Mensuel',detail:'Badge Z, bonus mensuel de monnaie de jeu, tenues exclusives et récompenses quotidiennes.'},
-  {code:'S',name:'S · Mensuel',detail:'Tous les avantages Z, bonus mensuel renforcé, objets rares et réductions dans les boutiques du jeu.'},
-  {code:'SZ',name:'SZ · Mensuel',detail:'Tous les avantages S, véhicule exclusif, décoration premium et accès aux événements VIP.'},
-  {code:'ZS',name:'ZS · Mensuel',detail:'Tous les avantages SZ, objets de collection légendaires, bonus supérieur et avantages de créateur.'}
- ];
- content.innerHTML='<button id="phoneBack">← Applications</button><h3>✨ Abonnements et offres spéciales</h3>'+(creator?'<p style="font-size:12px;color:#c6d8e5">Abonnements mensuels réservés aux comptes créateur déjà autorisés. Les bonus définitifs et les tarifs seront affichés avant tout paiement.</p>'+plans.map(o=>'<article style="padding:13px;margin:10px 0;border:1px solid #e9c77b66;border-radius:13px;background:linear-gradient(135deg,#ffffff12,#ffffff05)"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+o.name+'</b><b style="color:#ffe0a0">30 jours</b></div><p style="font-size:12px;color:#d2e0e8">'+o.detail+'</p><small style="color:#ffe0a0">Tarif et quantités des bonus à confirmer</small><button disabled style="opacity:.55;cursor:not-allowed;width:100%;margin-top:8px">Service indisponible pour le moment</button></article>').join('')+'<div style="padding:12px;border:1px solid #ffffff25;border-radius:12px"><b>Comptes administrateur</b><p style="font-size:12px;color:#c6d8e5">Les droits administrateur restent attribués manuellement par AF GAMER. Aucun abonnement ni achat ne peut donner les pouvoirs d’administration.</p></div><p style="font-size:11px;color:#ffdf9a">Aucun paiement réel n’est actif pour le moment. Les boutons resteront désactivés tant que le compte Wave Business, les tarifs et la confirmation serveur des paiements ne sont pas configurés.</p>':'<p>Les offres Creator sont réservées aux comptes créateur déjà autorisés. Le statut créateur et les droits administrateur ne peuvent pas être achetés.</p>');
+ content.innerHTML='<button id="phoneBack">← Applications</button><h3>✨ Abonnements et offres spéciales</h3><section style="padding:18px;margin:12px 0;border:1px solid #e9c77b66;border-radius:13px;background:linear-gradient(135deg,#ffffff12,#ffffff05);text-align:center"><div style="font-size:30px">🔒</div><b style="font-size:16px;color:#ffe0a0">Abonnements indisponibles pour le moment</b><p style="font-size:12px;color:#d2e0e8">Les abonnements seront proposés lorsque le jeu sera terminé. Aucun paiement ni souscription ne peut être effectué actuellement.</p></section>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
 }
+
 function openPhoneApp(app){
   const apps=document.getElementById('phoneApps'),content=document.getElementById('phoneAppContent');
   const shell=document.getElementById('phoneHomeShell');
@@ -8023,7 +7991,7 @@ const ABJ_MYV_CATALOG=[
  {id:'myv-pickup',brand:'Savanes',model:'Pickup 4x2',year:2023,type:'voiture',price:4200000,description:'Utilitaire pour les déplacements',docs:['Carte grise','Assurance simulée','Facture d’achat']},
  {id:'myv-moto',brand:'Lagune Moto',model:'City 125',year:2025,type:'moto',price:450000,description:'Moto légère pour la ville',docs:['Carte grise','Assurance simulée','Facture d’achat']}
 ];
-function abjChargeForApp(amount,label){amount=Math.max(0,Math.floor(Number(amount)||0));if(abjWaveInstalled()){if((lifeState.waveBalance||0)<amount)return false;lifeState.waveBalance-=amount;}else{if(lifeState.money<amount)return false;lifeState.money-=amount;}return true;}
+function abjChargeForApp(amount,label){amount=Math.max(0,Math.floor(Number(amount)||0));const primary=abjWaveInstalled()?'waveBalance':'money';if((Number(lifeState[primary])||0)>=amount){lifeState[primary]-=amount;return true;}if((Number(lifeState.bankBalance)||0)>=amount){lifeState.bankBalance-=amount;return true;}return false;}
 function abjWaveInstalled(){try{return !!JSON.parse(safeGet('abj-installed-apps:'+normalizeIvorianMobile(activeGameAccount))||'{}').wave;}catch(e){return false;}}
 function abjCashMethodLabel(){return abjWaveInstalled()?'Payer avec WaveABJ (solde du jeu)':'Payer en espèces (FCFA)';}
 function renderMyVApp(){
