@@ -476,7 +476,7 @@ const SIDEWALK = 4;
 const ROAD_HALF = ROAD_W / 2;
 const ROAD_SAFE = ROAD_HALF + SIDEWALK + 1.5;
 const ABIDJAN_ORIGIN = { lat: 5.315, lon: -4.015 };
-const ABIDJAN_BBOX = { south: 5.21, west: -4.17, north: 5.52, east: -3.87 }; // emprise cohérente avec les 13 communes du District autonome d'Abidjan
+const ABIDJAN_BBOX = { south: 5.08, west: -4.17, north: 5.52, east: -3.87 }; // emprise cohérente avec les 13 communes du District autonome d'Abidjan
 // Relief doux : Abidjan est globalement peu accidentée, on conserve des pentes urbaines faibles.
 function terrainHeight(x,z){
   return 0.85*Math.sin(x/2100)*Math.cos(z/2600) + 0.62*Math.sin((x+z)/1450) + 0.28*Math.cos((x-z)/720);
@@ -1742,7 +1742,7 @@ function buildPlayableUrbanCore(){
   const sidewalkMat=new THREE.MeshLambertMaterial({color:0xb8b2a5});
   const markingMat=new THREE.MeshLambertMaterial({color:0xe9dfbd});
   const roadV=[],roadI=[],walkV=[],walkI=[],markV=[],markI=[];
-  function quad(v,idx,a,b,c,d,y){const k=v.length/3,lift=Math.max(Number(y)||0,.48);[a,b,c,d].forEach(q=>v.push(q.x,terrainHeight(q.x,q.z)+lift,q.z));idx.push(k,k+1,k+2,k,k+2,k+3);}
+  function quad(v,idx,a,b,c,d,y){const k=v.length/3,lift=Math.max(0.025,Number(y)||0.035);[a,b,c,d].forEach(q=>v.push(q.x,terrainHeight(q.x,q.z)+lift,q.z));idx.push(k,k+1,k+2,k,k+2,k+3);}
   function strip(a,b,width,v,idx,y){const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz)||1,nx=-dz/len*width/2,nz=dx/len*width/2;quad(v,idx,{x:a.x+nx,z:a.z+nz},{x:b.x+nx,z:b.z+nz},{x:b.x-nx,z:b.z-nz},{x:a.x-nx,z:a.z-nz},y);}
   // Avenues, rues secondaires et rues transversales clairement visibles.
   const roads=[];
@@ -1905,7 +1905,7 @@ async function abjWriteOSMCache(data){
 
 async function loadAbidjanOSM() {
   const b = ABIDJAN_BBOX;
-  const query = `[out:json][timeout:90];(way[highway](${b.south},${b.west},${b.north},${b.east});way[building](${b.south},${b.west},${b.north},${b.east});way[natural=water](${b.south},${b.west},${b.north},${b.east});way[leisure=park](${b.south},${b.west},${b.north},${b.east});node[shop](${b.south},${b.west},${b.north},${b.east});node[amenity](${b.south},${b.west},${b.north},${b.east});node[office](${b.south},${b.west},${b.north},${b.east});node[tourism](${b.south},${b.west},${b.north},${b.east});node[public_transport](${b.south},${b.west},${b.north},${b.east});node[highway=bus_stop](${b.south},${b.west},${b.north},${b.east});relation[route=bus](${b.south},${b.west},${b.north},${b.east}););out body;>;out skel qt;`;
+  const query = `[out:json][timeout:90];(way[highway](${b.south},${b.west},${b.north},${b.east});way[building](${b.south},${b.west},${b.north},${b.east});way[natural=water](${b.south},${b.west},${b.north},${b.east});way[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});way[leisure=park](${b.south},${b.west},${b.north},${b.east});node[shop](${b.south},${b.west},${b.north},${b.east});node[amenity](${b.south},${b.west},${b.north},${b.east});node[office](${b.south},${b.west},${b.north},${b.east});node[tourism](${b.south},${b.west},${b.north},${b.east});node[public_transport](${b.south},${b.west},${b.north},${b.east});node[highway=bus_stop](${b.south},${b.west},${b.north},${b.east});relation[route=bus](${b.south},${b.west},${b.north},${b.east}););out body;>;out skel qt;`;
   let data = null;
   let loadedFromCache = false;
   // Une copie locale récente évite de retélécharger toute la carte des 13 communes à chaque connexion.
@@ -1937,7 +1937,7 @@ async function loadAbidjanOSM() {
   const ways = data.elements.filter(e => e.type === 'way');
   const roadWays = ways.filter(w => w.tags && w.tags.highway);
   const buildingWays = ways.filter(w => w.tags && w.tags.building);
-  const waterWays = ways.filter(w => w.tags && (w.tags.natural === 'water' || w.tags.leisure === 'park'));
+  const waterWays = ways.filter(w => w.tags && (w.tags.natural === 'water' || w.tags.waterway === 'riverbank' || w.tags.leisure === 'park'));
   buildOSMTransitRoutes(data.elements.filter(e=>e.type==='relation'&&e.tags&&e.tags.route==='bus'),ways,nodes);
   buildOSMRoads(roadWays, nodes);
   buildTrafficGraph();
@@ -2636,9 +2636,9 @@ function buildOSMWaterAndParks(ways,nodes) {
     const pos=geo.attributes.position;
     for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i);pos.setY(i,terrainHeight(x,z)-.045);}
     pos.needsUpdate=true;geo.computeVertexNormals();
-    const isWater=w.tags.natural==='water';
+    const isWater=w.tags.natural==='water'||w.tags.waterway==='riverbank';
     const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:isWater?0x4a9ab1:0x71865b,side:THREE.DoubleSide}));
-    mesh.renderOrder=-1;mesh.receiveShadow=true;mesh.name=isWater?'osm-water-surface':'osm-park-ground';scene.add(mesh);
+    mesh.renderOrder=-1;mesh.receiveShadow=true;mesh.name=isWater?'osm-water-surface':'osm-park-ground';scene.add(mesh);if(isWater){window.ABJ_WATER_POLYGONS=window.ABJ_WATER_POLYGONS||[];window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));}
   });
 }
 
@@ -5324,6 +5324,12 @@ function renderEmploymentApp(){
 function renderPhoneGamesApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
  const catalog=[
+  ['appels','📞','Appels','Appeler les joueurs connectés et recevoir leurs appels.'],
+  ['contacts','👥','Contacts','Carnet des joueurs rencontrés et des joueurs connectés.'],
+  ['messages','💬','Messages','Échanger des messages avec les joueurs.'],
+  ['offrescreateur','🎁','Offres spéciales','Découvrir les offres et avantages spéciaux.'],
+  ['cheats','⌨️','Codes','Saisir les codes de jeu autorisés.'],
+  ['recompenses','🏆','Récompenses','Consulter les récompenses du compte créateur.'],
   ['camera','📷','Caméra','Prendre des photos et enregistrer des vidéos.'],
   ['gallery','🖼️','Galerie','Retrouver les photos prises dans le jeu.'],
   ['messages','💬','Messages','Échanger avec les autres habitants.'],
@@ -7483,7 +7489,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
   if(socket.volatile)socket.volatile.emit('player:update',payload);else socket.emit('player:update',payload);
  },50);
  const oldActivate=activateGameAccount;
- activateGameAccount=function(phone){oldActivate(phone);setTimeout(connectOnline,700);};
+ activateGameAccount=async function(phone){await oldActivate(phone);setTimeout(connectOnline,350);};
  window.ABJ_CONNECT_ONLINE=connectOnline;
  window.ABJ_CHECK_UPDATE=checkUpdate;
  checkUpdate();setInterval(checkUpdate,60000);window.addEventListener('focus',checkUpdate);
@@ -7510,10 +7516,11 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
   if(!coreApps.has(app)&&!isDownloadedApp(app)){showMessage('Télécharge d’abord cette application dans Apps Jeux.');return;}
   return window.__ABJ_ORIGINAL_OPEN_PHONE_APP(app==='appstore'?'jeux':app);
  };
- const downloadedAppMeta={yango:{name:'Yango',emoji:'🚕'},achats:{name:'Achats & livraisons',emoji:'🛍️'},finances:{name:'Finances',emoji:'💳'},communication:{name:'Communication',emoji:'💬'},medias:{name:'Médias',emoji:'📸'},viepratique:{name:'Vie pratique',emoji:'🏙️'},monsuccess:{name:'Mon Success',emoji:'🏆'},immoabj:{name:'Immo ABJ',emoji:'🏘️'},proemploi:{name:'Pro Emploi',emoji:'🧰'},inventaire:{name:'Inventaire',emoji:'🎒'},afgamer:{name:'AF GAMER CI',emoji:'🎮'},google:{name:'Recherche',emoji:'🔎'}};
+ const downloadedAppMeta={contacts:{name:'Contacts',emoji:'👥'},messages:{name:'Messages',emoji:'💬'},appels:{name:'Appels',emoji:'📞'},offrescreateur:{name:'Offres spéciales',emoji:'🎁'},cheats:{name:'Codes',emoji:'⌨️'},recompenses:{name:'Récompenses',emoji:'🏆'},yango:{name:'Yango',emoji:'🚕'},achats:{name:'Achats & livraisons',emoji:'🛍️'},finances:{name:'Finances',emoji:'💳'},communication:{name:'Communication',emoji:'💬'},medias:{name:'Médias',emoji:'📸'},viepratique:{name:'Vie pratique',emoji:'🏙️'},monsuccess:{name:'Mon Success',emoji:'🏆'},immoabj:{name:'Immo ABJ',emoji:'🏘️'},proemploi:{name:'Pro Emploi',emoji:'🧰'},inventaire:{name:'Inventaire',emoji:'🎒'},afgamer:{name:'AF GAMER CI',emoji:'🎮'},google:{name:'Recherche',emoji:'🔎'}};
  function restoreDownloadedPhoneApps(){const host=document.getElementById('phoneApps');if(!host)return;const ids=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];ids.forEach(id=>{const a=downloadedAppMeta[id];if(!a||host.querySelector('[data-app="'+id+'"]'))return;let target=host.querySelector('.phoneAppsPage:last-child');if(!target||target.querySelectorAll('.phoneApp').length>=9){target=document.createElement('div');target.className='phoneAppsPage';host.appendChild(target);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+a.emoji+'</span>'+a.name;b.addEventListener('click',()=>openPhoneApp(id));target.appendChild(b);});}
  const activateBeforePhoneRestore=activateGameAccount;
- activateGameAccount=function(phone){activateBeforePhoneRestore(phone);setTimeout(restoreDownloadedPhoneApps,250);};
+ activateGameAccount=async function(phone){await activateBeforePhoneRestore(phone);if(lifeState){lifeState.v19=lifeState.v19||{};lifeState.v19.installedApps=Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];['contacts','messages','appels'].forEach(id=>{if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);});if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('recompenses'))lifeState.v19.installedApps.push('recompenses');saveLifeProgress(false);}setTimeout(()=>{restoreDownloadedPhoneApps();window.ABJ_CONNECT_ONLINE&&window.ABJ_CONNECT_ONLINE();},350);};
+ window.ABJ_RESTORE_PHONE_APPS=restoreDownloadedPhoneApps;
  const countBtn=document.createElement('button');countBtn.id='abjOnlineCount';countBtn.type='button';countBtn.innerHTML='👥 <b id="abjOnlineNumber">0</b>';
  countBtn.style.cssText='display:none;position:relative;z-index:2;margin-left:auto;padding:6px 9px;border:1px solid #f0d18d;border-radius:18px;background:#081827;color:#fff;font:700 12px system-ui;cursor:pointer;box-shadow:0 2px 8px #0008';
  const panel=document.createElement('div');panel.id='abjOnlinePanel';panel.style.cssText='display:none;position:absolute;top:42px;right:8px;z-index:90;min-width:190px;padding:13px;border:1px solid #f0d18d;border-radius:12px;background:#081827f2;color:white;font:13px system-ui;box-shadow:0 8px 28px #0009';
