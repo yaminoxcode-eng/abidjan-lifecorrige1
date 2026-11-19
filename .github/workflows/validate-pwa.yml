@@ -1,0 +1,18 @@
+name: Validate Abidjan Life PWA
+on:
+  push:
+    branches:
+      - ui/babylife-inspired-mobile-refresh
+  pull_request:
+    branches:
+      - main
+jobs:
+  pwa-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validate installable app and service worker
+        run: node client/tests/pwa-check.cjs
