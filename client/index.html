@@ -8632,3 +8632,97 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  if(back)back.addEventListener('click',()=>{step=0;section.style.display='none';if(layout)layout.style.display='';start.textContent='Continuer';});
 })();
 </script>
+
+<script>
+/* AF GAMER CI — accueil saisonnier et hélicoptère du créateur partagé */
+(function(){
+ const seasonalStyle=document.createElement('style');
+ seasonalStyle.textContent=`
+ #abjSeasonWelcome{position:fixed;inset:0;z-index:100000;background:radial-gradient(ellipse at 50% 15%,#315b58,#101e2d 65%,#080e18);display:grid;place-items:center;color:#fff;text-align:center;font-family:system-ui;overflow:hidden}
+ #abjSeasonWelcome:before{content:"";position:absolute;inset:0;background-image:radial-gradient(2px 2px at 15% 22%,#fff 50%,transparent 60%),radial-gradient(2px 2px at 70% 18%,#fff 50%,transparent 60%),radial-gradient(2px 2px at 88% 72%,#fff 50%,transparent 60%),radial-gradient(1px 1px at 35% 80%,#fff 50%,transparent 60%);background-size:180px 150px;opacity:.5;animation:abjSnow 12s linear infinite}
+ #abjSeasonWelcome .seasonCard{position:relative;z-index:1;width:min(90vw,620px);padding:36px 24px;border:1px solid #e5c87a77;border-radius:24px;background:#0c1927cc;box-shadow:0 20px 90px #0009}
+ #abjSeasonWelcome h1{font:900 clamp(34px,7vw,64px) Georgia,serif;color:#ffe4a0;margin:12px 0}
+ #abjSeasonWelcome button{margin-top:22px;border:0;border-radius:30px;padding:13px 30px;background:linear-gradient(90deg,#d4a94e,#f4df9d);font-weight:900;color:#1c2830}
+ @keyframes abjSnow{to{background-position:0 300px,0 220px,0 400px,0 280px}}
+ `;
+ document.head.appendChild(seasonalStyle);
+ function seasonal(){
+  const now=new Date(),month=now.getMonth(),day=now.getDate();
+  const active=(month===10&&day>=19)||(month===11&&day<=25);
+  if(!active||sessionStorage.getItem('abjSeasonSeen')===now.toDateString())return;
+  const christmas=month===11&&day===25;
+  const el=document.createElement('div');el.id='abjSeasonWelcome';
+  el.innerHTML='<div class="seasonCard"><div style="font-size:58px">'+(christmas?'🎄✨':'🎁❄️')+'</div><div style="letter-spacing:.28em;font-size:11px;color:#c9d8df">AF GAMER CI PRÉSENTE</div><h1>'+(christmas?'Joyeux Noël !':'La magie des fêtes arrive à Abidjan')+'</h1><p>'+(christmas?'Toute l’équipe AF GAMER CI te souhaite un merveilleux Noël.':'Chaque jour, une nouvelle ambiance des fêtes accompagne ton arrivée dans Abidjan Life.')+'</p><div style="color:#d8cda9;font-size:12px">'+now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+'</div><button id="abjSeasonEnter">ENTRER DANS ABIDJAN LIFE</button></div>';
+  document.body.appendChild(el);document.getElementById('abjSeasonEnter').onclick=()=>{sessionStorage.setItem('abjSeasonSeen',now.toDateString());el.remove();};
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',seasonal);else seasonal();
+
+ let creatorHeli=null,remoteHelis=new Map(),heliRotor=0,heliLastSend=0,heliActive=false;
+ function makeHeli(){
+  if(!window.THREE)return null;
+  const T=THREE,g=new T.Group();
+  const body=new T.Mesh(new T.CapsuleGeometry(.38,.95,4,10),new T.MeshStandardMaterial({color:0x243b42,metalness:.55,roughness:.38}));body.rotation.z=Math.PI/2;g.add(body);
+  const cabin=new T.Mesh(new T.SphereGeometry(.43,14,10),new T.MeshStandardMaterial({color:0x8ec5d8,transparent:true,opacity:.55,metalness:.25,roughness:.18}));cabin.scale.set(1.05,.8,.9);cabin.position.set(.05,.18,0);g.add(cabin);
+  const tail=new T.Mesh(new T.BoxGeometry(1.8,.09,.12),new T.MeshStandardMaterial({color:0x25353a,metalness:.5}));tail.position.x=-1.05;g.add(tail);
+  const fin=new T.Mesh(new T.BoxGeometry(.25,.42,.08),new T.MeshStandardMaterial({color:0xc49b47}));fin.position.set(-1.78,.2,0);g.add(fin);
+  const mast=new T.Mesh(new T.CylinderGeometry(.035,.035,.25,8),new T.MeshStandardMaterial({color:0xc5a45a}));mast.position.y=.58;g.add(mast);
+  const rotor=new T.Group();rotor.position.y=.72;g.add(rotor);
+  for(let i=0;i<4;i++){const blade=new T.Mesh(new T.BoxGeometry(2.15,.025,.13),new T.MeshStandardMaterial({color:0x1c252a,metalness:.4}));blade.rotation.y=i*Math.PI/2;rotor.add(blade);}
+  const tailRotor=new T.Group();tailRotor.position.set(-1.9,.22,0);g.add(tailRotor);
+  for(let i=0;i<3;i++){const b=new T.Mesh(new T.BoxGeometry(.42,.025,.055),new T.MeshStandardMaterial({color:0xc8b16d}));b.rotation.z=i*Math.PI/3;tailRotor.add(b);}
+  const skidMat=new T.MeshStandardMaterial({color:0x202b30,metalness:.5});
+  for(const z of [-.34,.34]){const skid=new T.Mesh(new T.CylinderGeometry(.035,.035,1.8,8),skidMat);skid.rotation.z=Math.PI/2;skid.position.set(0,-.45,z);g.add(skid);}
+  g.userData.rotor=rotor;g.userData.tailRotor=tailRotor;return g;
+ }
+ function addHeliToScene(data){
+  if(!window.scene||!window.THREE)return;
+  let h=remoteHelis.get(data.owner);if(!h){h=makeHeli();if(!h)return;scene.add(h);remoteHelis.set(data.owner,h);}
+  const p=data.position;h.position.set(p.x,p.y,p.z);h.rotation.y=p.yaw||0;h.userData.rotor.rotation.y=data.rotor||0;h.userData.tailRotor.rotation.x=(data.rotor||0)*2;
+  h.userData.target={x:p.x,y:p.y,z:p.z,yaw:p.yaw||0};
+ }
+ function stopRemoteHeli(data){const h=remoteHelis.get(data.owner);if(h&&window.scene)scene.remove(h);remoteHelis.delete(data.owner);}
+ function startCreatorHeli(){
+  if(!creatorRoleVerified||!isCreatorAccount(activeGameAccount)||!window.scene||!window.player){showMessage('Hélicoptère réservé au compte créateur connecté.');return;}
+  if(creatorHeli){stopCreatorHeli();return;}
+  creatorHeli=makeHeli();if(!creatorHeli)return;
+  scene.add(creatorHeli);heliActive=true;showMessage('🚁 Hélicoptère créateur activé. ZQSD pour piloter, E pour monter/descendre, Échap pour atterrir.');
+ }
+ function stopCreatorHeli(){
+  if(creatorHeli&&window.scene)scene.remove(creatorHeli);creatorHeli=null;heliActive=false;
+  if(window.socket?.connected)socket.emit('creator:helicopter:stop');
+ }
+ window.addEventListener('keydown',e=>{
+  if(!heliActive||!creatorHeli)return;
+  if(e.key==='Escape'){stopCreatorHeli();return;}
+  const step=e.shiftKey?1.8:.8;
+  const yaw=creatorHeli.rotation.y;
+  if(e.key.toLowerCase()==='z'||e.key==='ArrowUp'){creatorHeli.position.x-=Math.sin(yaw)*step;creatorHeli.position.z-=Math.cos(yaw)*step;}
+  if(e.key.toLowerCase()==='s'||e.key==='ArrowDown'){creatorHeli.position.x+=Math.sin(yaw)*step;creatorHeli.position.z+=Math.cos(yaw)*step;}
+  if(e.key.toLowerCase()==='q'||e.key==='ArrowLeft')creatorHeli.rotation.y+=.06;
+  if(e.key.toLowerCase()==='d'||e.key==='ArrowRight')creatorHeli.rotation.y-=.06;
+  if(e.key.toLowerCase()==='e')creatorHeli.position.y=Math.min(150,creatorHeli.position.y+1);
+  if(e.key.toLowerCase()==='c')creatorHeli.position.y=Math.max(terrainHeight(creatorHeli.position.x,creatorHeli.position.z)+3,creatorHeli.position.y-1);
+ },true);
+ function tickHeli(){
+  requestAnimationFrame(tickHeli);
+  if(creatorHeli&&heliActive){
+   heliRotor+=.38;creatorHeli.userData.rotor.rotation.y=heliRotor;creatorHeli.userData.tailRotor.rotation.x=heliRotor*2;
+   if(window.player){const p=player.position;creatorHeli.position.y=Math.max(creatorHeli.position.y,terrainHeight(creatorHeli.position.x,creatorHeli.position.z)+4);}
+   if(window.socket?.connected&&Date.now()-heliLastSend>80){heliLastSend=Date.now();socket.emit('creator:helicopter',{position:{x:creatorHeli.position.x,y:creatorHeli.position.y,z:creatorHeli.position.z,yaw:creatorHeli.rotation.y},rotor:heliRotor});}
+  }
+  for(const h of remoteHelis.values()){if(h.userData.rotor){h.userData.rotor.rotation.y+=.38;h.userData.tailRotor.rotation.x+=.76;}}
+ }
+ tickHeli();
+ window.addEventListener('creator:helicopter',e=>addHeliToScene(e.detail));
+ window.addEventListener('creator:helicopter:stop',e=>stopRemoteHeli(e.detail));
+ const origOpen=window.openPhoneApp;
+ if(typeof origOpen==='function'&&!window.__abjHeliAppWrapped){
+  window.__abjHeliAppWrapped=true;
+  window.openPhoneApp=function(app){
+   if(app==='helicoptere'){if(!creatorRoleVerified){showMessage('Réservé au compte créateur.');return;}origOpen('home');startCreatorHeli();return;}
+   return origOpen.apply(this,arguments);
+  };
+ }
+ const socketReady=setInterval(()=>{if(window.socket&&window.socket.on&&!window.__abjHeliSocketBound){window.__abjHeliSocketBound=true;socket.on('creator:helicopter',d=>window.dispatchEvent(new CustomEvent('creator:helicopter',{detail:d})));socket.on('creator:helicopter:stop',d=>window.dispatchEvent(new CustomEvent('creator:helicopter:stop',{detail:d})));}},1000);
+})();
+</script>
