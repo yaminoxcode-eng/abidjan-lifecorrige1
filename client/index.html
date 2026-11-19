@@ -2435,9 +2435,9 @@ function openCreatorAssistantPanel(){
  if(history.length)log.innerHTML=history.slice(-10).map(m=>'<p><b>'+(m.role==='assistant'?'Assistant':'Créateur')+':</b> '+escapeHTML(m.content)+'</p>').join('');
  p.querySelector('#creatorAssistantForm').onsubmit=async e=>{
   e.preventDefault();const input=p.querySelector('#creatorAssistantInput'),q=input.value.trim();if(!q)return;input.value='';
-  history.push({role:'user',content:q});log.innerHTML+='<p><b>Créateur :</b> '+escapeHTML(q)+'</p><p>Assistant : recherche et réflexion…</p>';
+  const priorHistory=history.slice(-8);history.push({role:'user',content:q});log.innerHTML+='<p><b>Créateur :</b> '+escapeHTML(q)+'</p><p>Assistant : recherche et réflexion…</p>';
   try{
-   const r=await fetch(creatorApi()+'/api/game/assistant',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({message:q,history:history.slice(-8)})});
+   const r=await fetch(creatorApi()+'/api/game/assistant',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},body:JSON.stringify({message:q,history:priorHistory})});
    const d=await r.json();if(!r.ok)throw new Error(d.error||'Service IA indisponible');
    const answer=String(d.answer||'Pas de réponse.');history.push({role:'assistant',content:answer});history=history.slice(-16);safeSet(memoryKey,JSON.stringify(history));
    log.innerHTML+='<p><b>Assistant :</b> '+escapeHTML(answer)+'</p>';
