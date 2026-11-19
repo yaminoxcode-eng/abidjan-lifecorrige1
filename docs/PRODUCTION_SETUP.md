@@ -18,11 +18,11 @@ Le schéma crée les tables `game_accounts`, `creator_reports`, `afgamer_inbox` 
 ## 3. Assistant IA
 Ajoute `OPENAI_API_KEY` dans Render. Le modèle configuré par défaut est dans `OPENAI_MODEL`. Mets une limite de dépenses et surveille l'utilisation du compte API. Sans clé, l'assistant répond en mode local limité.
 
-## 4. E-mails
-Ajoute `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`. L'inscription publique envoie maintenant un code à 6 chiffres (expiration 10 minutes, maximum 5 essais) et ne crée le compte qu'après validation du code. La récupération du mot de passe par e-mail utilise aussi SMTP. Sans SMTP, l'inscription et la récupération par e-mail répondent volontairement « service indisponible ». Les demandes de codes d'inscription sont conservées en mémoire : un redémarrage du serveur invalide les codes en attente. Le compte n'est créé qu'après sauvegarde Supabase réussie.
+## 4. Comptes et récupération
+La création de compte se fait directement avec le numéro de téléphone et le mot de passe. L'adresse e-mail est facultative et sert uniquement à la récupération du mot de passe. SMTP Brevo n'est donc pas nécessaire pour créer un compte ; il reste facultatif pour la récupération par e-mail. Les mots de passe restent hachés côté serveur.
 
-## 5. Paiements et abonnements
-Wave n'est pas connecté au code actuel. Aucun bouton ne doit annoncer un achat réel comme réussi. Avant activation : compte marchand Wave Business, accès API officiel, création d'une commande côté serveur, vérification cryptographique du webhook, identifiant de transaction unique/idempotent, journal de transactions, remboursements et tests sandbox. Les gemmes sont une monnaie virtuelle : 1 gemme = 1 000 000 FCFA dans le jeu uniquement. Le tarif utilisateur communiqué est 5 gemmes pour 500 FCFA réels. Aucune conversion gemmes-vers-argent réel.
+## 5. Économie du jeu — sans monétisation réelle
+Tous les achats disponibles dans le jeu utilisent exclusivement la monnaie virtuelle du joueur. Les gemmes peuvent être converties en monnaie virtuelle depuis l'application Récompenses. Aucun achat en argent réel, paiement Wave réel, carte bancaire, crédit de gemmes payant ou conversion en argent réel n'est actif. Les abonnements affichent uniquement « Abonnements indisponibles pour le moment ». La valeur des gemmes reste strictement virtuelle : 1 gemme = 1 000 000 FCFA de monnaie du jeu, sans valeur ni conversion en francs CFA réels.
 
 ## 6. Déploiement
 Après les secrets et la migration : vérifier les tests GitHub Actions, relire la PR, puis fusionner. Render déploiera automatiquement `main`. Contrôler ensuite `/health`, inscription, connexion, sauvegarde, multijoueur et récupération e-mail. Les paiements restent désactivés jusqu'à validation Wave.
