@@ -1021,7 +1021,8 @@ document.getElementById('accountForgot').addEventListener('click',openRecoverFlo
  document.getElementById('accountSendRecoveryCode').addEventListener('click',async()=>{
    const phone=normalizeIvorianMobile(document.getElementById('accountPhone').value);
    const email=String(document.getElementById('accountRecoverEmail').value||'').trim().toLowerCase();
-   if(!phone||phone!==pendingAccountPhone||!/^\S+@\S+\.\S{2,}$/.test(email)){showAccountStatus('Vérifie le numéro et l’adresse e-mail.',true);return;}
+   const at=email.indexOf('@'),dot=email.lastIndexOf('.');
+   if(!phone||phone!==pendingAccountPhone||at<1||dot<at+2||dot>=email.length-2){showAccountStatus('Vérifie le numéro et l’adresse e-mail.',true);return;}
    const btn=document.getElementById('accountSendRecoveryCode');btn.disabled=true;btn.textContent='Envoi…';
    try{
      const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
