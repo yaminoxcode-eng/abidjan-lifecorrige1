@@ -2061,7 +2061,7 @@ function buildOSMRoads(ways, nodes) {
       let last=null;
       for(const p of raw){if(!last||Math.hypot(p.x-last.x,p.z-last.z)>=18){pedestrianNodes.push(p);last=p;}}
       const pathWidth=tag==='pedestrian'?3.2:tag==='cycleway'?2.2:tag==='steps'?1.9:1.55;
-      for(let j=1;j<raw.length;j++)addWalkQuad(raw[j-1],raw[j],pathWidth,.17);
+      for(let j=1;j<raw.length;j++)addWalkQuad(raw[j-1],raw[j],pathWidth,.025);
       return;
     }
     const width=roadWidths[tag]||4;
@@ -2081,7 +2081,7 @@ function buildOSMRoads(ways, nodes) {
         addWalkQuad(l1,l2,sidewalkWidth,.025);addWalkQuad(r1,r2,sidewalkWidth,.025);
         addStripTo({x:a.x+nx*(width/2+.13),z:a.z+nz*(width/2+.13)},{x:b.x+nx*(width/2+.13),z:b.z+nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
         addStripTo({x:a.x-nx*(width/2+.13),z:a.z-nz*(width/2+.13)},{x:b.x-nx*(width/2+.13),z:b.z-nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
-        if(['primary','secondary','tertiary'].includes(tag)&&len>24){const dash=5,space=13,ux=(b.x-a.x)/len,uz=(b.z-a.z)/len;for(let at=8;at<len-3;at+=space){const p0={x:a.x+ux*at,z:a.z+uz*at},p1={x:a.x+ux*Math.min(len,at+dash),z:a.z+uz*Math.min(len,at+dash)};addStripTo(p0,p1,.16,.205,markVertices,markIndices);}}
+        if(['primary','secondary','tertiary'].includes(tag)&&len>24){const dash=5,space=13,ux=(b.x-a.x)/len,uz=(b.z-a.z)/len;for(let at=8;at<len-3;at+=space){const p0={x:a.x+ux*at,z:a.z+uz*at},p1={x:a.x+ux*Math.min(len,at+dash),z:a.z+uz*Math.min(len,at+dash)};addStripTo(p0,p1,.16,.035,markVertices,markIndices);}}
         pedestrianNodes.push(l1,l2,r1,r2);
       }
       osmRoadSegments.push({a,b,width,type:tag,name:w.tags.name||''});
