@@ -8663,21 +8663,45 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  }
  async function renderRewards(){
   const c=document.getElementById('phoneAppContent');if(!c)return;
-  c.innerHTML='<button id="rewardBack">← Applications</button><div id="abjCreatorRewards"><h3>🎁 Récompenses du créateur</h3><p class="muted">Attribue des gemmes temporaires aux joueurs. Les privilèges de créateur restent réservés à ton compte.</p><div class="rewardPanel"><label>Numéro du compte joueur</label><input id="rewardPhone" placeholder="Numéro ivoirien du joueur" inputmode="tel"><label>Nombre de gemmes</label><input id="rewardGems" type="number" min="1" max="1000000" value="100"><label>Durée de validité (jours)</label><input id="rewardDays" type="number" min="1" max="365" value="7"><label>Message de récompense</label><input id="rewardLabel" maxlength="60" value="Récompense AF GAMER CI"><button id="rewardGrant">Attribuer la récompense</button><p id="rewardStatus" class="muted"></p></div><div class="rewardPanel"><b>Récompenses actives</b><div id="rewardList" class="muted">Chargement…</div></div></div>';
+  c.innerHTML='<button id="rewardBack">← Applications</button><div id="abjCreatorRewards"><h3>🎁 Récompenses AF GAMER</h3><p class="muted">Tu peux offrir aux joueurs des gemmes, de l’argent de jeu, des objets et des bons pour véhicules, propriétés, entreprises ou cadeaux personnalisés.</p><div class="rewardPanel"><label>Numéro du compte joueur</label><input id="rewardPhone" placeholder="Numéro ivoirien du joueur" inputmode="tel"><label>Type de récompense</label><select id="rewardType"><option value="gems">Gemmes</option><option value="cash">Argent de poche (jeu)</option><option value="bank">Virement bancaire (jeu)</option><option value="item">Article / objet</option><option value="vehicle">Bon véhicule</option><option value="property">Bon propriété / terrain</option><option value="business">Bon entreprise</option><option value="custom">Cadeau personnalisé</option></select><label>Quantité (gemmes ou FCFA de jeu)</label><input id="rewardAmount" type="number" min="1" max="1000000000" value="100"><label>Nom ou description du cadeau</label><input id="rewardValue" maxlength="120" placeholder="Ex. moto, villa, parc, article…"><label>Message</label><input id="rewardLabel" maxlength="100" value="Récompense AF GAMER CI"><label>Délai pour récupérer (jours)</label><input id="rewardDays" type="number" min="1" max="365" value="30"><button id="rewardGrant">Envoyer la récompense</button><p id="rewardStatus" class="muted"></p></div><div class="rewardPanel"><b>Récompenses et cadeaux envoyés</b><div id="rewardList" class="muted">Chargement…</div></div></div>';
   document.getElementById('rewardBack').onclick=()=>{c.style.display='none';showPhoneHome();};
   const status=document.getElementById('rewardStatus'),list=document.getElementById('rewardList');
   const headers={'Authorization':'Bearer '+creatorToken(),'Content-Type':'application/json'};
   async function load(){
-   try{const r=await fetch(apiBase()+'/api/creator/rewards',{headers,cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Accès refusé');const active=(d.accounts||[]).flatMap(a=>(a.rewards||[]).map(x=>({name:a.name,phone:a.phone,...x})));list.innerHTML=active.length?active.map(x=>'<p>⭐ '+escapeHTML(x.name)+' · '+escapeHTML(x.phone)+'<br>'+Number(x.gems).toLocaleString('fr-FR')+' gemmes · '+escapeHTML(x.label)+'<br><small>Expire le '+new Date(x.expiresAt).toLocaleDateString('fr-FR')+'</small></p>').join(''):'Aucune récompense active.';}
-   catch(e){list.textContent=e.message;}
+   try{
+    const r=await fetch(apiBase()+'/api/creator/rewards',{headers,cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Accès refusé');
+    const active=(d.accounts||[]).flatMap(a=>[...(a.rewards||[]).map(x=>({name:a.name,phone:a.phone,...x,displayType:'Gemmes'})),...(a.inbox||[]).map(x=>({name:a.name,phone:a.phone,...x,displayType:x.type}))]);
+    list.innerHTML=active.length?active.slice().reverse().map(x=>'<article style="padding:8px;border-bottom:1px solid #ffffff25"><b>'+escapeHTML(x.name)+' · '+escapeHTML(x.displayType)+'</b><div>'+escapeHTML(x.phone)+' · '+escapeHTML(x.label)+'</div><small>'+escapeHTML(String(x.value||''))+' '+(x.gems||x.amount?Number(x.gems||x.amount).toLocaleString('fr-FR'):'')+' · '+escapeHTML(x.status||'actif')+' · Expire '+new Date(x.expiresAt).toLocaleDateString('fr-FR')+'</small></article>').join(''):'Aucune récompense envoyée.';
+   }catch(e){list.textContent=e.message;}
   }
   document.getElementById('rewardGrant').onclick=async()=>{
    status.textContent='Enregistrement…';
-   try{const r=await fetch(apiBase()+'/api/creator/rewards',{method:'POST',headers,body:JSON.stringify({phone:document.getElementById('rewardPhone').value,gems:document.getElementById('rewardGems').value,days:document.getElementById('rewardDays').value,label:document.getElementById('rewardLabel').value})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Attribution impossible');status.textContent='Récompense enregistrée pour '+d.target.name+'.';await load();}
-   catch(e){status.textContent=e.message;}
+   try{
+    const r=await fetch(apiBase()+'/api/creator/rewards',{method:'POST',headers,body:JSON.stringify({phone:document.getElementById('rewardPhone').value,type:document.getElementById('rewardType').value,amount:document.getElementById('rewardAmount').value,value:document.getElementById('rewardValue').value,days:document.getElementById('rewardDays').value,label:document.getElementById('rewardLabel').value})});
+    const d=await r.json();if(!r.ok)throw new Error(d.error||'Attribution impossible');
+    status.textContent='Récompense envoyée à '+d.target.name+'.';await load();
+   }catch(e){status.textContent=e.message;}
   };
   await load();
  }
+ async function renderPlayerRewards(){
+  const c=document.getElementById('phoneAppContent');if(!c)return;
+  c.innerHTML='<button id="rewardBack">← Applications</button><h3>🎁 Mes récompenses</h3><div id="playerRewardBody">Chargement…</div>';
+  document.getElementById('rewardBack').onclick=()=>{c.style.display='none';showPhoneHome();};
+  const body=document.getElementById('playerRewardBody'),token=safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount||''));
+  const base=apiBase();
+  async function load(){
+   const r=await fetch(base+'/api/rewards/me',{headers:{Authorization:'Bearer '+token},cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Impossible de charger tes récompenses.');
+   const gemRows=(d.gemRewards||[]).map(x=>'<article style="padding:10px;margin:7px 0;border:1px solid #b89b55;border-radius:10px"><b>💎 '+Number(x.gems||0).toLocaleString('fr-FR')+' gemmes</b><p>'+escapeHTML(x.label||'Récompense créateur')+'</p><small>Disponibles jusqu’au '+new Date(x.expiresAt).toLocaleDateString('fr-FR')+'</small></article>').join('');
+   const inbox=(d.rewards||[]).map(x=>'<article style="padding:10px;margin:7px 0;border:1px solid #ffffff28;border-radius:10px"><b>'+escapeHTML(x.label||'Cadeau AF GAMER')+'</b><p style="font-size:12px;color:#c6d8e5">'+escapeHTML(x.type)+' · '+escapeHTML(x.value||'')+' '+(x.amount?Number(x.amount).toLocaleString('fr-FR'):'')+'</p><small>'+escapeHTML(x.status||'available')+' · Expire le '+new Date(x.expiresAt).toLocaleDateString('fr-FR')+'</small>'+(x.status==='claimed'?'<p>✓ Récupéré</p>':'<button data-claim="'+escapeHTML(x.id)+'">Récupérer</button>')+'</article>').join('');
+   const vault=(d.vault||[]).map(x=>'<p>✓ '+escapeHTML(x.label)+' · '+escapeHTML(x.type)+' · '+escapeHTML(x.value||'')+'</p>').join('');
+   body.innerHTML='<section style="padding:12px;border:1px solid #9f8a4b;border-radius:12px"><b>💎 Solde : '+Number(d.gems||0).toLocaleString('fr-FR')+' gemmes</b><p style="font-size:12px;color:#c6d8e5">1 gemme = 1 000 000 FCFA de monnaie du jeu, crédités sur ton compte bancaire virtuel. Cette conversion ne donne pas de francs CFA réels.</p><div style="display:flex;gap:7px"><input id="exchangeGemAmount" type="number" min="1" max="100000" value="1" style="min-width:0;flex:1"><button id="exchangeGemButton">Convertir en FCFA de jeu</button></div></section><h4>Gemmes reçues</h4>'+(gemRows||'<p>Aucune gemme temporaire.</p>')+'<h4>Cadeaux à récupérer</h4>'+(inbox||'<p>Aucun cadeau en attente.</p>')+'<h4>Cadeaux déjà reçus</h4>'+(vault||'<p>Aucun cadeau récupéré.</p>');
+   body.querySelectorAll('[data-claim]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const cr=await fetch(base+'/api/rewards/claim',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({id:b.dataset.claim})}),cd=await cr.json();if(!cr.ok)throw new Error(cd.error||'Récupération impossible');if(cd.granted.type==='cash')lifeState.money=(Number(lifeState.money)||0)+Number(cd.granted.amount||0);if(cd.granted.type==='bank')lifeState.bankBalance=(Number(lifeState.bankBalance)||0)+Number(cd.granted.amount||0);saveLifeProgress(false);await load();showMessage('🎁 Récompense récupérée.');}catch(e){showMessage(e.message||'Erreur de récupération.');b.disabled=false;}});
+   const ex=body.querySelector('#exchangeGemButton');if(ex)ex.onclick=async()=>{ex.disabled=true;try{const gems=Number(body.querySelector('#exchangeGemAmount').value);const er=await fetch(base+'/api/rewards/exchange-gems',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({gems})}),ed=await er.json();if(!er.ok)throw new Error(ed.error||'Conversion impossible');lifeState.bankBalance=(Number(lifeState.bankBalance)||0)+Number(ed.gameMoney||0);saveLifeProgress(false);await load();showMessage('💎 Gemmes converties en '+Number(ed.gameMoney||0).toLocaleString('fr-FR')+' FCFA de jeu.');}catch(e){showMessage(e.message||'Conversion impossible.');ex.disabled=false;}};
+  }
+  try{await load();}catch(e){body.textContent=e.message||'Récompenses indisponibles.';}
+ }
+
  const originalActivate=window.activateGameAccount||activateGameAccount;
  if(typeof originalActivate==='function'&&!window.__ABJ_CREATOR_ACCOUNT_WRAPPED){
   window.__ABJ_CREATOR_ACCOUNT_WRAPPED=true;
@@ -8688,10 +8712,9 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   window.__ABJ_CREATOR_APP_WRAPPED=true;
   window.openPhoneApp=function(app){
    if(app==='recompenses'){
-    if(!creatorRoleVerified){showMessage('Accès réservé au compte créateur.');return;}
     openPhone();const home=document.getElementById('phoneHomeShell'),apps=document.getElementById('phoneApps'),content=document.getElementById('phoneAppContent');
     if(home)home.style.display='none';if(apps)apps.style.display='none';if(content)content.style.display='block';
-    renderRewards();return;
+    if(creatorRoleVerified)renderRewards();else renderPlayerRewards();return;
    }
    return originalOpen(app);
   };
