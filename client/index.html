@@ -507,6 +507,8 @@ function createAbidjanTerrain(){
 }
 let osmRoadSegments = [], trafficRoadSegments = [], pedestrianNodes = [], osmLoaded = false, npcPopulationCreated = false;
 let osmTransitRoutes = [], leafletTransitLayer = null, leafletVehicleLayer = null, leafletRouteLayer = null, leafletDynamicTimer = 0;
+window.ABJ_WATER_POLYGONS=window.ABJ_WATER_POLYGONS||[];
+function isPointInAbjWater(x,z){for(const poly of window.ABJ_WATER_POLYGONS){let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if(((a.z>z)!==(b.z>z))&&(x<(b.x-a.x)*(z-a.z)/(b.z-a.z+1e-9)+a.x))inside=!inside;}if(inside)return true;}return false;}
 const OBSTACLE_CELL = 96;
 const obstacleGrid = new Map();
 let jumpQueued = false;
@@ -2638,7 +2640,7 @@ function buildOSMWaterAndParks(ways,nodes) {
     pos.needsUpdate=true;geo.computeVertexNormals();
     const isWater=w.tags.natural==='water'||w.tags.waterway==='riverbank';
     const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:isWater?0x4a9ab1:0x71865b,side:THREE.DoubleSide}));
-    mesh.renderOrder=-1;mesh.receiveShadow=true;mesh.name=isWater?'osm-water-surface':'osm-park-ground';scene.add(mesh);if(isWater){window.ABJ_WATER_POLYGONS=window.ABJ_WATER_POLYGONS||[];window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));}
+    mesh.renderOrder=-1;mesh.receiveShadow=true;mesh.name=isWater?'osm-water-surface':'osm-park-ground';scene.add(mesh);if(isWater){window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));}if(isWater){window.ABJ_WATER_POLYGONS=window.ABJ_WATER_POLYGONS||[];window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));}
   });
 }
 
@@ -4283,12 +4285,15 @@ function updatePlayer(delta) {
     newPos.z=Math.max(minZ,Math.min(maxZ,newPos.z));
   } else {
     const limit=CITY_SIZE/2-8;
+    const safeX=newPos.x,safeZ=newPos.z;
     newPos.x=Math.max(-limit,Math.min(limit,newPos.x+move.x*speed));
     resolveWorldAxis(newPos,'x',.42);
     resolveVehicleAxis(newPos,'x',.42);
+    if(isPointInAbjWater(newPos.x,newPos.z))newPos.x=safeX;
     newPos.z=Math.max(-limit,Math.min(limit,newPos.z+move.z*speed));
     resolveWorldAxis(newPos,'z',.42);
     resolveVehicleAxis(newPos,'z',.42);
+    if(isPointInAbjWater(newPos.x,newPos.z))newPos.z=safeZ;
   }
   player.position.x = newPos.x;
   player.position.z = newPos.z;
@@ -7310,8 +7315,9 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
  const api=()=>window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
  const token=()=>activeGameAccount?safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount)):null;
  let socket=null,lastSend=0,lastFullSync=0,lastNetState=null,remote=new Map();
+ const pendingRemotePlayers=new Map();
  function makeRemoteAvatar(data){
-  if(typeof scene==='undefined'||!scene||!window.THREE||typeof createCharacter!=='function')return null;
+  if(typeof scene==='undefined'||!scene||!window.THREE||typeof createCharacter!=='function'){pendingRemotePlayers.set(data.id,data);return null;}
   const p=data.profile||{};
   const group=createCharacter({gender:p.gender==='femme'?'femme':'homme',skin:Number(p.skin)||0x7a4a24,hair:Number(p.hair)||0x17120f,shirt:Number(p.shirt)||0xe74c3c,pants:Number(p.pants)||0x2c3e50,bodyType:p.bodyType,hairstyle:p.hairstyle,outfit:p.outfit});
   group.userData.onlinePlayerId=data.id;group.userData.isOnlinePlayer=true;group.userData.displayName=p.name||'Citoyen';
@@ -7319,7 +7325,7 @@ window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorr
  }
  function updateRemote(data){
   if(!data||!data.id||!data.position)return;
-  let obj=remote.get(data.id);if(!obj){obj=makeRemoteAvatar(data);if(!obj)return;remote.set(data.id,obj);}
+  let obj=remote.get(data.id);if(!obj){obj=makeRemoteAvatar(data);if(!obj)return;pendingRemotePlayers.delete(data.id);remote.set(data.id,obj);}
   const x=Number(data.position.x)||0,z=Number(data.position.z)||0;
   obj.position.set(x,typeof terrainHeight==='function'?terrainHeight(x,z)+.03:0,z);
   if(Number.isFinite(data.position.yaw))obj.rotation.y=data.position.yaw;
@@ -7366,6 +7372,7 @@ function updateRemoteAvatars(delta){
 }
 window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
 
+ setInterval(()=>{if(typeof scene==='undefined'||!scene||!worldReady)return;pendingRemotePlayers.forEach(updateRemote);},700);
  function removeRemote(id){const obj=remote.get(id);if(obj&&typeof scene!=='undefined'&&scene){if(obj.userData.remoteVehicle)scene.remove(obj.userData.remoteVehicle);scene.remove(obj);}remote.delete(id);}
  function connectOnline(){
   const t=token();if(!t||!window.io||socket?.connected)return;
@@ -7386,6 +7393,8 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    socket.on('connect_error',e=>console.warn('Connexion multijoueur refusée :',e.message));
    socket.on('world:players',list=>(list||[]).forEach(updateRemote));
    socket.on('player:joined',updateRemote);socket.on('player:moved',updateRemote);
+   socket.on('social:message',m=>window.dispatchEvent(new CustomEvent('abj-online-message',{detail:m})));
+   socket.on('social:call',m=>window.dispatchEvent(new CustomEvent('abj-online-call',{detail:m})));
    socket.on('player:left',removeRemote);
    socket.on('players:count',v=>updateOnlineCount(v?.count));
    socket.on('world:host',v=>{window.ABJ_WORLD_HOST=!!v&&v.id===socket.id;});
@@ -7506,7 +7515,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
   const phoneNav=document.getElementById('phonePageDots')?.parentElement;if(phoneNav)phoneNav.style.display='none';
  }
  window.__ABJ_ORIGINAL_OPEN_PHONE_APP=openPhoneApp;
- const coreApps=new Set(['localisation','mobilite','jeux','appstore','parametres']);
+ const coreApps=new Set(['localisation','yango','jeux','appstore','parametres']);
  const isDownloadedApp=(id)=>{
   const saved=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];
   let legacy={};try{legacy=JSON.parse(safeGet('abj-installed-apps:'+normalizeIvorianMobile(activeGameAccount))||'{}')||{};}catch(e){}
