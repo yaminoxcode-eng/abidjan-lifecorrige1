@@ -845,8 +845,8 @@ async function accountContinue(){
     if(emailTaken){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.', true);return;}
     const confirm=document.getElementById('accountPasswordConfirm').value;
     if(pass!==confirm){showAccountStatus('Les deux mots de passe ne correspondent pas.', true);return;}
-    const code=String(document.getElementById('accountRegisterCode').value||'').replace(/\\D/g,'');
-    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+    const code=String(document.getElementById('accountRegisterCode').value||'').replace(/\D/g,'');
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
     let response,data;
     try{
       if(code.length!==6){
