@@ -471,7 +471,6 @@ app.post('/api/auth/register', async (req,res) => {
 });
 
 app.post('/api/auth/migrate-local', async (req, res) => {
-  return res.status(403).json({error:'Migration sécurisée momentanément suspendue : vérifie ton adresse e-mail avant de transférer ton compte. Ta sauvegarde locale reste intacte.'});
   const phone = phoneOf(req.body.phone);
   const password = String(req.body.password || '');
   const legacyHash = String(req.body.legacyPasswordHash || '');
@@ -511,7 +510,7 @@ app.post('/api/auth/migrate-local', async (req, res) => {
     return res.status(400).json({error:'Adresse e-mail invalide.'});
   }
 
-  if ([...accounts.values()].some(a => a.email === email)) {
+  if (email && [...accounts.values()].some(a => a.email === email)) {
     return res.status(409).json({
       error: 'Cette adresse e-mail est déjà utilisée.'
     });
@@ -525,7 +524,7 @@ app.post('/api/auth/migrate-local', async (req, res) => {
 
   const a = {
     phone,
-    email,
+    email: email || null,
     passwordHash: await bcrypt.hash(password, 12),
     security: {},
     profile: {
