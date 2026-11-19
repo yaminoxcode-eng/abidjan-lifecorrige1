@@ -32,4 +32,4 @@ jobs:
           console.log(`Checked ${checked} inline scripts.`);
           NODE
       - name: Validate web app manifest
-        run: node -e "const m=require('./client/manifest.webmanifest'); if(!m.name || !m.icons?.length) process.exit(1)"
+        run: node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('./client/manifest.webmanifest','utf8')); if(!m.name || !m.icons?.length) process.exit(1)"
