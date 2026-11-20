@@ -1601,29 +1601,36 @@ function resolveVehicleCollisions(pos, radius) {
 function generateCity() {
   worldReady = false;
   outdoorGround = createAbidjanTerrain();
-
-  // Les éléments secondaires ne doivent jamais empêcher l'entrée dans le monde.
+  let worldOpened = false;
   const optional = (label, build) => {
     try { return build(); }
-    catch (error) {
-      console.warn('Élément urbain différé ou indisponible (' + label + ') :', error);
-      return null;
-    }
+    catch (error) { console.warn('Élément urbain différé ou indisponible (' + label + ') :', error); return null; }
   };
   const openWorld = (statusText) => {
-    // Le monde devient jouable dès que le terrain et le joueur existent.
-    // Les enrichissements (trafic, éclairage, etc.) continuent ensuite sans bloquer l'entrée.
     worldReady = true;
     const status = document.getElementById('mapStatus');
     if (status && statusText) status.textContent = statusText;
-    optional('position de départ', () => startPlayerAtHome());
-    if (mapOpen) optional('actualisation de la carte', () => drawBigMap());
+    if (!worldOpened) {
+      worldOpened = true;
+      optional('position de départ', () => startPlayerAtHome());
+      if (mapOpen) optional('actualisation de la carte', () => drawBigMap());
+    } else if (mapOpen) optional('actualisation de la carte', () => drawBigMap());
   };
 
-  loadAbidjanOSM().then(() => {
+  // Démarrage immédiat sur un quartier local léger : la grande carte OSM se charge ensuite en arrière-plan.
+  const mapPromise = loadAbidjanOSM();
+  requestAnimationFrame(() => {
+    optional('quartier jouable de démarrage', buildPlayableUrbanCore);
+    if (!npcPopulationCreated) {
+      optional('premiers habitants', () => createNPCs(mobilePerformanceMode ? 80 : 140));
+      npcPopulationCreated = true;
+    }
+    openWorld('Quartier prêt · la carte détaillée d’Abidjan se complète en arrière-plan…');
+  });
+
+  mapPromise.then(() => {
     const status = document.getElementById('mapStatus');
     if (status) status.textContent = osmRoadSegments.length.toLocaleString('fr-FR') + ' segments de routes et rues · ' + allBuildings.length.toLocaleString('fr-FR') + ' bâtiments · ' + poi.length.toLocaleString('fr-FR') + ' commerces et lieux · ' + doors.length + ' maisons accessibles';
-
     optional('arbres des rues', buildMappedStreetTrees);
     optional('siège AF GAMER', createAFGamerHQ);
     optional('auto-écoles', createDrivingSchools);
@@ -1631,24 +1638,14 @@ function generateCity() {
     optional('stations et garages', createFuelStationsAndRepairGarages);
     optional('aéroport', createAbidjanAirport);
     optional('terrains et locations', createLandAndRentalParcels);
-
-    if (!npcPopulationCreated) {
-      optional('population initiale', () => createNPCs(mobilePerformanceMode ? 120 : 240));
-      npcPopulationCreated = true;
-    }
-
-    // Ouvrir le monde avant le trafic : la création des véhicules n'est pas une condition
-    // nécessaire pour jouer et ne doit plus laisser la barre bloquée à 93 %.
-    openWorld((status ? status.textContent : '') + ' · monde jouable');
-
-    const trafficTarget = mobilePerformanceMode ? 80 : 180;
-    let trafficRemaining = trafficTarget;
+    openWorld((status ? status.textContent : 'Ville chargée') + ' · ville enrichie');
+    let trafficRemaining = mobilePerformanceMode ? 60 : 140;
     const addTrafficBatch = () => {
       if (trafficRemaining <= 0) {
         requestAnimationFrame(() => optional('feux et panneaux', buildUrbanTrafficSignals));
         return;
       }
-      const batch = Math.min(20, trafficRemaining);
+      const batch = Math.min(14, trafficRemaining);
       trafficRemaining -= batch;
       optional('lot de circulation', () => createAbidjanTraffic(batch));
       if (trafficRemaining > 0) requestAnimationFrame(addTrafficBatch);
@@ -1656,24 +1653,18 @@ function generateCity() {
     };
     requestAnimationFrame(addTrafficBatch);
   }).catch(err => {
-    console.warn('Données OSM indisponibles, démarrage du quartier de secours :', err);
-    osmRoadSegments.length = 0;
-    trafficRoadSegments.length = 0;
-    trafficGraph.clear();
-
-    // Ce noyau urbain de secours est déjà présent dans le projet mais n'était jamais appelé.
-    // Il permet de jouer même lorsque les serveurs cartographiques sont indisponibles.
-    optional('noyau urbain de secours', buildPlayableUrbanCore);
-    optional('siège AF GAMER', createAFGamerHQ);
-    optional('auto-écoles', createDrivingSchools);
-    optional('dépôts de transport', createTransitDepots);
-    optional('aéroport', createAbidjanAirport);
-    optional('terrains et locations', createLandAndRentalParcels);
-    if (!npcPopulationCreated) {
-      optional('population de secours', () => createNPCs(mobilePerformanceMode ? 80 : 150));
-      npcPopulationCreated = true;
+    console.warn('Données OSM indisponibles, le quartier jouable reste actif :', err);
+    if (!osmLoaded) {
+      osmRoadSegments.length = 0;
+      trafficRoadSegments.length = 0;
+      trafficGraph.clear();
+      optional('siège AF GAMER', createAFGamerHQ);
+      optional('auto-écoles', createDrivingSchools);
+      optional('dépôts de transport', createTransitDepots);
+      optional('aéroport', createAbidjanAirport);
+      optional('terrains et locations', createLandAndRentalParcels);
     }
-    openWorld('Mode de secours actif : ville jouable, certaines données cartographiques seront rechargées plus tard.');
+    openWorld('Quartier jouable · certaines données cartographiques seront rechargées plus tard.');
   });
 }
 
@@ -11444,6 +11435,84 @@ let worldTries=0;const worldTimer=setInterval(()=>{
  if(worldTries>600)clearInterval(worldTimer);
 },1000);
 console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, transports et entreprises.');
+})();
+</script>
+
+
+<script id="abj-v140-interface">
+(function(){
+  if(typeof window.v11ShowLoading==='function') window.v11ShowLoading=function(){};
+  if(!document.getElementById('abj-babylife-inspired-ui-refresh')){
+    const style=document.createElement('style');style.id='abj-babylife-inspired-ui-refresh';
+    style.textContent="\n/* Abidjan Life — interface mobile premium, inspirée des codes de lisibilité des jeux de vie modernes */\n:root{--abj-ink:#172a31;--abj-muted:#60747a;--abj-paper:rgba(250,250,246,.97);--abj-soft:#e8efed;--abj-line:#cbd9d5;--abj-orange:#ed760d;--abj-green:#188454;--abj-shadow:0 22px 65px rgba(4,16,22,.28)}\nbutton,input,select{font:inherit}\n#lifeHud{background:rgba(250,250,246,.94)!important;border:1px solid rgba(255,255,255,.8)!important;border-radius:24px!important;box-shadow:0 8px 28px #06151d38!important;color:var(--abj-ink)!important;text-shadow:none!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}\n#lifeMood{filter:none!important}\n#moneyLabel{color:var(--abj-green)!important;font-weight:900!important}\n#lifeClock{background:rgba(250,250,246,.94)!important;color:var(--abj-ink)!important;border:1px solid #ffffff!important;border-radius:22px!important;box-shadow:0 6px 20px #06151d25!important;text-shadow:none!important;backdrop-filter:blur(14px)}\n#needPanel,#panel,#dialog{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:24px!important;box-shadow:var(--abj-shadow)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}\n#needPanel h3,#panel h2,#dialog .npcName{color:var(--abj-ink)!important}\n#needPanel p,#panel p,#dialog .npcText{color:var(--abj-muted)!important}\n#needPanel .needTrack{background:#dce7e3!important}\n#needPanel .needRow{font-size:13px!important}\n#needPanel button,#panel button,#dialog .choices button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:15px!important;padding:11px 15px!important;font-weight:800!important;min-height:42px}\n#accountOverlay,#creatorOverlay{background:rgba(8,22,28,.62)!important;backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important}\n#accountCard,#creatorCard{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid #fff!important;border-radius:28px!important;box-shadow:var(--abj-shadow)!important;scrollbar-color:#9aaca6 transparent!important}\n#accountCard h2,#creatorCard h2,#creatorCard h3{color:var(--abj-ink)!important}\n#accountCard p,#creatorCard p,#creatorCard .creatorDetail p{color:var(--abj-muted)!important}\n#accountCard label,#creatorCard .creatorColumnLabel{color:#52686d!important}\n#accountCard input,#accountCard select,#creatorCard input,#creatorCard select{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:14px!important;min-height:46px}\n#accountCard button,#creatorCard button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:16px!important;min-height:44px;font-weight:800}\n#accountCard button.primary,#creatorCard .creatorActions #creatorStart{background:var(--abj-orange)!important;color:#fff!important;border-color:var(--abj-orange)!important}\n#accountStatus{color:var(--abj-green)!important}\n#accountActions{background:linear-gradient(180deg,rgba(250,250,246,0),var(--abj-paper) 22%,var(--abj-paper))!important}\n#creatorOptions,#creatorDetail{background:#edf2ef!important;border:1px solid var(--abj-line)!important;border-radius:18px!important}\n#creatorDetail h3{color:var(--abj-ink)!important}\n.creatorOptionBtn{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important}\n.creatorOptionBtn small{color:var(--abj-muted)!important}\n.creatorOptionBtn.active{border-color:var(--abj-orange)!important;background:#fff7ed!important;box-shadow:inset 3px 0 var(--abj-orange)!important}\n.creatorCenter #creatorPreview{border-color:#d6e0dc!important;box-shadow:0 12px 32px #172a311c!important}\n#phone{border:1px solid #fff!important;border-radius:32px!important;background:var(--abj-paper)!important;color:var(--abj-ink)!important;box-shadow:0 26px 80px #0007!important;padding:12px!important}\n#phoneTop{color:var(--abj-ink)!important;border-bottom:1px solid var(--abj-line)!important}\n#phoneClock{color:var(--abj-muted)!important}\n#phoneClose{background:#e8efed!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important}\n#phoneScreen{background:#f2f5f2!important;color:var(--abj-ink)!important;border:1px solid #e0e8e4!important;box-shadow:none!important}\n#phoneScreen h3{color:var(--abj-ink)!important}\n#phoneScreen h3:after{color:#7a8c8d!important}\n.phoneApp{background:#fff!important;color:var(--abj-ink)!important;border:1px solid #dce6e1!important;box-shadow:0 5px 14px #172a3110!important;border-radius:18px!important}\n.phoneApp span{background:#edf2ef!important;box-shadow:none!important}\n.phoneApp:before{display:none}\n.phoneApp[data-app=\"localisation\"]{background:#e8f4f1!important}.phoneApp[data-app=\"transport\"],.phoneApp[data-app=\"yango\"]{background:#fff2df!important}.phoneApp[data-app=\"banque\"]{background:#eaf1fb!important}.phoneApp[data-app=\"wave\"]{background:#e7f7ef!important}.phoneApp[data-app=\"mairie\"],.phoneApp[data-app=\"sante\"]{background:#edf3fa!important}.phoneApp[data-app=\"messages\"],.phoneApp[data-app=\"contacts\"]{background:#f1edfa!important}.phoneApp[data-app=\"camera\"],.phoneApp[data-app=\"gallery\"]{background:#f8edf1!important}\n#phoneAppContent{color:var(--abj-ink)!important}\n#phoneAppContent button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:14px!important;min-height:42px;font-weight:750}\n#phoneHome{background:#28363a!important}\n#phonePageDots span{background:#bdcbc6!important}#phonePageDots span.on{background:var(--abj-orange)!important;box-shadow:0 0 0 3px #ed760d22!important}\n#touchControls button{background:rgba(250,250,246,.9)!important;color:var(--abj-ink)!important;border:1px solid #fff!important;box-shadow:0 5px 18px #0003!important;backdrop-filter:blur(10px)}\n#touchControls button:active,#touchControls button.pressed{background:var(--abj-orange)!important;color:#fff!important}\n#cameraOverlay,#elevatorMenu{background:rgba(8,22,28,.66)!important;backdrop-filter:blur(12px)!important}\n#cameraPhone,#elevatorCard{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid #fff!important;border-radius:28px!important;box-shadow:var(--abj-shadow)!important}\n#cameraPhone button,#elevatorCard button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:14px!important;min-height:42px}\n#elevatorCard h2{color:var(--abj-ink)!important}#elevatorCard p{color:var(--abj-muted)!important}\n#elevatorFloors button{background:#edf2ef!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important}\n#elevatorFloors button.current{background:var(--abj-orange)!important;color:#fff!important}\n#phoneNotification{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:18px!important;box-shadow:var(--abj-shadow)!important}\n#phoneNotificationBody{color:var(--abj-muted)!important}\n@media(max-width:760px){\n #lifeHud{left:8px!important;right:8px!important;max-width:none!important;gap:7px!important;padding:7px 10px!important;border-radius:22px!important}\n #lifeMood{font-size:23px!important}\n #moneyLabel{font-size:11px!important}\n #lifeClock{top:8px!important;right:8px!important;padding:6px 9px!important}\n #needPanel{top:64px!important;max-height:calc(100dvh - 84px)!important;overflow:auto!important;width:calc(100vw - 20px)!important;padding:18px!important}\n #panel{top:62px!important;max-height:calc(100dvh - 80px)!important;overflow:auto!important;width:calc(100vw - 20px)!important;padding:18px!important}\n #dialog{bottom:112px!important;width:calc(100vw - 20px)!important;padding:16px!important}\n #accountCard,#creatorCard{max-height:calc(100dvh - 22px)!important;padding:18px!important;border-radius:25px!important}\n #phone{width:min(390px,calc(100vw - 18px))!important;height:min(720px,calc(100dvh - 18px))!important;border-radius:30px!important}\n #phoneApps .phoneApp{min-height:76px!important}\n #touchControls{padding-left:12px!important;padding-right:12px!important}\n}\n@media(prefers-reduced-motion:reduce){#phone *,#accountCard *,#creatorCard *,#needPanel *{scroll-behavior:auto!important;transition:none!important}}\n";document.head.appendChild(style);
+  }
+  const dock=document.createElement('nav');dock.id='abjQuickDock';dock.setAttribute('aria-label','Raccourcis du jeu');
+  dock.innerHTML=[
+    ['needs','🙂','Besoins','Afficher faim, énergie, santé, hygiène et loisirs'],
+    ['map','🗺️','Carte','Voir Abidjan et choisir une destination'],
+    ['phone','📱','Téléphone','Ouvrir les applications, messages et services'],
+    ['inventory','🎒','Sac','Consulter les objets et équipements'],
+    ['transport','🚕','Transport','Accéder aux taxis et transports'],
+    ['camera','📷','Caméra','Prendre une photo ou enregistrer une vidéo']
+  ].map(x=>'<button type="button" data-quick="'+x[0]+'" title="'+x[3]+'" aria-label="'+x[3]+'"><span>'+x[1]+'</span><small>'+x[2]+'</small></button>').join('');
+  document.body.appendChild(dock);
+  const css=document.createElement('style');
+  css.textContent=`
+    #abjQuickDock{position:fixed;z-index:32;left:50%;bottom:18px;transform:translateX(-50%);display:none;align-items:center;gap:8px;padding:8px 10px;border:1px solid #ffffffd9;border-radius:23px;background:rgba(250,250,246,.94);box-shadow:0 10px 34px #06151d45;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+    #abjQuickDock button{width:62px;min-height:58px;border:1px solid #dce6e1;border-radius:16px;background:#fff;color:#172a31;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;box-shadow:0 3px 10px #172a3110}
+    #abjQuickDock button span{font-size:23px;line-height:1.15}#abjQuickDock button small{font-size:10px;font-weight:800}
+    #abjQuickDock button:active{background:#fff2df;border-color:#ed760d;transform:scale(.96)}
+    #abjPhoneSwitchLoading{position:absolute;inset:0;z-index:50;display:none;place-items:center;background:rgba(250,250,246,.94);color:#172a31;border-radius:20px;text-align:center;padding:22px}
+    #abjPhoneSwitchLoading .abj-switch-card{display:flex;flex-direction:column;align-items:center;gap:12px;font-weight:800}
+    #abjPhoneSwitchLoading .abj-switch-icon{font-size:34px;animation:abjSwitchPulse .8s ease-in-out infinite alternate}
+    #abjPhoneSwitchLoading .abj-switch-bar{width:130px;height:5px;border-radius:8px;background:#dce7e3;overflow:hidden}
+    #abjPhoneSwitchLoading .abj-switch-bar i{display:block;width:45%;height:100%;border-radius:8px;background:#ed760d;animation:abjSwitchSlide .8s ease-in-out infinite alternate}
+    @keyframes abjSwitchPulse{to{transform:scale(1.12);opacity:.65}}@keyframes abjSwitchSlide{to{transform:translateX(120%)}}
+    #phoneScreen{position:relative}
+    @media(max-width:760px){#abjQuickDock{bottom:calc(96px + env(safe-area-inset-bottom));gap:5px;padding:6px;border-radius:19px;max-width:calc(100vw - 12px)}#abjQuickDock button{width:clamp(44px,14vw,57px);min-height:53px;border-radius:14px}#abjQuickDock button span{font-size:21px}#abjQuickDock button small{font-size:9px}}
+    @media(max-width:380px){#abjQuickDock{gap:3px}#abjQuickDock button{width:43px}#abjQuickDock button small{font-size:8px}}
+  `;
+  document.head.appendChild(css);
+  const phoneScreen=document.getElementById('phoneScreen');
+  if(phoneScreen&&!document.getElementById('abjPhoneSwitchLoading')){
+    const loader=document.createElement('div');loader.id='abjPhoneSwitchLoading';
+    loader.innerHTML='<div class="abj-switch-card"><div class="abj-switch-icon">📲</div><div>Ouverture de l’application…</div><div class="abj-switch-bar"><i></i></div></div>';
+    phoneScreen.appendChild(loader);
+  }
+  function refreshDock(){
+    const visible=!!(typeof gameStarted!=='undefined'&&gameStarted&&typeof worldReady!=='undefined'&&worldReady);
+    dock.style.display=visible?'flex':'none';
+  }
+  setInterval(refreshDock,350);
+  dock.addEventListener('click',function(e){
+    const b=e.target.closest('button[data-quick]');if(!b)return;
+    const a=b.dataset.quick;
+    try{
+      if(a==='needs'&&typeof v13ToggleNeeds==='function'){v13ToggleNeeds();return;}
+      if(a==='map'&&typeof openBigMap==='function'){openBigMap();return;}
+      if(a==='phone'&&typeof openPhone==='function'){openPhone();return;}
+      if(a==='camera'&&typeof openGameCamera==='function'){openGameCamera();return;}
+      if(a==='inventory'||a==='transport'){
+        if(typeof openPhone==='function')openPhone();
+        requestAnimationFrame(()=>{if(typeof openPhoneApp==='function')openPhoneApp(a==='inventory'?'inventaire':'transport');});
+      }
+    }catch(err){console.warn('Raccourci indisponible :',a,err);}
+  });
+  if(typeof window.openPhoneApp==='function'&&!window.openPhoneApp.__abjLoadingWrapped){
+    const original=window.openPhoneApp;
+    const wrapped=function(app){
+      const overlay=document.getElementById('abjPhoneSwitchLoading');
+      if(overlay&&phoneOpen&&app!=='localisation'&&app!=='camera'){
+        overlay.style.display='grid';
+        requestAnimationFrame(()=>{
+          try{original.call(this,app);}
+          finally{requestAnimationFrame(()=>setTimeout(()=>{overlay.style.display='none';},160));}
+        });
+      }else original.call(this,app);
+    };
+    wrapped.__abjLoadingWrapped=true;window.openPhoneApp=wrapped;
+  }
+  console.info('ABJ V1.40 — démarrage rapide, interface Babi Life et chargement réservé aux applications.');
 })();
 </script>
 
