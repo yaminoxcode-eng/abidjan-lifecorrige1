@@ -2206,7 +2206,7 @@ function buildOSMBuildings(ways,nodes) {
     return sector;
   }
   ways.forEach(w=>{
-    if(count>=(mobilePerformanceMode?2300:6000) || w.nodes.length<4)return;
+    if(count>=(mobilePerformanceMode?2600:6800) || w.nodes.length<4)return;
     const pts=w.nodes.map(id=>nodes.get(id)).filter(Boolean);
     if(pts.length<4)return;
     const area=Math.abs(pts.reduce((v,p,i)=>{const q=pts[(i+1)%pts.length];return v+p.x*q.z-q.x*p.z;},0))/2;
@@ -4787,7 +4787,7 @@ function nearestTrafficNode(x,z,maxDistance=650){
 function buildCourseGoRoadPath(sx,sz,tx,tz){
  if(!trafficGraph||trafficGraph.size<2)return null;
  // On refuse les grands raccords hors chaussée : le taxi ne doit pas traverser la ville en ligne droite.
- const start=nearestTrafficNode(sx,sz,180),goal=nearestTrafficNode(tx,tz,180);if(!start||!goal)return null;
+ const start=nearestTrafficNode(sx,sz,4500),goal=nearestTrafficNode(tx,tz,4500);if(!start||!goal)return null;
  const parse=k=>{const [x,z]=k.split(':').map(Number);return {x,z};};
  const goalPoint=parse(goal),g=new Map([[start,0]]),prev=new Map(),open=[],closed=new Set();
  const push=item=>{let i=open.length;open.push(item);while(i>0){const p=(i-1)>>1;if(open[p].f<=item.f)break;open[i]=open[p];i=p;}open[i]=item;};
@@ -4824,7 +4824,7 @@ function renderCourseGoApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
  if(activeCourseGoRide){const r=activeCourseGoRide;const eta=Math.max(0,Math.ceil(r.etaSeconds||0));const etaLabel=r.phase==='approach'?('Arrivée estimée : <b>'+eta+' s</b>'):(r.phase==='pickup'?'Le véhicule est là':('Trajet : '+Math.round((r.progress||0)*100)+' %'));content.innerHTML='<button id="phoneBack">← Applications</button><h3>🚖 CourseGo</h3><div style="padding:12px;border-radius:12px;background:#ffffff12"><b>'+(r.phase==='approach'?'Chauffeur en approche':r.phase==='pickup'?'Chauffeur arrivé · F pour monter':r.phase==='riding'?'Trajet en cours':'Course terminée')+'</b><p style="font-size:12px;color:#d7e3ea">'+escapeHTML(r.destination.nom)+'</p><p style="font-size:18px;color:#ffe0a0;margin:8px 0">'+etaLabel+'</p><p>Prix estimé : '+r.fare.toLocaleString('fr-FR')+' FCFA</p><p id="yangoRideStatus">'+(r.phase==='approach'?'Le chauffeur rejoint le point de prise en charge. Suis le compte à rebours.':r.phase==='pickup'?'Le taxi est arrêté. Approche-toi et appuie sur F pour monter.':'Tu es à bord : la caméra suit le véhicule. '+(r.routeMapped?'Itinéraire routier cartographié.':'Trajet de secours.'))+'</p></div><button id="yangoCancel">Annuler la course</button>';document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};document.getElementById('yangoCancel').onclick=cancelCourseGoRide;return;}
  const pickup=currentInterior&&lastExteriorPosition?lastExteriorPosition:(player?getPlayerMapPosition():{x:0,z:0});const px=pickup.x,pz=pickup.z;
- const candidates=poi.filter(p=>p.nom&&p.nom.length>2&&Math.hypot(p.x-px,p.z-pz)>25&&Math.hypot(p.x-px,p.z-pz)<Math.min(CITY_SIZE*.72,12000)).sort((a,b)=>Math.hypot(a.x-px,a.z-pz)-Math.hypot(b.x-px,b.z-pz)).slice(0,30);
+ const candidates=poi.filter(p=>p.nom&&p.nom.length>2&&Math.hypot(p.x-px,p.z-pz)>25).sort((a,b)=>Math.hypot(a.x-px,a.z-pz)-Math.hypot(b.x-px,b.z-pz)).slice(0,30);
  const options=candidates.map((p,i)=>{const d=Math.hypot(p.x-px,p.z-pz),fare=Math.max(700,Math.round((d/1000*650+500)/100)*100);return '<option value="'+i+'">'+escapeHTML(p.nom)+' · '+Math.round(d)+' m · '+fare.toLocaleString('fr-FR')+' F</option>';}).join('');
  content.innerHTML='<button id="phoneBack">← Applications</button><h3>🚖 CourseGo</h3><p style="font-size:12px;color:#c6d8e5">Choisis une destination cartographiée autour de toi. Le tarif est une estimation de la simulation, pas un tarif réel CourseGo.</p><label for="yangoDestination">Où vas-tu ?</label><select id="yangoDestination" style="width:100%;padding:10px;margin:8px 0;background:#183447;color:white;border-radius:8px">'+(options||'<option value="">Aucun lieu proche</option>')+'</select><div id="yangoQuote" style="padding:10px;background:#ffffff10;border-radius:9px;font-size:12px">Le prix et la distance estimés s’afficheront ici.</div><button id="yangoRequest" '+(!candidates.length?'disabled':'')+'>Commander un chauffeur</button><p id="yangoStatus" style="font-size:12px;color:#ffe0a0"></p>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
@@ -8937,19 +8937,45 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   h.userData.target={x:p.x,y:p.y,z:p.z,yaw:p.yaw||0};
  }
  function stopRemoteHeli(data){const h=remoteHelis.get(data.owner);if(h&&window.scene)scene.remove(h);remoteHelis.delete(data.owner);}
+ let creatorHeliArrival=null;
  function startCreatorHeli(){
-  const official=(typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(activeGameAccount):String(activeGameAccount||'').replace(/\D/g,''));
-  const isCreator = official==='+2250799259362' || String(activeGameAccount||'').replace(/\D/g,'').endsWith('0799259362');
+  const official=(typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(activeGameAccount):String(activeGameAccount||'').replace(/\\D/g,''));
+  const isCreator = official==='+2250799259362' || String(activeGameAccount||'').replace(/\\D/g,'').endsWith('0799259362');
   const licensed = !!(lifeState&&lifeState.documents&&lifeState.documents.brevet_pilote) || window.__ABJ_TEMP_PILOT===true;
   if((!isCreator&&!licensed)||!window.scene||!window.player){showMessage('Hélicoptère : compte créateur, brevet pilote, ou service aéroport requis.');return;}
   if(isCreator)creatorRoleVerified=true;
   if(creatorHeli){stopCreatorHeli();return;}
   creatorHeli=makeHeli();if(!creatorHeli)return;
-  try{creatorHeli.position.set(player.position.x, terrainHeight(player.position.x,player.position.z)+12, player.position.z);creatorHeli.rotation.y=player.rotation.y;}catch(e){}
-  scene.add(creatorHeli);heliActive=true;window.creatorHeli=creatorHeli;window.__abjHeliActive=true;
-  showMessage(isCreator?'🚁 Hélicoptère créateur activé. ZQSD · E/C altitude · Échap atterrir.':'🚁 Vol autorisé (brevet/aéroport). ZQSD · E/C altitude · Échap atterrir.');
+  const p=player.position,baseYaw=player.rotation.y||0;
+  const directions=[0,Math.PI/4,Math.PI/2,3*Math.PI/4,Math.PI,5*Math.PI/4,3*Math.PI/2,7*Math.PI/4];
+  let landing=null;
+  for(const a of directions){
+   const x=p.x+Math.sin(a)*17,z=p.z+Math.cos(a)*17;
+   if((typeof isInsideAnyObstacle!=='function'||!isInsideAnyObstacle(x,z,4))&&
+      (typeof isPointInAbjWater!=='function'||!isPointInAbjWater(x,z))){landing={x,z,y:terrainHeight(x,z)+1.0};break;}
+  }
+  if(!landing)landing={x:p.x+Math.sin(baseYaw)*20,z:p.z+Math.cos(baseYaw)*20,y:terrainHeight(p.x+Math.sin(baseYaw)*20,p.z+Math.cos(baseYaw)*20)+1.0};
+  const away=Math.atan2(landing.x-p.x,landing.z-p.z)+Math.PI;
+  const start={x:landing.x+Math.sin(away)*58,z:landing.z+Math.cos(away)*58};
+  creatorHeli.position.set(start.x,terrainHeight(start.x,start.z)+42,start.z);
+  creatorHeli.rotation.y=Math.atan2(landing.x-start.x,landing.z-start.z);
+  scene.add(creatorHeli);heliActive=false;window.creatorHeli=creatorHeli;window.__abjHeliActive=false;
+  creatorHeliArrival={started:performance.now(),duration:8500,from:{x:creatorHeli.position.x,y:creatorHeli.position.y,z:creatorHeli.position.z},to:landing};
+  const arrive=()=>{
+   if(!creatorHeli||!creatorHeliArrival)return;
+   const a=creatorHeliArrival,t=Math.min(1,(performance.now()-a.started)/a.duration),e=t*t*(3-2*t);
+   creatorHeli.position.set(a.from.x+(a.to.x-a.from.x)*e,a.from.y+(a.to.y-a.from.y)*e,a.from.z+(a.to.z-a.from.z)*e);
+   creatorHeli.rotation.y=Math.atan2(a.to.x-creatorHeli.position.x,a.to.z-creatorHeli.position.z);
+   heliRotor+=.42;creatorHeli.userData.rotor.rotation.y=heliRotor;creatorHeli.userData.tailRotor.rotation.x=heliRotor*2;
+   if(t<1){requestAnimationFrame(arrive);return;}
+   creatorHeli.position.set(a.to.x,a.to.y,a.to.z);creatorHeliArrival=null;heliActive=true;window.__abjHeliActive=true;
+   showMessage('🚁 Votre hélicoptère vient de se poser à proximité. ZQSD pour le piloter · E/C altitude · Échap pour le ranger.');
+  };
+  showMessage('🚁 Hélicoptère en approche… Il arrive et va se poser près de vous.');
+  requestAnimationFrame(arrive);
  }
  function stopCreatorHeli(){
+  creatorHeliArrival=null;
   if(creatorHeli&&window.scene)scene.remove(creatorHeli);creatorHeli=null;heliActive=false;window.creatorHeli=null;window.__abjHeliActive=false;
   if(typeof socket!=='undefined'&&socket?.connected)socket.emit('creator:helicopter:stop');
  }
@@ -11283,6 +11309,136 @@ setInterval(()=>{
 },2000);
 
 console.info('ABJ V1.38 — assistant général + IA PNJ active');
+})();
+</script>
+
+
+<script>
+/* ABJ V1.39 — commandes créateur, arrivée hélicoptère, mobilité et densité urbaine. */
+(function(){
+'use strict';
+if(window.__ABJ_V139)return;window.__ABJ_V139=true;window.ABJ_BUILD_VERSION='1.39';
+const creatorOk=()=>{try{return typeof isCreatorAccount==='function'&&isCreatorAccount(activeGameAccount);}catch(e){return false;}};
+function phoneView(){
+ const c=document.getElementById('phoneAppContent'),a=document.getElementById('phoneApps'),h=document.getElementById('phoneHomeShell');
+ if(h)h.style.display='none';if(a)a.style.display='none';if(c){c.style.display='block';return c;}return null;
+}
+function showCreatorCommands(){
+ if(!creatorOk()){if(typeof showMessage==='function')showMessage('Commandes réservées au compte créateur officiel.');return;}
+ if(typeof openPhone==='function')openPhone();
+ creatorRoleVerified=true;
+ const c=phoneView();if(!c)return;
+ c.innerHTML='<button id="creatorCmdBack">← Applications</button><h3>🎮 Centre de commandes créateur</h3><p style="font-size:12px;color:#d6e5ed">Compte créateur vérifié · commandes disponibles dans le monde.</p><div style="padding:11px;margin:8px 0;border:1px solid #ffffff35;border-radius:12px;background:#ffffff10"><b>🚁 Hélicoptère</b><p style="font-size:12px">Fait venir l’hélicoptère depuis le ciel. Il approche puis se pose à quelques mètres de toi.</p><button id="creatorCallHeli" style="width:100%">Faire venir mon hélicoptère</button></div><div style="padding:11px;margin:8px 0;border:1px solid #ffffff35;border-radius:12px;background:#ffffff10"><b>🚕 Taxi / Yango</b><p style="font-size:12px">Commander un chauffeur et choisir une destination sur l’ensemble de la carte.</p><button id="creatorCallTaxi" style="width:100%">Ouvrir Yango / CourseGo</button></div><div style="padding:11px;margin:8px 0;border:1px solid #ffffff35;border-radius:12px;background:#ffffff10"><b>🏙️ Ville</b><p style="font-size:12px">Les agences et sièges d’entreprises simulés sont ajoutés à la ville.</p><button id="creatorCmdAudit" style="width:100%">Lancer un audit de la ville</button></div>';
+ c.querySelector('#creatorCmdBack').onclick=()=>{c.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();};
+ c.querySelector('#creatorCallHeli').onclick=()=>{c.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();if(typeof window.openPhoneApp==='function')window.openPhoneApp('helicoptere');};
+ c.querySelector('#creatorCallTaxi').onclick=()=>{if(typeof window.openPhoneApp==='function')window.openPhoneApp('yango');};
+ c.querySelector('#creatorCmdAudit').onclick=async()=>{try{const r=await window.ABJ_RUN_WORLD_AUDIT?.();showMessage(r?'Audit terminé : '+r.summary.totalFindings+' anomalie(s).':'Audit indisponible pour le moment.');}catch(e){showMessage('Audit indisponible : '+(e.message||'erreur'));}};
+}
+function addCreatorTiles(){
+ if(!creatorOk()||!document.getElementById('phoneApps'))return;
+ creatorRoleVerified=true;
+ const host=document.getElementById('phoneApps');
+ let page=host.querySelector('.phoneAppsPage:last-child');
+ const add=(id,emoji,label,fn)=>{
+  if(host.querySelector('[data-app="'+id+'"]'))return;
+  if(!page||page.querySelectorAll('.phoneApp').length>=9){page=document.createElement('div');page.className='phoneAppsPage';host.appendChild(page);}
+  const b=document.createElement('button');b.type='button';b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+emoji+'</span><b>'+label+'</b>';b.addEventListener('click',fn);page.appendChild(b);
+ };
+ add('commandescreateur','🎮','Commandes créateur',showCreatorCommands);
+ add('helicoptere','🚁','Hélicoptère',()=>{if(typeof window.openPhoneApp==='function')window.openPhoneApp('helicoptere');});
+}
+const previousOpen=window.openPhoneApp;
+if(typeof previousOpen==='function'&&!window.__ABJ_V139_PHONE_WRAPPED){
+ window.__ABJ_V139_PHONE_WRAPPED=true;
+ window.openPhoneApp=function(app){if(app==='commandescreateur'){showCreatorCommands();return;}return previousOpen.apply(this,arguments);};
+}
+let appTries=0;const appTimer=setInterval(()=>{appTries++;addCreatorTiles();if(appTries>240)clearInterval(appTimer);},1200);
+
+/* Ajoute des arrêts simulés aux secteurs routiers peu desservis. Ils sont clairement identifiés comme simulation. */
+function fillTransportCoverage(){
+ if(window.__ABJ_V139_STOPS||!osmLoaded||!Array.isArray(osmRoadSegments)||!osmRoadSegments.length||!Array.isArray(transportStops))return;
+ window.__ABJ_V139_STOPS=true;
+ const candidates=osmRoadSegments.filter(r=>['primary','secondary','tertiary','residential','living_street','unclassified'].includes(r.type)&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>90);
+ let made=0;
+ for(let i=0;i<candidates.length&&transportStops.length<320;i+=Math.max(1,Math.floor(candidates.length/180))){
+  const r=candidates[i],x=(r.a.x+r.b.x)/2,z=(r.a.z+r.b.z)/2;
+  if(transportStops.some(st=>Math.hypot(st.x-x,st.z-z)<280))continue;
+  transportStops.push({x,z,name:'Arrêt simulé '+String(++made).padStart(2,'0'),mode:made%3===0?'Bus simulé':'Gbaka simulé',commune:'Réseau complémentaire',operator:'Transport simulé Abidjan Life',synthetic:true});
+ }
+ console.info('V1.39 : arrêts complémentaires ajoutés',made);
+ if(typeof abjRefreshLeafletDynamicLayers==='function')abjRefreshLeafletDynamicLayers(true);
+}
+
+/* Agences d’entreprises connues représentées comme lieux fictifs de gameplay, sans partenariat officiel. */
+function buildBusinessDistrict(){
+ if(window.__ABJ_V139_BUSINESSES||!osmLoaded||!scene||!trafficRoadSegments.length)return;
+ window.__ABJ_V139_BUSINESSES=true;
+ const brands=[
+  {name:'Orange Côte d’Ivoire',ceo:'Aïssata Koné',color:0xf07822,height:26,shirt:0xe67e22},
+  {name:'MTN Côte d’Ivoire',ceo:'Yao N’Guessan',color:0xf2c230,height:22,shirt:0xf1c40f},
+  {name:'Wave',ceo:'Mariam Diabaté',color:0x24b77a,height:16,shirt:0x1abc9c},
+  {name:'Ecobank',ceo:'Kouamé Aka',color:0xc52e3d,height:24,shirt:0x9b59b6},
+  {name:'NSIA Banque',ceo:'Fatou Traoré',color:0x2864a5,height:20,shirt:0x3498db},
+  {name:'CFAO Mobility',ceo:'Serge Koffi',color:0x43566a,height:18,shirt:0x34495e},
+  {name:'Solibra',ceo:'Ibrahim Coulibaly',color:0x2f8a55,height:17,shirt:0x2ecc71}
+ ];
+ const center=typeof geoToWorld==='function'?geoToWorld(5.323,-4.02):{x:0,z:0};
+ const roads=trafficRoadSegments.filter(r=>r.width>=5&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>25).sort((a,b)=>{
+  const da=Math.hypot((a.a.x+a.b.x)/2-center.x,(a.a.z+a.b.z)/2-center.z);
+  const db=Math.hypot((b.a.x+b.b.x)/2-center.x,(b.a.z+b.b.z)/2-center.z);return da-db;
+ });
+ const used=[];
+ brands.forEach((brand,index)=>{
+  let spot=null,yaw=0;
+  for(let j=0;j<roads.length&&!spot;j+=Math.max(1,Math.floor(roads.length/500))){
+   const r=roads[(j+index*31)%roads.length],dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,len=Math.hypot(dx,dz)||1,nx=-dz/len,nz=dx/len;
+   for(const side of [1,-1]){
+    const x=(r.a.x+r.b.x)/2+nx*side*(r.width/2+27),z=(r.a.z+r.b.z)/2+nz*side*(r.width/2+27);
+    if(used.some(p=>Math.hypot(p.x-x,p.z-z)<190))continue;
+    if(typeof isInsideAnyObstacle==='function'&&isInsideAnyObstacle(x,z,13))continue;
+    if(typeof isPointInAbjWater==='function'&&isPointInAbjWater(x,z))continue;
+    if(typeof overlapsExisting==='function'&&overlapsExisting(x,z,23,19,8))continue;
+    spot={x,z};yaw=Math.atan2(dx,dz);break;
+   }
+  }
+  if(!spot)return;
+  used.push(spot);
+  const g=new THREE.Group(),h=brand.height;
+  const mat=new THREE.MeshStandardMaterial({color:brand.color,roughness:.78});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(23,h,19),mat);body.position.y=h/2;body.castShadow=true;body.receiveShadow=true;g.add(body);
+  const glassMat=new THREE.MeshStandardMaterial({color:0x75b6c8,metalness:.25,roughness:.25});
+  for(let floor=1;floor<Math.floor(h/3);floor++)for(const x of [-7,0,7]){
+   const win=new THREE.Mesh(new THREE.BoxGeometry(3.2,1.25,.12),glassMat);win.position.set(x,floor*3,9.58);g.add(win);
+  }
+  const sign=new THREE.Mesh(new THREE.BoxGeometry(15,2.1,.35),new THREE.MeshStandardMaterial({color:0x101b27,emissive:brand.color,emissiveIntensity:.12}));
+  sign.position.set(0,h-.8,9.8);g.add(sign);
+  const plaque=new THREE.Mesh(new THREE.BoxGeometry(10,.65,.42),new THREE.MeshBasicMaterial({color:brand.color}));plaque.position.set(0,h-.8,10.02);g.add(plaque);
+  g.position.set(spot.x,terrainHeight(spot.x,spot.z),spot.z);g.rotation.y=yaw;g.userData={businessHQ:true,businessName:brand.name};scene.add(g);
+  if(typeof addObstacle==='function')addObstacle(spot.x,spot.z,23,19,h);
+  if(typeof allBuildings!=='undefined'&&Array.isArray(allBuildings))allBuildings.push({x:spot.x,z:spot.z,w:23,d:19,h,type:'business-hq',name:brand.name});
+  if(typeof addPOI==='function')addPOI(spot.x,spot.z,'commerce',brand.name+' · agence simulée',{name:brand.name,simulation:true});
+  try{
+   if(typeof createCharacter==='function'&&typeof npcs!=='undefined'){
+    const leader=createCharacter({gender:index%2?'femme':'homme',skin:[0x7a4a24,0x8d5524,0xa0663a][index%3],hair:0x17120f,shirt:brand.shirt,pants:0x263746,bodyType:'standard',hairstyle:'court',outfit:'chic'});
+    leader.scale.set(.94,.94,.94);
+    const frontX=spot.x+Math.sin(yaw)*15,frontZ=spot.z+Math.cos(yaw)*15;
+    leader.position.set(frontX,terrainHeight(frontX,frontZ)+.02,frontZ);leader.rotation.y=yaw+Math.PI;
+    leader.userData=Object.assign(leader.userData||{},{name:brand.ceo,isNPC:true,isBusinessLeader:true,businessName:brand.name,goal:'travail',goalTimer:30,homeX:frontX,homeZ:frontZ,direction:new THREE.Vector3(0,0,1),speed:.65,changeTimer:8,pauseTimer:0,dead:false});
+    scene.add(leader);npcs.push(leader);
+   }
+  }catch(e){console.warn('PNJ entreprise non créé',brand.name,e);}
+ });
+ console.info('V1.39 : sièges d’entreprises simulés ajoutés',used.length,'— marques représentées sans partenariat officiel.');
+}
+let worldTries=0;const worldTimer=setInterval(()=>{
+ worldTries++;
+ if(typeof gameStarted!=='undefined'&&gameStarted&&typeof worldReady!=='undefined'&&worldReady&&osmLoaded){
+  try{fillTransportCoverage();buildBusinessDistrict();}catch(e){console.warn('V1.39 monde',e);}
+  if(window.__ABJ_V139_STOPS&&window.__ABJ_V139_BUSINESSES)clearInterval(worldTimer);
+ }
+ if(worldTries>600)clearInterval(worldTimer);
+},1000);
+console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, transports et entreprises.');
 })();
 </script>
 
