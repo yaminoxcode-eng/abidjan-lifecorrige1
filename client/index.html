@@ -10581,7 +10581,7 @@ function furnitureActions(item){
   const nap=()=>{playerSitting=true;lifeState.energy=Math.min(100,(lifeState.energy||0)+18);lifeState.hunger=Math.max(0,(lifeState.hunger||100)-3);showMessage('Petite sieste sur '+label+'…');setTimeout(()=>{playerSitting=false;showMessage('Tu te relèves.');},2500);};
   const sleep=()=>{if(typeof startSleep==='function'){startSleep();}else{playerSitting=true;lifeState.energy=100;showMessage('Tu dors un moment…');setTimeout(()=>{playerSitting=false;},3200);}};
   const move=()=>{
-    if(item.object)heldFurniture=item.object;heldFurniture.userData=heldFurniture.userData||{};heldFurniture.userData.label=label;showMessage('Tu portes '+label+'. F pour reposer · R pour tourner.');}
+    if(item.object){heldFurniture=item.object;heldFurniture.userData=heldFurniture.userData||{};heldFurniture.userData.label=label;showMessage('Tu portes '+label+'. F pour reposer · R pour tourner.');}
     else showMessage('Cet objet ne peut pas être déplacé.');
   };
   const look=()=>showMessage('Tu observes '+label+'.');
