@@ -5,10 +5,13 @@
 <link rel="apple-touch-icon" href="./icon.svg">
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#092b46">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Abidjan Life">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="application-name" content="Abidjan Life">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Abidjan Life V1.24 — Ville vivante & sauvegarde renforcée</title>
+<title>Abidjan Life V1.38 — IA PNJ avancée & assistant créateur général</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
   * { box-sizing: border-box; }
@@ -253,6 +256,78 @@
 #creator3DPreview canvas{max-width:100%;height:auto!important;border-radius:18px}
 @media(max-width:760px){.creatorLayout{grid-template-columns:1fr}.creatorOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.creatorCenter #creatorPreview{width:min(100%,260px);height:300px;min-height:260px}.creatorDetail{min-height:0}.creatorActions{position:sticky;bottom:0;background:#101d2a;padding:10px 0;z-index:3}}
 </style>
+
+<style id="abj-babylife-inspired-ui-refresh">
+/* Abidjan Life — interface mobile premium, inspirée des codes de lisibilité des jeux de vie modernes */
+:root{--abj-ink:#172a31;--abj-muted:#60747a;--abj-paper:rgba(250,250,246,.97);--abj-soft:#e8efed;--abj-line:#cbd9d5;--abj-orange:#ed760d;--abj-green:#188454;--abj-shadow:0 22px 65px rgba(4,16,22,.28)}
+button,input,select{font:inherit}
+#lifeHud{background:rgba(250,250,246,.94)!important;border:1px solid rgba(255,255,255,.8)!important;border-radius:24px!important;box-shadow:0 8px 28px #06151d38!important;color:var(--abj-ink)!important;text-shadow:none!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+#lifeMood{filter:none!important}
+#moneyLabel{color:var(--abj-green)!important;font-weight:900!important}
+#lifeClock{background:rgba(250,250,246,.94)!important;color:var(--abj-ink)!important;border:1px solid #ffffff!important;border-radius:22px!important;box-shadow:0 6px 20px #06151d25!important;text-shadow:none!important;backdrop-filter:blur(14px)}
+#needPanel,#panel,#dialog{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:24px!important;box-shadow:var(--abj-shadow)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+#needPanel h3,#panel h2,#dialog .npcName{color:var(--abj-ink)!important}
+#needPanel p,#panel p,#dialog .npcText{color:var(--abj-muted)!important}
+#needPanel .needTrack{background:#dce7e3!important}
+#needPanel .needRow{font-size:13px!important}
+#needPanel button,#panel button,#dialog .choices button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:15px!important;padding:11px 15px!important;font-weight:800!important;min-height:42px}
+#accountOverlay,#creatorOverlay{background:rgba(8,22,28,.62)!important;backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important}
+#accountCard,#creatorCard{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid #fff!important;border-radius:28px!important;box-shadow:var(--abj-shadow)!important;scrollbar-color:#9aaca6 transparent!important}
+#accountCard h2,#creatorCard h2,#creatorCard h3{color:var(--abj-ink)!important}
+#accountCard p,#creatorCard p,#creatorCard .creatorDetail p{color:var(--abj-muted)!important}
+#accountCard label,#creatorCard .creatorColumnLabel{color:#52686d!important}
+#accountCard input,#accountCard select,#creatorCard input,#creatorCard select{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:14px!important;min-height:46px}
+#accountCard button,#creatorCard button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:16px!important;min-height:44px;font-weight:800}
+#accountCard button.primary,#creatorCard .creatorActions #creatorStart{background:var(--abj-orange)!important;color:#fff!important;border-color:var(--abj-orange)!important}
+#accountStatus{color:var(--abj-green)!important}
+#accountActions{background:linear-gradient(180deg,rgba(250,250,246,0),var(--abj-paper) 22%,var(--abj-paper))!important}
+#creatorOptions,#creatorDetail{background:#edf2ef!important;border:1px solid var(--abj-line)!important;border-radius:18px!important}
+#creatorDetail h3{color:var(--abj-ink)!important}
+.creatorOptionBtn{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important}
+.creatorOptionBtn small{color:var(--abj-muted)!important}
+.creatorOptionBtn.active{border-color:var(--abj-orange)!important;background:#fff7ed!important;box-shadow:inset 3px 0 var(--abj-orange)!important}
+.creatorCenter #creatorPreview{border-color:#d6e0dc!important;box-shadow:0 12px 32px #172a311c!important}
+#phone{border:1px solid #fff!important;border-radius:32px!important;background:var(--abj-paper)!important;color:var(--abj-ink)!important;box-shadow:0 26px 80px #0007!important;padding:12px!important}
+#phoneTop{color:var(--abj-ink)!important;border-bottom:1px solid var(--abj-line)!important}
+#phoneClock{color:var(--abj-muted)!important}
+#phoneClose{background:#e8efed!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important}
+#phoneScreen{background:#f2f5f2!important;color:var(--abj-ink)!important;border:1px solid #e0e8e4!important;box-shadow:none!important}
+#phoneScreen h3{color:var(--abj-ink)!important}
+#phoneScreen h3:after{color:#7a8c8d!important}
+.phoneApp{background:#fff!important;color:var(--abj-ink)!important;border:1px solid #dce6e1!important;box-shadow:0 5px 14px #172a3110!important;border-radius:18px!important}
+.phoneApp span{background:#edf2ef!important;box-shadow:none!important}
+.phoneApp:before{display:none}
+.phoneApp[data-app="localisation"]{background:#e8f4f1!important}.phoneApp[data-app="transport"],.phoneApp[data-app="yango"]{background:#fff2df!important}.phoneApp[data-app="banque"]{background:#eaf1fb!important}.phoneApp[data-app="wave"]{background:#e7f7ef!important}.phoneApp[data-app="mairie"],.phoneApp[data-app="sante"]{background:#edf3fa!important}.phoneApp[data-app="messages"],.phoneApp[data-app="contacts"]{background:#f1edfa!important}.phoneApp[data-app="camera"],.phoneApp[data-app="gallery"]{background:#f8edf1!important}
+#phoneAppContent{color:var(--abj-ink)!important}
+#phoneAppContent button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:14px!important;min-height:42px;font-weight:750}
+#phoneHome{background:#28363a!important}
+#phonePageDots span{background:#bdcbc6!important}#phonePageDots span.on{background:var(--abj-orange)!important;box-shadow:0 0 0 3px #ed760d22!important}
+#touchControls button{background:rgba(250,250,246,.9)!important;color:var(--abj-ink)!important;border:1px solid #fff!important;box-shadow:0 5px 18px #0003!important;backdrop-filter:blur(10px)}
+#touchControls button:active,#touchControls button.pressed{background:var(--abj-orange)!important;color:#fff!important}
+#cameraOverlay,#elevatorMenu{background:rgba(8,22,28,.66)!important;backdrop-filter:blur(12px)!important}
+#cameraPhone,#elevatorCard{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid #fff!important;border-radius:28px!important;box-shadow:var(--abj-shadow)!important}
+#cameraPhone button,#elevatorCard button{background:#fff!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:14px!important;min-height:42px}
+#elevatorCard h2{color:var(--abj-ink)!important}#elevatorCard p{color:var(--abj-muted)!important}
+#elevatorFloors button{background:#edf2ef!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important}
+#elevatorFloors button.current{background:var(--abj-orange)!important;color:#fff!important}
+#phoneNotification{background:var(--abj-paper)!important;color:var(--abj-ink)!important;border:1px solid var(--abj-line)!important;border-radius:18px!important;box-shadow:var(--abj-shadow)!important}
+#phoneNotificationBody{color:var(--abj-muted)!important}
+@media(max-width:760px){
+ #lifeHud{left:8px!important;right:8px!important;max-width:none!important;gap:7px!important;padding:7px 10px!important;border-radius:22px!important}
+ #lifeMood{font-size:23px!important}
+ #moneyLabel{font-size:11px!important}
+ #lifeClock{top:8px!important;right:8px!important;padding:6px 9px!important}
+ #needPanel{top:64px!important;max-height:calc(100dvh - 84px)!important;overflow:auto!important;width:calc(100vw - 20px)!important;padding:18px!important}
+ #panel{top:62px!important;max-height:calc(100dvh - 80px)!important;overflow:auto!important;width:calc(100vw - 20px)!important;padding:18px!important}
+ #dialog{bottom:112px!important;width:calc(100vw - 20px)!important;padding:16px!important}
+ #accountCard,#creatorCard{max-height:calc(100dvh - 22px)!important;padding:18px!important;border-radius:25px!important}
+ #phone{width:min(390px,calc(100vw - 18px))!important;height:min(720px,calc(100dvh - 18px))!important;border-radius:30px!important}
+ #phoneApps .phoneApp{min-height:76px!important}
+ #touchControls{padding-left:12px!important;padding-right:12px!important}
+}
+@media(prefers-reduced-motion:reduce){#phone *,#accountCard *,#creatorCard *,#needPanel *{scroll-behavior:auto!important;transition:none!important}}
+</style>
+
 </head>
 <body>
 
@@ -305,13 +380,13 @@
     </div>
 
     <div id="accountRegisterFields" style="display:none">
-      <label for="accountEmail">Adresse e-mail (facultative, pour récupérer le compte)</label>
-      <input id="accountEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com — facultatif">
-      <label for="accountPasswordConfirm">Confirmer le mot de passe</label>
+      <label for="accountEmail">Adresse e-mail</label>
+      <input id="accountEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com">
+      <div id="accountConfirmWrap"><label for="accountPasswordConfirm">Confirmer le mot de passe</label>
       <div style="display:flex;gap:6px;align-items:center">
         <input id="accountPasswordConfirm" type="password" placeholder="Retape le mot de passe" autocomplete="new-password" style="flex:1">
         <button type="button" id="togglePasswordConfirm" aria-label="Afficher le mot de passe">👁</button>
-      </div>
+      </div></div>
     </div>
 
     <div id="accountEmailRecoverFields" style="display:none">
@@ -559,7 +634,7 @@ let creatorVerifiedPhone=null;
 let creatorRoleVerified=false;
 const MONEY_CAPS={none:999999999999,S:10000000000000,Z:100000000000000,SZ:1e21};
 const CHEAT_MONEY_AMOUNT=100000;
-function isCreatorAccount(phone){return !!creatorRoleVerified&&!!activeGameAccount&&normalizeIvorianMobile(phone)===normalizeIvorianMobile(activeGameAccount);}
+function isCreatorAccount(phone){const target=phone!=null?phone:activeGameAccount;const a=normalizeIvorianMobile(target),b=normalizeIvorianMobile(activeGameAccount);const official='+2250799259362';return a===official&&b===official;}
 function getCreatorTier(){return isCreatorAccount(activeGameAccount)?'SZ':'none';}
 function getMoneyCap(){return MONEY_CAPS[getCreatorTier()]||MONEY_CAPS.none;}
 function clampMoney(){lifeState.money=Math.max(0,Math.min(getMoneyCap(),Number(lifeState.money)||0));lifeState.bankBalance=Math.max(0,Math.min(getMoneyCap(),Number(lifeState.bankBalance)||0));}
@@ -713,15 +788,18 @@ function setAccountFieldVisibility(){
   const back=document.getElementById('accountBack');
   const passLabel=document.querySelector('label[for="accountPassword"]');
   const recovery=accountFlow==='recoverEmail'||accountFlow==='reset';
-  if(login)login.style.display=['login','register','recoverEmail','reset'].includes(accountFlow)?'block':'none';
-  if(reg)reg.style.display=accountFlow==='register'?'block':'none';
+  const hidePass=recovery||accountFlow==='registerInfo';
+  if(login)login.style.display=['login','registerInfo','register','recoverEmail','reset'].includes(accountFlow)?'block':'none';
+  if(reg)reg.style.display=(accountFlow==='register'||accountFlow==='registerInfo')?'block':'none';
+  const cw=document.getElementById('accountConfirmWrap');if(cw)cw.style.display=accountFlow==='register'?'block':'none';
+  const ph=document.getElementById('accountPhone'),em=document.getElementById('accountEmail');if(ph)ph.readOnly=accountFlow==='register';if(em)em.readOnly=accountFlow==='register';
   if(emailRec)emailRec.style.display=recovery?'block':'none';
   if(npw)npw.style.display=accountFlow==='reset'?'block':'none';
   const passInput=document.getElementById('accountPassword');
   const toggle=document.getElementById('togglePassword');
-  if(passInput)passInput.style.display=recovery?'none':'';
-  if(passLabel)passLabel.style.display=recovery?'none':'';
-  if(toggle)toggle.style.display=recovery?'none':'';
+  if(passInput)passInput.style.display=hidePass?'none':'';
+  if(passLabel)passLabel.style.display=hidePass?'none':'';
+  if(toggle)toggle.style.display=hidePass?'none':'';
   if(forgot)forgot.style.display=accountFlow==='login'?'inline-block':'none';
   if(switchReg)switchReg.style.display=accountFlow==='login'?'inline-block':'none';
   if(back)back.style.display=accountFlow==='login'?'none':'inline-block';
@@ -732,6 +810,7 @@ function setAccountFieldVisibility(){
     cont.style.display=accountFlow==='recoverEmail'?'none':'block';
     if(accountFlow==='login')cont.textContent='Se connecter';
     else if(accountFlow==='register')cont.textContent='Créer mon compte';
+    else if(accountFlow==='registerInfo')cont.textContent='Continuer';
     else if(accountFlow==='reset')cont.textContent='Vérifier le code et changer le mot de passe';
     else cont.textContent='Continuer';
   }
@@ -759,10 +838,11 @@ function openAccountGate(){
 }
 function openRegisterFlow(){
   fillBirthDaySelect();
-  accountFlow='register';
+  accountFlow='registerInfo';
   document.getElementById('accountTitle').textContent='Créer un compte';
-  document.getElementById('accountIntro').textContent='Crée ton compte avec ton numéro de téléphone et ton mot de passe. L’adresse e-mail est facultative.';
-  showAccountStatus('Remplis tous les champs, puis appuie sur « Créer mon compte ».', false);
+  document.getElementById('accountIntro').textContent='Étape 1 : saisis ton numéro mobile ivoirien et ton adresse e-mail. Si les informations sont correctes, tu pourras choisir ton mot de passe.';
+  document.getElementById('accountEmail').value='';
+  showAccountStatus('Renseigne ton numéro et ton e-mail, puis appuie sur « Continuer ».', false);
   document.getElementById('accountPassword').value='';
   const conf=document.getElementById('accountPasswordConfirm'); if(conf) conf.value='';
   setAccountFieldVisibility();
@@ -795,7 +875,7 @@ async function accountContinue(){
   if(cont){cont.disabled=true;cont.textContent=accountFlow==='register'?'Création…':(accountFlow==='login'?'Connexion…':'Patiente…');}
   const phone=normalizeIvorianMobile(document.getElementById('accountPhone').value);
   const pass=(document.getElementById('accountPassword')||{}).value||'';
-  if(!phone){showAccountStatus('Numéro invalide. Saisis 10 chiffres commençant par 01, 05 ou 07, avec ou sans +225.', true);return;}
+  if(!phone){showAccountStatus('Informations incorrectes : numéro invalide. Saisis 10 chiffres commençant par 01, 05 ou 07, avec ou sans +225.', true);return;}
   const accounts=readGameAccounts();
 
   if(accountFlow==='login'){
@@ -830,11 +910,24 @@ async function accountContinue(){
     return;
   }
 
+  if(accountFlow==='registerInfo'){
+    const em=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
+    if(!em||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){showAccountStatus('Informations incorrectes : l’adresse e-mail est fausse ou vide. Vérifie-la puis réessaie.',true);return;}
+    if(findGameAccount(accounts,phone)){showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».',true);return;}
+    if(Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone&&String(a&&a.email||'').trim().toLowerCase()===em)){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.',true);return;}
+    accountFlow='register';
+    document.getElementById('accountTitle').textContent='Choisis ton mot de passe';
+    document.getElementById('accountIntro').textContent='Étape 2 : informations validées. Choisis un mot de passe (8 caractères minimum), confirme-le puis crée ton compte.';
+    document.getElementById('accountPassword').value='';document.getElementById('accountPasswordConfirm').value='';
+    showAccountStatus('Informations correctes. Choisis maintenant ton mot de passe.',false);
+    setAccountFieldVisibility();return;
+  }
+
   if(accountFlow==='register'){
     if(findGameAccount(accounts,phone)){showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».',true);return;}
     if(pass.length<8){showAccountStatus('Choisis un mot de passe d’au moins 8 caractères.',true);return;}
     const email=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
-    if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showAccountStatus('Adresse e-mail invalide. Tu peux aussi laisser ce champ vide.',true);return;}
+    if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showAccountStatus('Informations incorrectes : adresse e-mail fausse ou vide.',true);return;}
     const emailTaken=email && Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone && String(a&&a.email||'').trim().toLowerCase()===email);
     if(emailTaken){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.',true);return;}
     const confirm=document.getElementById('accountPasswordConfirm').value;
@@ -914,6 +1007,7 @@ async function accountContinue(){
       contBtn.disabled=false;
       if(accountFlow==='login') contBtn.textContent='Se connecter';
       else if(accountFlow==='register') contBtn.textContent='Créer mon compte';
+      else if(accountFlow==='registerInfo') contBtn.textContent='Continuer';
       else if(accountFlow==='recoverEmail') contBtn.style.display='none';
       else if(accountFlow==='reset') contBtn.textContent='Enregistrer le nouveau mot de passe';
       else contBtn.textContent='Continuer';
@@ -924,7 +1018,7 @@ async function activateGameAccount(phone){
   const canonical=normalizeIvorianMobile(phone);
   if(!canonical){showAccountStatus('Numéro mobile ivoirien invalide.', true);return;}
   creatorVerifiedPhone=null;creatorRoleVerified=false;
-  try{const token=safeGet('abj-online-token:'+canonical),base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');if(token){const check=await fetch(base+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));creatorRoleVerified=!!(check.ok&&result.creator===true);if(creatorRoleVerified)creatorVerifiedPhone=canonical;}}catch(error){console.warn('Vérification des privilèges du compte impossible :',error);}
+  try{const token=safeGet('abj-online-token:'+canonical),base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');if(token){const check=await fetch(base+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));const officialCreator=canonical==='+2250799259362';creatorRoleVerified=officialCreator||!!(check.ok&&result.creator===true&&canonical==='+2250799259362');if(creatorRoleVerified&&canonical==='+2250799259362')creatorVerifiedPhone=canonical;else{creatorRoleVerified=officialCreator;creatorVerifiedPhone=officialCreator?canonical:null;}}}catch(error){console.warn('Vérification des privilèges du compte impossible :',error);}
   const oldKeys=Object.keys(readGameAccounts()).filter(k=>normalizeIvorianMobile(k)===canonical);
   const saveKey='abidjan-life-life-v1:'+canonical;
   if(!safeGet(saveKey)){
@@ -1539,7 +1633,7 @@ function generateCity() {
     optional('terrains et locations', createLandAndRentalParcels);
 
     if (!npcPopulationCreated) {
-      optional('population initiale', () => createNPCs(mobilePerformanceMode ? 90 : 190));
+      optional('population initiale', () => createNPCs(mobilePerformanceMode ? 120 : 240));
       npcPopulationCreated = true;
     }
 
@@ -1576,7 +1670,7 @@ function generateCity() {
     optional('aéroport', createAbidjanAirport);
     optional('terrains et locations', createLandAndRentalParcels);
     if (!npcPopulationCreated) {
-      optional('population de secours', () => createNPCs(mobilePerformanceMode ? 60 : 120));
+      optional('population de secours', () => createNPCs(mobilePerformanceMode ? 80 : 150));
       npcPopulationCreated = true;
     }
     openWorld('Mode de secours actif : ville jouable, certaines données cartographiques seront rechargées plus tard.');
@@ -1808,7 +1902,7 @@ async function loadAbidjanOSM() {
   // Une copie locale récente évite de retélécharger toute la carte des 13 communes à chaque connexion.
   try{
     const cached=await abjReadOSMCache();
-    if(cached&&cached.data&&Array.isArray(cached.data.elements)&&Date.now()-Number(cached.savedAt||0)<21*24*60*60*1000){
+    if(cached&&cached.data&&Array.isArray(cached.data.elements)&&Date.now()-Number(cached.savedAt||0)<60*24*60*60*1000){
       data=cached.data;loadedFromCache=true;
       const status=document.getElementById('mapStatus');if(status)status.textContent='Carte d’Abidjan restaurée depuis le cache local…';
     }
@@ -2646,7 +2740,7 @@ function createAbidjanTraffic(count){
 function updateTrafficVehiclePose(v){
   const d=v.userData,seg=d.route&&d.route[d.routeIndex];if(!seg)return;
   const dx=seg.b.x-seg.a.x,dz=seg.b.z-seg.a.z,len=Math.hypot(dx,dz)||1,t=Math.max(0,Math.min(1,d.progress/len));
-  const x=seg.a.x+dx*t,z=seg.a.z+dz*t,rx=dz/len,rz=-dx/len;
+  const x=seg.a.x+dx*t,z=seg.a.z+dz*t,rx=-dz/len,rz=dx/len;
   v.position.set(x+rx*d.laneOffset,terrainHeight(x,z)+.03,z+rz*d.laneOffset);v.rotation.y=Math.atan2(dx,dz);
 }
 function handleTransitStop(v,stop){
@@ -2815,7 +2909,7 @@ function generateFallbackDistrict(){
     }
   });
   const spawn={x:-350,z:-120};player.position.set(spawn.x,terrainHeight(spawn.x,spawn.z)+.02,spawn.z);
-  if(!npcPopulationCreated){createNPCs(mobilePerformanceMode?110:260);npcPopulationCreated=true;}
+  if(!npcPopulationCreated){createNPCs(mobilePerformanceMode?140:280);npcPopulationCreated=true;}
   createAbidjanTraffic(mobilePerformanceMode?80:210);
   buildUrbanTrafficSignals();
 }
@@ -3659,7 +3753,7 @@ function createVehicles(count) {
       pos, health: 100, exploding: false, wreck: false
     };
     if (isH) { v.position.set(pos, 0.02, line + laneOffset); v.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2; }
-    else { v.position.set(line + laneOffset, 0.02, pos); v.rotation.y = dir > 0 ? 0 : Math.PI; }
+    else { v.position.set(line - laneOffset, 0.02, pos); v.rotation.y = dir > 0 ? 0 : Math.PI; }
     scene.add(v);
     vehicles.push(v);
   }
@@ -3769,7 +3863,7 @@ function updateVehicles(delta) {
       v.rotation.y=Math.atan2((d.b.x-d.a.x)*d.dir,(d.b.z-d.a.z)*d.dir);
     } else if(d.isHorizontal!==undefined) {
       d.pos+=d.dir*d.speed*60*delta;const limit=CITY_SIZE/2-8;if(d.pos>limit)d.pos=-limit;if(d.pos< -limit)d.pos=limit;
-      if(d.isHorizontal){v.position.x=d.pos;v.position.z=d.roadLine+d.laneOffset;}else{v.position.z=d.pos;v.position.x=d.roadLine+d.laneOffset;}
+      if(d.isHorizontal){v.position.x=d.pos;v.position.z=d.roadLine+d.laneOffset;}else{v.position.z=d.pos;v.position.x=d.roadLine-d.laneOffset;}
     }
     if(d.type==='osmTraffic')v.position.y=terrainHeight(v.position.x,v.position.z)+0.03;
     if(v.userData.wheels)v.userData.wheels.forEach(w=>w.rotation.x+=delta*8);
@@ -3901,7 +3995,13 @@ function createNPCs(count) {
   const pants = [0x2c3e50, 0x1a1a1a, 0x5d4037, 0x34495e, 0x2d3436];
   for (let i = 0; i < count; i++) {
     const npcName = names[Math.floor(Math.random() * names.length)];
-    const npc = createCharacter({ shirt: shirts[Math.floor(Math.random() * shirts.length)], pants: pants[Math.floor(Math.random() * pants.length)] });
+    const skins=[0x7a4a24,0x5a3018,0xa0663a,0x8d5524,0xc58b5b,0x6b3a1f];
+    const hairs=[0x17120f,0x3b2418,0x222b36,0x1a120e];
+    const styles=['court','degrade','afro','tresses','long'];
+    const bodies=['standard','fin','athletique','fort'];
+    const outfits=['urbain','chic','sport'];
+    const gender=Math.random()>.48?'femme':'homme';
+    const npc = createCharacter({ gender, skin:skins[Math.floor(Math.random()*skins.length)], hair:hairs[Math.floor(Math.random()*hairs.length)], shirt: shirts[Math.floor(Math.random() * shirts.length)], pants: pants[Math.floor(Math.random() * pants.length)], bodyType:bodies[Math.floor(Math.random()*bodies.length)], hairstyle:styles[Math.floor(Math.random()*styles.length)], outfit:outfits[Math.floor(Math.random()*outfits.length)] });
     npc.traverse(o=>{if(o.isMesh)o.castShadow=false;});
     const s = 0.88 + Math.random() * 0.25;
     npc.scale.set(s, s, s);
@@ -4376,6 +4476,7 @@ function loadLifeProgress(){
   try{
     const raw=safeGet(LIFE_SAVE_KEY); if(!raw)return;
     const saved=JSON.parse(raw);
+    if(saved.v19&&typeof saved.v19==='object'&&!Array.isArray(saved.v19)){lifeState.v19={...(lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{}),...saved.v19,installedApps:Array.isArray(saved.v19.installedApps)?[...new Set(saved.v19.installedApps.filter(x=>typeof x==='string'&&x.length<=48))].slice(0,80):[]};}
     if(saved.gameSettings&&typeof saved.gameSettings==='object')lifeState.gameSettings={graphics:['auto','performance','quality'].includes(saved.gameSettings.graphics)?saved.gameSettings.graphics:'auto',cameraSensitivity:Math.max(.5,Math.min(1.8,Number(saved.gameSettings.cameraSensitivity)||1)),showHints:saved.gameSettings.showHints!==false,controlMode:['auto','pc','touch'].includes(saved.gameSettings.controlMode)?saved.gameSettings.controlMode:'auto'};
     if(saved.worldPosition && Number.isFinite(saved.worldPosition.x) && Number.isFinite(saved.worldPosition.z)) pendingSavedWorldPosition={x:saved.worldPosition.x,z:saved.worldPosition.z,yaw:Number.isFinite(saved.worldPosition.yaw)?saved.worldPosition.yaw:0};
     if(Number.isFinite(saved.bankBalance))lifeState.bankBalance=Math.max(0,saved.bankBalance);if(Number.isFinite(saved.waveBalance))lifeState.waveBalance=Math.max(0,saved.waveBalance);if(Number.isFinite(saved.waveDailyWithdrawn))lifeState.waveDailyWithdrawn=Math.max(0,saved.waveDailyWithdrawn);if(typeof saved.waveDayKey==='string')lifeState.waveDayKey=saved.waveDayKey;if(Array.isArray(saved.waveNotifs))lifeState.waveNotifs=saved.waveNotifs.slice(0,12);if(saved.phoneSkin&&typeof saved.phoneSkin==='object'){lifeState.phoneSkin=saved.phoneSkin;try{applyPhoneSkin(lifeState.phoneSkin);}catch(e){}}['hunger','energy','social','hygiene','respect','health','money','hour','minute','workXP'].forEach(k=>{
@@ -4410,6 +4511,7 @@ function saveLifeProgress(show=true){
       hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,hygiene:lifeState.hygiene,respect:lifeState.respect,health:lifeState.health,
       money:lifeState.money,bankBalance:lifeState.bankBalance,waveBalance:lifeState.waveBalance||0,gameSettings:lifeState.gameSettings||{},waveDailyWithdrawn:lifeState.waveDailyWithdrawn,waveDayKey:lifeState.waveDayKey,waveNotifs:lifeState.waveNotifs,phoneSkin:lifeState.phoneSkin,hour:lifeState.hour,minute:lifeState.minute,documents:lifeState.documents,education:lifeState.education,cheats:lifeState.cheats,creatorTier:lifeState.creatorTier||'none',playerProfile:lifeState.playerProfile,
       job:lifeState.job,workXP:lifeState.workXP,bankTransactions:lifeState.bankTransactions,contacts:lifeState.contacts,messages:lifeState.messages,inventory:lifeState.inventory,homeDecor:lifeState.homeDecor,delivery:lifeState.delivery,creator:lifeState.creator,housing:lifeState.housing,projects:lifeState.projects||[],
+      v19:lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{},
       worldPosition:__worldPosition,
       savedAt:new Date().toISOString()
     };
@@ -5461,8 +5563,8 @@ function openPhoneApp(app){
 function openGameCamera(){if(!renderer||!camera)return;cameraMode=true;cameraOriginalFov=camera.fov;document.exitPointerLock&&document.exitPointerLock();document.getElementById('cameraOverlay').style.display='flex';document.getElementById('cameraZoom').value=String(Math.round(camera.fov));const preview=document.getElementById('cameraPreview');preview.innerHTML='';const view=document.createElement('canvas');view.width=640;view.height=860;view.style.width='100%';view.style.height='100%';view.style.objectFit='cover';preview.appendChild(view);const ctx=view.getContext('2d');const draw=()=>{if(!cameraMode)return;try{const src=renderer.domElement,scale=Math.min(view.width/src.width,view.height/src.height),w=src.width*scale,h=src.height*scale;ctx.fillStyle='#000';ctx.fillRect(0,0,view.width,view.height);ctx.drawImage(src,(view.width-w)/2,(view.height-h)/2,w,h);}catch(e){}requestAnimationFrame(draw);};draw();}
 function closeGameCamera(){cameraMode=false;if(mediaRecorder&&mediaRecorder.state==='recording')mediaRecorder.stop();document.getElementById('cameraOverlay').style.display='none';camera.fov=cameraOriginalFov;camera.updateProjectionMatrix();if(renderer&&!dialogOpen&&!panelOpen&&!mapOpen)requestGamePointerLock();}
 function loadGameGallery(){try{gameGallery=JSON.parse(safeGet('abj-life-gallery-v1')||'[]');if(!Array.isArray(gameGallery))gameGallery=[];}catch(e){gameGallery=[];}}
-function saveGameGallery(){try{safeSet('abj-life-gallery-v1',JSON.stringify(gameGallery.slice(-8)));}catch(e){showMessage('Galerie presque pleine : télécharge tes photos.');}}
-function takeGamePhoto(){if(!renderer)return;const src=renderer.domElement,c=document.createElement('canvas'),scale=Math.min(1,1280/src.width);c.width=Math.round(src.width*scale);c.height=Math.round(src.height*scale);c.getContext('2d').drawImage(src,0,0,c.width,c.height);const data=c.toDataURL('image/jpeg',.78);gameGallery.push({id:Date.now(),data,name:'Abidjan-Life-'+Date.now()+'.jpg'});gameGallery=gameGallery.slice(-8);saveGameGallery();document.getElementById('cameraStatus').textContent='Photo enregistrée dans la galerie';showMessage('📸 Photo prise ! Retrouve-la dans la Galerie.');}
+function saveGameGallery(){try{safeSet('abj-life-gallery-v1',JSON.stringify(gameGallery.slice(-40)));}catch(e){showMessage('Galerie presque pleine : télécharge tes photos.');}}
+function takeGamePhoto(){if(!renderer)return;const src=renderer.domElement,c=document.createElement('canvas'),scale=Math.min(1,1280/src.width);c.width=Math.round(src.width*scale);c.height=Math.round(src.height*scale);c.getContext('2d').drawImage(src,0,0,c.width,c.height);const data=c.toDataURL('image/jpeg',.78);gameGallery.push({id:Date.now(),data,name:'Abidjan-Life-'+Date.now()+'.jpg',at:Date.now()});gameGallery=gameGallery.slice(-40);saveGameGallery();document.getElementById('cameraStatus').textContent='Photo enregistrée dans la galerie';showMessage('📸 Photo prise ! Partage-la depuis Galerie ou Réseaux.');if(typeof abjPhoneSound==='function')abjPhoneSound('shutter');}
 function toggleGameVideo(){const status=document.getElementById('cameraStatus'),btn=document.getElementById('recordVideo');if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();btn.textContent='◉ Vidéo';return;}if(!renderer.domElement.captureStream||typeof MediaRecorder==='undefined'){status.textContent='Vidéo non prise en charge par ce navigateur.';return;}try{recordedChunks=[];const stream=renderer.domElement.captureStream(30);mediaRecorder=new MediaRecorder(stream);mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size)recordedChunks.push(e.data);};mediaRecorder.onstop=()=>{const blob=new Blob(recordedChunks,{type:recordedChunks[0]?.type||'video/webm'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Abidjan-Life-video-'+Date.now()+'.webm';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);status.textContent='Vidéo téléchargée sur ton appareil.';btn.textContent='◉ Vidéo';};mediaRecorder.start();btn.textContent='■ Arrêter';status.textContent='Enregistrement vidéo en cours…';}catch(e){status.textContent='Impossible de démarrer la vidéo.';}}
 function renderGameGallery(){loadGameGallery();drawGalleryItems();}
 function drawGalleryItems(){const grid=document.getElementById('galleryGrid');if(!grid)return;loadGameGallery();grid.innerHTML='';if(!gameGallery.length){grid.innerHTML='<p>Aucune photo pour le moment. Ouvre Caméra pour en prendre.</p>';return;}gameGallery.slice().reverse().forEach(item=>{const card=document.createElement('div'),img=document.createElement('img'),a=document.createElement('a'),del=document.createElement('button');img.src=item.data;img.alt='Photo du jeu';a.href=item.data;a.download=item.name;a.textContent='Télécharger';del.textContent='Supprimer';del.onclick=()=>{gameGallery=gameGallery.filter(x=>x.id!==item.id);saveGameGallery();drawGalleryItems();};card.append(img,a,del);grid.appendChild(card);});}
@@ -6865,7 +6967,9 @@ function v16ValidateTrafficRoutes(){
     if(recenter)recenter.onclick=function(){const p=getPlayerMapPosition();const geo=worldToGeo(p.x,p.z);if(typeof leafletMap!=='undefined'&&leafletMap)leafletMap.setView([geo.lat,geo.lon],Math.max(leafletMap.getZoom(),15));};
   }
 })();
-</script>\n\n<script>
+</script>
+
+<script>
 /* ================= V1.18 : Projets + ergonomie tactile ================= */
 (function(){
   const $=id=>document.getElementById(id);
@@ -7352,6 +7456,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    if(sessionStorage.getItem(key))return;
    if(document.getElementById('abjUpdateOverlay'))return;
 
+   if(typeof gameStarted!=='undefined'&&gameStarted&&worldReady&&window.__abjUpdateAccepted!==m.version&&typeof window.abjShowUpdateToast==='function'){window.abjShowUpdateToast(m,checkUpdate);return;}
    const overlay=document.createElement('div');overlay.id='abjUpdateOverlay';
    overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:linear-gradient(145deg,#06121fF5,#102e40F5);color:white;display:grid;place-items:center;font:16px system-ui;text-align:center;padding:22px;backdrop-filter:blur(8px)';
    const panel=document.createElement('div');panel.style.cssText='width:min(460px,100%);padding:28px 22px;border:1px solid #e9c77b;border-radius:20px;background:linear-gradient(145deg,#1b394b,#0b1b29);box-shadow:0 22px 70px #000b';
@@ -8582,8 +8687,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  const timer=setInterval(()=>{attempts++;if(buildTalon()||attempts>180)clearInterval(timer);},1000);
 })();
 </script>
-</body>
-</html>
+
 
 <script>
 /* AF GAMER CI — compte créateur officiel et espace Récompenses */
@@ -8723,7 +8827,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   }).catch(()=>{const box=document.getElementById('abjCallPlayers');if(box)box.textContent='Impossible de charger les joueurs.';});
  }
  const priorOpen=window.openPhoneApp;
- const phoneRequirements={camera:['iphone','galaxy'],gallery:['iphone','galaxy'],youtube:['iphone','galaxy'],tiktok:['iphone','galaxy'],appels:['iphone','galaxy'],wave:['galaxy','iphone']};
+ const phoneRequirements={}; /* V1.36 : plus de limitation de modèle / batterie pour les apps */
  window.openPhoneApp=function(app){
   const required=phoneRequirements[app];
   if(required){
@@ -8834,15 +8938,23 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  }
  function stopRemoteHeli(data){const h=remoteHelis.get(data.owner);if(h&&window.scene)scene.remove(h);remoteHelis.delete(data.owner);}
  function startCreatorHeli(){
-  if(!creatorRoleVerified||!isCreatorAccount(activeGameAccount)||!window.scene||!window.player){showMessage('Hélicoptère réservé au compte créateur connecté.');return;}
+  const official=(typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(activeGameAccount):String(activeGameAccount||'').replace(/\D/g,''));
+  const isCreator = official==='+2250799259362' || String(activeGameAccount||'').replace(/\D/g,'').endsWith('0799259362');
+  const licensed = !!(lifeState&&lifeState.documents&&lifeState.documents.brevet_pilote) || window.__ABJ_TEMP_PILOT===true;
+  if((!isCreator&&!licensed)||!window.scene||!window.player){showMessage('Hélicoptère : compte créateur, brevet pilote, ou service aéroport requis.');return;}
+  if(isCreator)creatorRoleVerified=true;
   if(creatorHeli){stopCreatorHeli();return;}
   creatorHeli=makeHeli();if(!creatorHeli)return;
-  scene.add(creatorHeli);heliActive=true;showMessage('🚁 Hélicoptère créateur activé. ZQSD pour piloter, E pour monter/descendre, Échap pour atterrir.');
+  try{creatorHeli.position.set(player.position.x, terrainHeight(player.position.x,player.position.z)+12, player.position.z);creatorHeli.rotation.y=player.rotation.y;}catch(e){}
+  scene.add(creatorHeli);heliActive=true;window.creatorHeli=creatorHeli;window.__abjHeliActive=true;
+  showMessage(isCreator?'🚁 Hélicoptère créateur activé. ZQSD · E/C altitude · Échap atterrir.':'🚁 Vol autorisé (brevet/aéroport). ZQSD · E/C altitude · Échap atterrir.');
  }
  function stopCreatorHeli(){
-  if(creatorHeli&&window.scene)scene.remove(creatorHeli);creatorHeli=null;heliActive=false;
+  if(creatorHeli&&window.scene)scene.remove(creatorHeli);creatorHeli=null;heliActive=false;window.creatorHeli=null;window.__abjHeliActive=false;
   if(typeof socket!=='undefined'&&socket?.connected)socket.emit('creator:helicopter:stop');
  }
+ window.startCreatorHeli=startCreatorHeli;
+ window.stopCreatorHeli=stopCreatorHeli;
  window.addEventListener('keydown',e=>{
   if(!heliActive||!creatorHeli)return;
   if(e.key==='Escape'){stopCreatorHeli();return;}
@@ -8871,10 +8983,2308 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  if(typeof origOpen==='function'&&!window.__abjHeliAppWrapped){
   window.__abjHeliAppWrapped=true;
   window.openPhoneApp=function(app){
-   if(app==='helicoptere'){if(!creatorRoleVerified){showMessage('Réservé au compte créateur.');return;}const ph=document.getElementById('phone');if(ph)ph.classList.remove('open');startCreatorHeli();return;}
+   if(app==='helicoptere'){const ok=(typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(activeGameAccount):'')==='+2250799259362'||String(activeGameAccount||'').replace(/\D/g,'').endsWith('0799259362');if(!ok){showMessage('Hélicoptère réservé au compte créateur officiel (0799259362).');return;}creatorRoleVerified=true;const ph=document.getElementById('phone');if(ph)ph.classList.remove('open');startCreatorHeli();return;}
    return origOpen.apply(this,arguments);
   };
  }
  const socketReady=setInterval(()=>{if(typeof socket!=='undefined'&&socket&&socket.on&&!window.__abjHeliSocketBound){window.__abjHeliSocketBound=true;socket.on('creator:helicopter',d=>window.dispatchEvent(new CustomEvent('creator:helicopter',{detail:d})));socket.on('creator:helicopter:stop',d=>window.dispatchEvent(new CustomEvent('creator:helicopter:stop',{detail:d})));}},1000);
 })();
 </script>
+
+<script>
+/* ABIDJAN LIFE — installation PWA (Android, ordinateur et iOS) */
+(function(){
+  if(window.__ABJ_PWA_INIT__) return;
+  window.__ABJ_PWA_INIT__=true;
+  var deferredPrompt=null;
+  var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  var isStandalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+  function makeButton(){
+    if(isStandalone || document.getElementById('abjInstallApp')) return;
+    var b=document.createElement('button');
+    b.id='abjInstallApp'; b.type='button'; b.textContent='⬇ Installer';
+    b.setAttribute('aria-label','Installer Abidjan Life sur cet appareil');
+    b.style.cssText='position:fixed;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:99999;padding:11px 15px;border:1px solid #ffe19a;border-radius:24px;background:linear-gradient(135deg,#f4d18a,#c58c39);color:#172630;font:800 13px system-ui;box-shadow:0 4px 18px #0008;cursor:pointer';
+    b.addEventListener('click',async function(){
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        try { await deferredPrompt.userChoice; } catch(e) {}
+        deferredPrompt=null; b.remove(); return;
+      }
+      var msg=isIOS
+        ? 'Pour installer Abidjan Life sur ton iPhone : touche Partager (le carré avec la flèche vers le haut), puis « Sur l’écran d’accueil », et confirme avec Ajouter.'
+        : 'Dans le menu de ton navigateur, choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».';
+      if(typeof window.showMessage==='function') window.showMessage(msg); else alert(msg);
+    });
+    document.body.appendChild(b);
+  }
+  window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault(); deferredPrompt=e; makeButton();
+    var b=document.getElementById('abjInstallApp'); if(b) b.textContent='⬇ Installer le jeu';
+  });
+  window.addEventListener('appinstalled',function(){
+    var b=document.getElementById('abjInstallApp'); if(b) b.remove();
+    deferredPrompt=null;
+  });
+  if(!isStandalone){ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',makeButton,{once:true}); else makeButton(); }
+  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+    window.addEventListener('load',function(){
+      navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(function(err){console.warn('Abidjan Life : service worker non activé',err);});
+    },{once:true});
+  }
+})();
+</script>
+
+<script>
+/* ABJ V1.29 — éléments repérés sur les captures de référence, intégrés à la logique du monde (FCFA, quartiers réels). */
+(function(){
+ 'use strict';
+ if(window.__ABJ_V129)return;window.__ABJ_V129=true;
+ if(typeof buildHotelIvoire!=='function')return;
+ const original=buildHotelIvoire;
+ buildHotelIvoire=function(x,z){
+  original(x,z);
+  try{
+   const cx=x-96,cz=z+10,g=new THREE.Group();
+   const body=new THREE.MeshLambertMaterial({color:0xcfd6da}),glass=new THREE.MeshLambertMaterial({color:0x6f9bb0}),dark=new THREE.MeshLambertMaterial({color:0x2c3e50});
+   const base=new THREE.Mesh(new THREE.BoxGeometry(44,12,36),body);base.position.y=6;base.castShadow=true;g.add(base);
+   const tower=new THREE.Mesh(new THREE.BoxGeometry(26,30,24),glass);tower.position.set(4,27,0);tower.castShadow=true;g.add(tower);
+   const door=new THREE.Mesh(new THREE.BoxGeometry(4,5,.4),dark);door.position.set(0,2.5,18.2);g.add(door);
+   g.position.set(cx,terrainHeight(cx,cz),cz);scene.add(g);
+   landmarkBase(cx,cz,48,40,44,'shopping-center','Ivoire Trade Center · Cocody');
+  }catch(e){console.warn('V1.29 Ivoire Trade Center',e);}
+ };
+})();
+</script>
+
+<script>
+/* ABJ V1.30 — le bouton « Activer le son » et le compteur de joueurs en ligne n'apparaissent que dans le monde explorable. */
+(function(){
+ 'use strict';
+ const st=document.createElement('style');
+ st.textContent='body:not(.abj-in-world) #abjAudioButton,body:not(.abj-in-world) #abjOnlineCount,body:not(.abj-in-world) #abjOnlinePanel{display:none!important}';
+ document.head.appendChild(st);
+ const blockers=['startScreen','accountOverlay','accountIntro','afGamerIntro','creatorOverlay','statusStartOverlay','loadingScreen'];
+ const shown=id=>{const e=document.getElementById(id);if(!e)return false;const c=getComputedStyle(e);return c.display!=='none'&&c.visibility!=='hidden'&&!e.classList.contains('done')&&e.getBoundingClientRect().width>0;};
+ function sync(){
+  let inWorld=false;
+  try{inWorld=!!(gameStarted&&worldReady&&!blockers.some(shown));}catch(e){}
+  document.body.classList.toggle('abj-in-world',inWorld);
+ }
+ sync();setInterval(sync,250);
+})();
+</script>
+<script>
+/* ABJ V1.31 — littoral : mer (golfe de Guinée) et lagunes réelles creusées dans le relief, avec rivage sablonneux et ponts conservés. */
+(function(){
+ 'use strict';
+ if(window.__ABJ_V131)return;window.__ABJ_V131=true;
+ if(typeof terrainHeight!=='function'||typeof createAbidjanTerrain!=='function'||typeof geoToWorld!=='function')return;
+ // Zones d'eau stylisées en (latitude, longitude). Modifie simplement ces tableaux pour ajuster la géographie.
+ const toWorld=pts=>pts.map(p=>{const q=geoToWorld(p[0],p[1]);return{x:q.x,z:q.z};});
+ const ZONES=[
+  {name:'Golfe de Guinée',sea:true,poly:toWorld([[5.222,-4.300],[5.232,-4.200],[5.240,-4.100],[5.248,-4.012],[5.246,-3.950],[5.235,-3.900],[5.222,-3.850],[5.198,-3.750],[5.185,-3.700],[5.000,-3.700],[5.000,-4.300]])},
+  {name:'Lagune Ébrié · Marcory–Koumassi',poly:toWorld([[5.276,-4.040],[5.278,-4.000],[5.276,-3.965],[5.264,-3.962],[5.262,-4.000],[5.264,-4.040]])},
+  {name:'Lagune Ébrié · Plateau–Treichville',poly:toWorld([[5.3105,-4.030],[5.3100,-4.010],[5.3085,-3.990],[5.3060,-3.990],[5.3068,-4.010],[5.3072,-4.030]])}
+ ];
+ const SHORE=110,DEPTH=5.5,LEVEL=-2.0,PAD=420;
+ ZONES.forEach(zn=>{const xs=zn.poly.map(p=>p.x),zs=zn.poly.map(p=>p.z);zn.x0=Math.min(...xs)-PAD;zn.x1=Math.max(...xs)+PAD;zn.z0=Math.min(...zs)-PAD;zn.z1=Math.max(...zs)+PAD;});
+ // distance signée au bord : positive dans l'eau, négative sur terre
+ function signedDist(poly,x,z){
+  let inside=false,min=1e12;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+   const a=poly[i],b=poly[j];
+   if(((a.z>z)!==(b.z>z))&&(x<(b.x-a.x)*(z-a.z)/(b.z-a.z+1e-9)+a.x))inside=!inside;
+   const dx=b.x-a.x,dz=b.z-a.z,l2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/l2));
+   const px=a.x+t*dx-x,pz=a.z+t*dz-z,d2=px*px+pz*pz;if(d2<min*min)min=Math.sqrt(d2);
+  }
+  return inside?min:-min;
+ }
+ function waterDist(x,z){let best=-1e9;for(const zn of ZONES){if(x<zn.x0||x>zn.x1||z<zn.z0||z>zn.z1)continue;const d=signedDist(zn.poly,x,z);if(d>best)best=d;}return best;}
+ // les routes proches (ponts) gardent leur altitude d'origine
+ let hash=null,hashCount=-1;const CELL=80;
+ function buildHash(){
+  hash=new Map();hashCount=osmRoadSegments.length;
+  for(const s of osmRoadSegments){
+   const len=Math.hypot(s.b.x-s.a.x,s.b.z-s.a.z),n=Math.max(1,Math.ceil(len/CELL));
+   for(let k=0;k<=n;k++){const x=s.a.x+(s.b.x-s.a.x)*k/n,z=s.a.z+(s.b.z-s.a.z)*k/n,key=Math.floor(x/CELL)+','+Math.floor(z/CELL);let arr=hash.get(key);if(!arr){arr=[];hash.set(key,arr);}if(arr[arr.length-1]!==s)arr.push(s);}
+  }
+ }
+ function nearRoad(x,z){
+  if(typeof osmRoadSegments==='undefined'||!osmRoadSegments.length)return false;
+  if(!hash||hashCount!==osmRoadSegments.length)buildHash();
+  const cx=Math.floor(x/CELL),cz=Math.floor(z/CELL);
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const arr=hash.get((cx+i)+','+(cz+j));if(!arr)continue;
+   for(const s of arr){const dx=s.b.x-s.a.x,dz=s.b.z-s.a.z,l2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-s.a.x)*dx+(z-s.a.z)*dz)/l2));
+    const px=s.a.x+t*dx-x,pz=s.a.z+t*dz-z,r=(s.width||6)/2+9;if(px*px+pz*pz<r*r)return true;}}
+  return false;
+ }
+ const baseHeight=terrainHeight;
+ terrainHeight=function(x,z){
+  const b=baseHeight(x,z),d=waterDist(x,z);
+  if(d<-SHORE)return b;
+  let t=Math.min(1,(d+SHORE)/(2*SHORE));t=t*t*(3-2*t);
+  if(t>.02&&nearRoad(x,z))return b;
+  return b-DEPTH*t;
+ };
+ // enregistre l'eau pour le blocage du joueur
+ window.ABJ_WATER_POLYGONS=window.ABJ_WATER_POLYGONS||[];
+ ZONES.forEach(zn=>window.ABJ_WATER_POLYGONS.push(zn.poly));
+ const waters=[];
+ const originalTerrain=createAbidjanTerrain;
+ createAbidjanTerrain=function(){
+  const mesh=originalTerrain();
+  try{
+   // rivage sablonneux et fond marin teinté
+   const pos=mesh.geometry.attributes.position,col=new Float32Array(pos.count*3);
+   for(let i=0;i<pos.count;i++){
+    const d=waterDist(pos.getX(i),pos.getZ(i));let r=1,g=1,b=1;
+    if(d>40){r=.30;g=.52;b=.58;}
+    else if(d>-240){const t=Math.min(1,Math.max(0,(d+240)/280));const s=Math.sin(t*Math.PI*.5);r=1+(.97-1)*s;g=1+(.88-1)*s;b=1+(.64-1)*s;if(d>-30){const k=(d+30)/70;r=r*(1-k)+.30*k;g=g*(1-k)+.52*k;b=b*(1-k)+.58*k;}}
+    col[i*3]=r;col[i*3+1]=g;col[i*3+2]=b;
+   }
+   mesh.geometry.setAttribute('color',new THREE.BufferAttribute(col,3));
+   mesh.material.vertexColors=true;mesh.material.needsUpdate=true;
+   ZONES.forEach((zn,idx)=>{
+    const shape=new THREE.Shape();shape.moveTo(zn.poly[0].x,-zn.poly[0].z);for(let i=1;i<zn.poly.length;i++)shape.lineTo(zn.poly[i].x,-zn.poly[i].z);shape.closePath();
+    const geo=new THREE.ShapeGeometry(shape);geo.rotateX(-Math.PI/2);
+    const mat=new THREE.MeshPhongMaterial({color:zn.sea?0x1b7fb0:0x2a8f9c,specular:0x9fd0e6,shininess:90,transparent:true,opacity:.9,side:THREE.DoubleSide});
+    const w=new THREE.Mesh(geo,mat);w.position.y=LEVEL;w.name=zn.sea?'abj-mer':'abj-lagune';w.renderOrder=1;w.userData.phase=idx;scene.add(w);waters.push(w);
+   });
+  }catch(e){console.warn('V1.31 littoral',e);}
+  return mesh;
+ };
+ (function wave(){
+  const t=performance.now()/1000;
+  for(const w of waters){if(w.parent)w.position.y=LEVEL+Math.sin(t*.8+w.userData.phase)*.07;}
+  requestAnimationFrame(wave);
+ })();
+})();
+</script>
+<script>
+/* ABJ V1.32 — entrées sur tous les bâtiments (création à la demande), notification de mise à jour en jeu, bureau créateur réactivé. */
+(function(){
+ 'use strict';
+ if(window.__ABJ_V132)return;window.__ABJ_V132=true;
+
+ /* 1) Notification de mise à jour dans le jeu (non bloquante) */
+ window.abjShowUpdateToast=function(m,proceed){
+  const later='abj-update-later-'+m.version;
+  try{if(sessionStorage.getItem(later))return;}catch(e){}
+  if(document.getElementById('abjUpdateToast'))return;
+  const t=document.createElement('div');t.id='abjUpdateToast';
+  t.style.cssText='position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);z-index:9000;width:min(420px,92vw);padding:12px 14px;border:1px solid #e9c77b;border-radius:16px;background:rgba(10,26,40,.96);color:#fff;font:13px system-ui;box-shadow:0 10px 34px #000a;display:flex;gap:10px;align-items:center';
+  const txt=document.createElement('div');txt.style.flex='1';
+  txt.innerHTML='<b style="color:#ffe0a0">🚀 Mise à jour disponible</b><br><span style="color:#c9d9e3">Version '+String(m.version).replace(/[<>&]/g,'')+' — installe-la quand tu veux, ta partie est sauvegardée.</span>';
+  const go=document.createElement('button');go.textContent='Installer';go.style.cssText='border:0;border-radius:9px;padding:9px 12px;background:#e5b85e;color:#17232c;font-weight:900;cursor:pointer';
+  const no=document.createElement('button');no.textContent='Plus tard';no.style.cssText='border:1px solid #ffffff40;border-radius:9px;padding:9px 10px;background:transparent;color:#fff;cursor:pointer';
+  go.onclick=()=>{t.remove();window.__abjUpdateAccepted=m.version;try{if(typeof saveLifeProgress==='function')saveLifeProgress(false);}catch(e){}proceed();};
+  no.onclick=()=>{t.remove();try{sessionStorage.setItem(later,'1');}catch(e){}};
+  t.append(txt,go,no);document.body.appendChild(t);
+  setTimeout(()=>{if(t.parentNode&&!window.__abjUpdateAccepted)t.style.opacity='.92';},100);
+ };
+
+ /* 2) Entrée sur n'importe quel bâtiment : porte virtuelle + intérieur générés au moment d'entrer */
+ const GRID=96;let grid=null,gridCount=-1;
+ function buildGrid(){
+  grid=new Map();gridCount=allBuildings.length;
+  for(let i=0;i<allBuildings.length;i++){
+   const b=allBuildings[i];if(!b||!(b.w>0)||!(b.d>0))continue;
+   const x0=Math.floor((b.x-b.w/2)/GRID),x1=Math.floor((b.x+b.w/2)/GRID),z0=Math.floor((b.z-b.d/2)/GRID),z1=Math.floor((b.z+b.d/2)/GRID);
+   if(x1-x0>8||z1-z0>8)continue;
+   for(let gx=x0;gx<=x1;gx++)for(let gz=z0;gz<=z1;gz++){const k=gx+','+gz;let a=grid.get(k);if(!a){a=[];grid.set(k,a);}a.push(b);}
+  }
+ }
+ function nearestBuilding(px,pz,reach){
+  if(!grid||gridCount!==allBuildings.length)buildGrid();
+  const cx=Math.floor(px/GRID),cz=Math.floor(pz/GRID);let best=null,bd=reach;
+  for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const a=grid.get((cx+i)+','+(cz+j));if(!a)continue;
+   for(const b of a){if(b.w<4||b.d<4)continue;const dx=Math.max(Math.abs(px-b.x)-b.w/2,0),dz=Math.max(Math.abs(pz-b.z)-b.d/2,0),d=Math.hypot(dx,dz);if(d<bd){bd=d;best=b;}}}
+  return best;
+ }
+ function virtualDoor(b,px,pz){
+  if(b.__vdoor)return b.__vdoor;
+  const rx=px-b.x,rz=pz-b.z,fx=Math.abs(rx)/(b.w/2),fz=Math.abs(rz)/(b.d/2);let x,z,nx=0,nz=0;
+  if(fx>fz){const s=rx>=0?1:-1;x=b.x+s*b.w/2;z=Math.max(b.z-b.d/2+1,Math.min(b.z+b.d/2-1,pz));nx=s;}
+  else{const s=rz>=0?1:-1;z=b.z+s*b.d/2;x=Math.max(b.x-b.w/2+1,Math.min(b.x+b.w/2-1,px));nz=s;}
+  const id='lz-'+Math.round(b.x)+'_'+Math.round(b.z);
+  const rot=Math.atan2(nx,nz);
+  try{const m=new THREE.Mesh(new THREE.BoxGeometry(1.35,2.4,.14),new THREE.MeshLambertMaterial({color:0x5d4037}));m.position.set(x+nx*.08,terrainHeight(x,z)+1.2,z+nz*.08);m.rotation.y=rot;scene.add(m);}catch(e){}
+  const q=(typeof getQuartierAt==='function')?getQuartierAt(b.x,b.z):null;
+  return b.__vdoor={x,z,id,rot,normal:new THREE.Vector3(nx,0,nz),home:true,lazy:true,
+   bw:b.w,bd:b.d,bh:b.h||6,style:(q&&q.style)||'populaire',
+   buildingName:b.name||(b.h>10?'Immeuble':(b.type==='monument'?'Bâtiment':'Bâtiment accessible'))};
+ }
+ const originalFind=findNearbyResidentialDoor;
+ let lastT=0,lastRes=null,lastX=1e9,lastZ=1e9;
+ findNearbyResidentialDoor=function(){
+  if(!player||currentInterior)return null;
+  const real=originalFind();if(real)return real;
+  const now=performance.now(),px=player.position.x,pz=player.position.z;
+  if(now-lastT<120&&Math.abs(px-lastX)<.4&&Math.abs(pz-lastZ)<.4)return lastRes;
+  lastT=now;lastX=px;lastZ=pz;
+  const b=nearestBuilding(px,pz,4.5);
+  lastRes=b?virtualDoor(b,px,pz):null;return lastRes;
+ };
+ const originalEnter=enterBuilding;
+ enterBuilding=function(door){
+  if(door&&door.lazy&&!interiors[door.id]){
+   try{
+    const floors=Math.max(1,Math.min(6,Math.round(door.bh/3.1)));
+    interiors[door.id]=generateInterior(door.id,door.bw,door.bd,floors,0xeceff1,door.style);
+   }catch(e){console.warn('Intérieur indisponible',e);showMessage('Cette porte est fermée pour le moment.');return;}
+  }
+  return originalEnter(door);
+ };
+
+ /* 3) Bureau créateur : touche U dans le QG (étage 2 = apparence, étage 3 = monde) */
+ document.addEventListener('keydown',e=>{
+  if(String(e.key||'').toLowerCase()!=='u'||e.repeat)return;
+  try{
+   if(!currentInterior||!currentInterior.creatorHQ||!isCreatorAccount(activeGameAccount))return;
+   if(currentFloor===3)openCreatorWorldMenu();else if(currentFloor===2)openCreatorAppearanceRoom();
+  }catch(err){console.warn(err);}
+ });
+})();
+</script>
+<script>
+/* ABJ V1.33 — barre de tâche en jeu (téléchargements, entrées/sorties) + personnages plus agréables à regarder. */
+(function(){
+ 'use strict';
+ if(window.__ABJ_V133)return;window.__ABJ_V133=true;
+
+ /* 1) Petite barre de progression : le personnage reste immobile tant que la tâche n'est pas terminée */
+ let bar=null,fill=null,lbl=null,eta=null;
+ function ensureBar(){
+  if(bar)return;
+  bar=document.createElement('div');bar.id='abjTaskBar';
+  bar.style.cssText='position:fixed;left:50%;bottom:max(110px,calc(env(safe-area-inset-bottom) + 96px));transform:translateX(-50%);z-index:9500;width:min(270px,72vw);padding:8px 11px;border:1px solid #e9c77b;border-radius:13px;background:rgba(8,20,32,.94);color:#fff;font:12px system-ui;box-shadow:0 6px 22px #0009;display:none;pointer-events:none';
+  const row=document.createElement('div');row.style.cssText='display:flex;justify-content:space-between;gap:8px;margin-bottom:6px';
+  lbl=document.createElement('span');lbl.style.cssText='font-weight:700;color:#ffe0a0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+  eta=document.createElement('span');eta.style.cssText='color:#c9d9e3;white-space:nowrap';
+  row.append(lbl,eta);
+  const track=document.createElement('div');track.style.cssText='height:8px;border-radius:8px;background:#06121c;border:1px solid #ffffff30;overflow:hidden';
+  fill=document.createElement('div');fill.style.cssText='height:100%;width:0%;border-radius:8px;background:linear-gradient(90deg,#c28d36,#ffe09a)';
+  track.appendChild(fill);bar.append(row,track);document.body.appendChild(bar);
+ }
+ window.abjRunTask=function(label,seconds,done){
+  if(window.__abjTaskBusy)return false;
+  ensureBar();window.__abjTaskBusy=true;
+  lbl.textContent=label;fill.style.width='0%';bar.style.display='block';
+  const total=Math.max(.4,Number(seconds)||1)*1000,t0=performance.now();
+  (function tick(){
+   const p=Math.min(1,(performance.now()-t0)/total);
+   fill.style.width=(p*100).toFixed(0)+'%';
+   eta.textContent=p>=1?'100 %':Math.round(p*100)+' % · '+Math.max(1,Math.ceil((1-p)*total/1000))+' s';
+   if(p<1){requestAnimationFrame(tick);return;}
+   bar.style.display='none';window.__abjTaskBusy=false;
+   try{if(typeof done==='function')done();}catch(e){console.warn('Tâche',e);}
+  })();
+  return true;
+ };
+ // gel du personnage pendant la tâche
+ const originalUpdate=updatePlayer;
+ updatePlayer=function(delta){
+  if(window.__abjTaskBusy){try{for(const k of ['z','w','q','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '])keys[k]=false;}catch(e){}return;}
+  return originalUpdate(delta);
+ };
+ // entrées / sorties de bâtiment (sauf au démarrage du monde)
+ const originalStart=startPlayerAtHome;
+ startPlayerAtHome=function(){window.__abjStartup=true;try{return originalStart.apply(this,arguments);}finally{window.__abjStartup=false;}};
+ const originalEnter=enterBuilding;
+ enterBuilding=function(door){
+  if(window.__abjTaskBusy||!door||currentInterior)return;
+  if(window.__abjStartup)return originalEnter(door);
+  window.abjRunTask('🚪 Entrée · '+String(door.buildingName||'bâtiment').slice(0,28),1.1,()=>originalEnter(door));
+ };
+ const originalExit=exitBuilding;
+ exitBuilding=function(){
+  if(window.__abjTaskBusy||!currentInterior)return;
+  window.abjRunTask('🚪 Sortie du bâtiment',.8,()=>originalExit());
+ };
+ // téléchargement d'applications du téléphone
+ document.addEventListener('click',e=>{
+  const b=e.target&&e.target.closest?e.target.closest('[data-install]'):null;
+  if(!b||b.__abjGo)return;
+  if(/install/i.test(b.textContent)&&!/télécharger/i.test(b.textContent))return;
+  e.stopImmediatePropagation();e.preventDefault();
+  if(window.__abjTaskBusy)return;
+  const art=b.closest('article'),name=((art&&art.querySelector('b'))||{}).textContent||'application';
+  let h=0;for(const c of String(b.dataset.install))h=(h*31+c.charCodeAt(0))>>>0;
+  window.abjRunTask('⬇️ Téléchargement · '+name.slice(0,22),2.5+(h%25)/10,()=>{b.__abjGo=true;try{b.click();}finally{b.__abjGo=false;}});
+ },true);
+
+ /* 2) Personnages : peau et cheveux moins sombres, visage lisible, tête plus expressive, ombre au sol */
+ const originalChar=createCharacter;
+ createCharacter=function(opts){
+  const g=originalChar(opts);
+  try{
+   if(g.userData.abjPolish)return g;g.userData.abjPolish=true;
+   const skinHex=Number((opts||{}).skin)||0x7a4a24;
+   const seen=new Set();
+   g.traverse(m=>{
+    if(!m.isMesh||!m.material||seen.has(m.material))return;seen.add(m.material);
+    const mt=m.material;if(!mt.color)return;const hex=mt.color.getHex();
+    if(hex===skinHex){mt.roughness=.55;mt.emissive=new THREE.Color(skinHex);mt.emissiveIntensity=.17;}
+    else if(m.userData&&m.userData.clothingPart){mt.roughness=.72;}
+    else if(hex===(Number((opts||{}).hair)||0x17120f)){mt.roughness=.45;mt.emissive=new THREE.Color(0x1c1c1c);mt.emissiveIntensity=.8;}
+   });
+   const hg=g.userData.headGroup;
+   if(hg){
+    hg.scale.setScalar(1.1);hg.position.y+=.015;
+    hg.children.forEach(c=>{if(c.isMesh&&c.position.z>.2&&Math.abs(c.position.y-.035)<.01)c.scale.multiplyScalar(1.25);});
+   }
+   const blob=new THREE.Mesh(new THREE.CircleGeometry(.5,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.22,depthWrite:false}));
+   blob.rotation.x=-Math.PI/2;blob.position.y=.025;blob.renderOrder=2;g.add(blob);
+  }catch(e){console.warn('V1.33 personnage',e);}
+  return g;
+ };
+})();
+</script>
+
+<script>
+/* ABJ V1.34 — monde plus coloré et vivant : lumière nuit, bâtiments décoratifs,
+   panneaux pub, marchés (2 articles/vendeur), montée R / descente T,
+   calendrier semaine/mois/année, progression hors-ligne, téléphone réorganisé,
+   intérieurs plus lisibles. */
+(function(){
+'use strict';
+if(window.__ABJ_V134)return;window.__ABJ_V134=true;
+window.ABJ_BUILD_VERSION='1.34';
+
+/* ---------- 1) Calendrier jeu (jours / semaines / mois / années) ---------- */
+const ABJ_MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const ABJ_WEEKDAYS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+function ensureCalendar(){
+  lifeState.calendar=lifeState.calendar||{year:2026,month:1,day:1,week:1};
+  const c=lifeState.calendar;
+  c.year=Math.max(2026,Number(c.year)||2026);
+  c.month=Math.min(12,Math.max(1,Number(c.month)||1));
+  c.day=Math.min(31,Math.max(1,Number(c.day)||1));
+  c.week=Math.max(1,Number(c.week)||1);
+  return c;
+}
+function daysInMonth(y,m){return new Date(y,m,0).getDate();}
+function advanceGameDay(){
+  const c=ensureCalendar();
+  c.day+=1;
+  const dim=daysInMonth(c.year,c.month);
+  if(c.day>dim){c.day=1;c.month+=1;}
+  if(c.month>12){c.month=1;c.year+=1;}
+  // semaine ISO-like : tous les 7 jours de jeu
+  const totalDays=(c.year-2026)*365+Math.floor((c.month-1)*30.4)+c.day;
+  c.week=Math.floor((totalDays-1)/7)+1;
+  lifeState.housing=lifeState.housing||{ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1};
+  lifeState.housing.gameDay=(lifeState.housing.gameDay||1)+1;
+}
+function formatGameDate(){
+  const c=ensureCalendar();
+  const totalDays=(c.year-2026)*365+Math.floor((c.month-1)*30.4)+c.day;
+  const wd=ABJ_WEEKDAYS[((totalDays-1)%7+7)%7];
+  return wd+' '+c.day+' '+ABJ_MONTHS[c.month-1]+' '+c.year+' · S'+c.week;
+}
+function applyOfflineTimeProgress(){
+  try{
+    const key='abj-last-realtime:'+String(activeGameAccount||'guest');
+    const prev=Number(safeGet(key)||0);
+    const now=Date.now();
+    safeSet(key,String(now));
+    if(!prev||prev>now)return;
+    // 1 min réelle ≈ 2 min de jeu (accélération légère hors ligne)
+    const elapsedMin=Math.min(48*60,(now-prev)/60000); // max 2 jours de jeu
+    if(elapsedMin<2)return;
+    let addMin=elapsedMin*2;
+    while(addMin>=1){
+      lifeState.minute=(Number(lifeState.minute)||0)+1;
+      addMin-=1;
+      if(lifeState.minute>=60){
+        lifeState.minute=0;
+        const prevH=Number(lifeState.hour)||0;
+        lifeState.hour=(prevH+1)%24;
+        if(prevH===23)advanceGameDay();
+      }
+    }
+    if(typeof showMessage==='function'&&elapsedMin>30){
+      showMessage('⏳ Temps écoulé hors jeu : le calendrier a avancé jusqu’au '+formatGameDate()+'.');
+    }
+  }catch(e){}
+}
+
+/* ---------- 2) Affichage date + horloge renforcée ---------- */
+function refreshClockUI(){
+  const clockEl=document.getElementById('lifeClock');
+  if(clockEl){
+    const h=String(Number(lifeState.hour)||0).padStart(2,'0');
+    const m=String(Math.floor(Number(lifeState.minute)||0)).padStart(2,'0');
+    clockEl.innerHTML=h+':'+m+'<br><small style="font-size:9px;font-weight:700;opacity:.85">'+formatGameDate()+'</small>';
+    clockEl.style.lineHeight='1.15';
+    clockEl.style.textAlign='right';
+  }
+  const phoneClock=document.getElementById('phoneClock');
+  if(phoneClock)phoneClock.textContent=String(Number(lifeState.hour)||0).padStart(2,'0')+':'+String(Math.floor(Number(lifeState.minute)||0)).padStart(2,'0');
+}
+
+const __oldLife=typeof updateLifeSimulation==='function'?updateLifeSimulation:null;
+if(__oldLife){
+  updateLifeSimulation=function(delta){
+    const beforeDay=lifeState.housing&&lifeState.housing.gameDay;
+    const beforeHour=lifeState.hour;
+    __oldLife(delta);
+    // Si le core a incrémenté le jour via hour wrap, synchroniser le calendrier
+    if(lifeState.housing&&beforeDay!=null&&lifeState.housing.gameDay>beforeDay){
+      // advanceGameDay aurait déjà été appelé dans core parfois : on aligne sans double
+      const c=ensureCalendar();
+      // ne pas double-avancer si on a déjà aligné
+      if(!lifeState.__calSyncedDay||lifeState.__calSyncedDay!==lifeState.housing.gameDay){
+        // core a déjà +1 gameDay ; on avance seulement calendrier une fois
+        const dim=daysInMonth(c.year,c.month);
+        // si on n'a pas encore pushé le calendrier pour ce gameDay
+        if((lifeState.__lastCalGameDay||0)<lifeState.housing.gameDay){
+          c.day+=1;
+          if(c.day>dim){c.day=1;c.month+=1;}
+          if(c.month>12){c.month=1;c.year+=1;}
+          const totalDays=(c.year-2026)*365+Math.floor((c.month-1)*30.4)+c.day;
+          c.week=Math.floor((totalDays-1)/7)+1;
+          lifeState.__lastCalGameDay=lifeState.housing.gameDay;
+        }
+      }
+    }
+    refreshClockUI();
+  };
+}
+
+/* ---------- 3) Éclairage nuit plus riche + lumières urbaines ---------- */
+const nightLights=[];
+function enhanceNightLighting(){
+  if(!scene||scene.userData.abjNightEnhanced)return;
+  scene.userData.abjNightEnhanced=true;
+  // Ambient un peu plus chaude
+  let amb=scene.children.find(o=>o&&o.isAmbientLight);
+  if(!amb){amb=new THREE.AmbientLight(0xffe8cc,.22);scene.add(amb);}
+  scene.userData.abjAmbient=amb;
+  // Lumières ponctuelles « lampadaires » autour du joueur (repositionnées)
+  for(let i=0;i<10;i++){
+    const L=new THREE.PointLight(0xffc878,.0,42,1.6);
+    L.userData.abjStreet=true;
+    scene.add(L);nightLights.push(L);
+  }
+}
+function updateNightUrbanLights(){
+  if(!player||!nightLights.length)return;
+  const h=(Number(lifeState.hour)||0)+(Number(lifeState.minute)||0)/60;
+  const night=h<6.2||h>18.3?1:0;
+  const dusk=Math.exp(-Math.pow((h-18.5)/1.2,2))+Math.exp(-Math.pow((h-5.8)/1.1,2));
+  const intensity=Math.max(night*0.95,dusk*0.7);
+  // fenêtres allumées : boost ambient
+  const amb=scene.userData.abjAmbient;
+  if(amb)amb.intensity=.16+(1-Math.max(0,Math.sin(((h/24)*Math.PI*2)-Math.PI/2)))*.22+intensity*.08;
+  const px=player.position.x,pz=player.position.z;
+  nightLights.forEach((L,i)=>{
+    const a=i/nightLights.length*Math.PI*2+(performance.now()/40000);
+    const r=18+i*7;
+    L.position.set(px+Math.cos(a)*r,terrainHeight(px,pz)+5.5,pz+Math.sin(a)*r);
+    L.intensity=intensity*(0.55+(i%3)*.18);
+    L.color.setHex(i%2?0xffd29a:0xffb86b);
+  });
+  // Bâtiments proches : teinte émissive légère la nuit
+  if(intensity>.2&&typeof allBuildings!=='undefined'){
+    // déjà géré via lampadaires ; rien de lourd ici
+  }
+}
+const __oldSky=typeof updateDynamicSky==='function'?updateDynamicSky:null;
+if(__oldSky){
+  updateDynamicSky=function(delta){
+    __oldSky(delta);
+    try{
+      enhanceNightLighting();
+      updateNightUrbanLights();
+      // Ciel nuit plus profond + halo urbain
+      if(scene&&lifeState){
+        const h=(Number(lifeState.hour)||0)+(Number(lifeState.minute)||0)/60;
+        const night=h<5.5||h>19.2;
+        if(night&&scene.background&&scene.background.isColor){
+          scene.background.lerp(new THREE.Color(0x0a1530),.15);
+        }
+      }
+    }catch(e){}
+  };
+}
+
+/* ---------- 4) Intérieurs : masquer le monde extérieur qui traverse (arbres/« feuilles ») ---------- */
+function hideWorldForInterior(hide){
+  try{
+    if(typeof outdoorGround!=='undefined'&&outdoorGround)outdoorGround.visible=!hide;
+    if(typeof laguneMesh!=='undefined'&&laguneMesh)laguneMesh.visible=!hide;
+    if(typeof npcs!=='undefined')npcs.forEach(n=>{if(n)n.visible=!hide&&!n.userData.dead;});
+    if(typeof vehicles!=='undefined')vehicles.forEach(v=>{if(v)v.visible=!hide;});
+    // Arbres / props décoratifs souvent nommés ou marqués
+    if(typeof scene!=='undefined'&&scene){
+      scene.traverse(o=>{
+        if(!o||!o.isObject3D)return;
+        const n=(o.name||'')+'';
+        if(/tree|palm|foliage|bush|herbe|plant|abj-tree|vegetation/i.test(n))o.visible=!hide;
+        if(o.userData&&(o.userData.isTree||o.userData.foliage||o.userData.vegetation))o.visible=!hide;
+      });
+    }
+    // Lumière d'intérieur stable
+    if(hide){
+      if(!window.__abjInteriorLight){
+        window.__abjInteriorLight=new THREE.HemisphereLight(0xfff2dd,0x3a4a55,1.05);
+        scene.add(window.__abjInteriorLight);
+      }
+      window.__abjInteriorLight.visible=true;
+      window.__abjInteriorLight.intensity=1.1;
+    }else if(window.__abjInteriorLight){
+      window.__abjInteriorLight.visible=false;
+    }
+  }catch(e){}
+}
+const __oldEnter=typeof enterBuilding==='function'?enterBuilding:null;
+if(__oldEnter){
+  enterBuilding=function(door){
+    const r=__oldEnter.apply(this,arguments);
+    hideWorldForInterior(true);
+    // Rendre tous les étages du bâtiment un peu plus lumineux
+    try{
+      if(currentInterior&&currentInterior.group){
+        currentInterior.group.visible=true;
+        currentInterior.group.traverse(m=>{
+          if(m.isMesh&&m.material){
+            const mats=Array.isArray(m.material)?m.material:[m.material];
+            mats.forEach(mat=>{
+              if(mat&&mat.color&&!mat.userData?.abjLit){
+                mat.userData=mat.userData||{};
+                mat.userData.abjLit=true;
+                if(mat.emissive){mat.emissive.lerp(new THREE.Color(0x222018),.12);}
+              }
+            });
+          }
+        });
+      }
+    }catch(e){}
+    return r;
+  };
+}
+const __oldExit=typeof exitBuilding==='function'?exitBuilding:null;
+if(__oldExit){
+  exitBuilding=function(){
+    const r=__oldExit.apply(this,arguments);
+    hideWorldForInterior(false);
+    return r;
+  };
+}
+
+/* ---------- 5) Véhicules : R monter · T descendre (E reste compatible) ---------- */
+window.addEventListener('keydown',function(e){
+  if(!worldReady||!player||dialogOpen||panelOpen||mapOpen||phoneOpen||currentInterior)return;
+  const k=String(e.key||'').toLowerCase();
+  if(k==='r'){
+    if(typeof drivingVehicle!=='undefined'&&drivingVehicle)return;
+    // Ne pas voler la rotation de meuble
+    if(typeof heldFurniture!=='undefined'&&heldFurniture)return;
+    const mesh=(typeof ownedVehicleMeshes!=='undefined'?ownedVehicleMeshes:[]).find(v=>v&&v.visible&&Math.hypot(v.position.x-player.position.x,v.position.z-player.position.z)<4.2);
+    if(mesh&&typeof enterOwnedVehicle==='function'){
+      e.preventDefault();e.stopImmediatePropagation();
+      enterOwnedVehicle(mesh);
+      showMessage('Tu montes (R). ZQSD pour rouler · T pour descendre.');
+    }
+  }
+  if(k==='t'){
+    if(typeof drivingVehicle!=='undefined'&&drivingVehicle&&typeof exitOwnedVehicle==='function'){
+      e.preventDefault();e.stopImmediatePropagation();
+      exitOwnedVehicle();
+      showMessage('Tu descends du véhicule (T).');
+    }
+  }
+},true);
+
+/* ---------- 6) Bâtiments décoratifs dans les zones vides + panneaux + enseignes ---------- */
+function makeBillboard(text,w,h,bg,fg){
+  const c=document.createElement('canvas');c.width=512;c.height=256;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle=bg||'#1a3a5c';ctx.fillRect(0,0,512,256);
+  ctx.strokeStyle=fg||'#f0d18d';ctx.lineWidth=10;ctx.strokeRect(12,12,488,232);
+  ctx.fillStyle=fg||'#f0d18d';ctx.font='bold 42px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  const lines=String(text).split('\n');
+  lines.forEach((line,i)=>ctx.fillText(line.slice(0,22),256,128+(i-(lines.length-1)/2)*48));
+  const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace||tex.colorSpace;
+  return new THREE.Mesh(new THREE.PlaneGeometry(w||8,h||4),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,transparent:true}));
+}
+function decorateEmptyAreas(){
+  if(!scene||!osmLoaded||window.__ABJ_V134_DECOR)return;
+  window.__ABJ_V134_DECOR=true;
+  const brands=[
+    ['SUPERMARCHE\nBONPRIX','#c0392b'],['PHARMACIE\nDU PLATEAU','#1e8449'],['BOUTIQUE\nYAKELE','#6c3483'],
+    ['CASH CENTER','#1a5276'],['MAQUIS\nCHEZ AWA','#b9770e'],['SALON\nBEAUTE CI','#922b21'],
+    ['TELECOM\nORANGE','#e67e22'],['WAVE\nPOINT','#117a65'],['LIBRAIRIE\nNELSON','#2c3e50'],
+    ['RESTAU\nATTIEKE','#a04000'],['BANQUE\nSIBC','#1f618d'],['COIFFURE\nAFROKING','#4a235a']
+  ];
+  let placed=0;
+  const tryPlace=(x,z,kind)=>{
+    if(Math.abs(x)>CITY_SIZE/2-80||Math.abs(z)>CITY_SIZE/2-80)return false;
+    if(typeof isOnRoad==='function'&&isOnRoad(x,z,8))return false;
+    if(typeof isPointInAbjWater==='function'&&isPointInAbjWater(x,z))return false;
+    if(typeof overlapsExisting==='function'&&overlapsExisting(x,z,18,16,3))return false;
+    const g=new THREE.Group();
+    const h=kind==='tower'?(10+Math.random()*18):(4.5+Math.random()*5);
+    const w=kind==='tower'?(10+Math.random()*8):(7+Math.random()*6);
+    const d=kind==='tower'?(10+Math.random()*8):(7+Math.random()*6);
+    const hue=Math.random();
+    const col=new THREE.Color().setHSL(hue*.08+.05,.25+.2*Math.random(),.45+.2*Math.random());
+    const body=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color:col,roughness:.82}));
+    body.position.y=h/2;body.castShadow=true;body.receiveShadow=true;g.add(body);
+    // toit coloré
+    const roof=new THREE.Mesh(new THREE.BoxGeometry(w+0.4,.4,d+0.4),new THREE.MeshStandardMaterial({color:0xc9783a,roughness:.7}));
+    roof.position.y=h+.2;g.add(roof);
+    // fenêtres
+    const glass=new THREE.MeshStandardMaterial({color:0x7eb6c9,emissive:0x224455,emissiveIntensity:.25,roughness:.3});
+    for(let fy=1;fy<h-1;fy+=2.2){
+      for(let fx=-w/2+1.5;fx<w/2-1;fx+=2.4){
+        const win=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.2,.08),glass);
+        win.position.set(fx,fy,d/2+.05);g.add(win);
+      }
+    }
+    // enseigne / panneau pub
+    if(Math.random()>.35){
+      const b=brands[(placed+Math.floor(Math.random()*brands.length))%brands.length];
+      const board=makeBillboard(b[0],Math.min(w*.9,9),Math.min(3.2,h*.35),b[1],'#fff8e7');
+      board.position.set(0,h*0.62,d/2+.12);g.add(board);
+    }
+    // auvent
+    if(kind!=='tower'){
+      const awning=new THREE.Mesh(new THREE.BoxGeometry(w*.7,.18,1.4),new THREE.MeshStandardMaterial({color:0xd35400,roughness:.6}));
+      awning.position.set(0,2.6,d/2+.7);g.add(awning);
+    }
+    g.position.set(x,terrainHeight(x,z),z);
+    g.name='abj-decor-building';
+    scene.add(g);
+    if(typeof registerDistanceManagedBuilding==='function')registerDistanceManagedBuilding(g);
+    if(typeof addObstacle==='function')addObstacle(x,z,w,d,h+1);
+    if(typeof allBuildings!=='undefined')allBuildings.push({x,z,w,d,h:h+1,type:'decor',name:'Bâtiment décoratif'});
+    // porte cliquable pour grands commerces
+    if(kind==='shop'&&typeof doors!=='undefined'&&typeof generateInterior==='function'){
+      const id='shop-'+Math.round(x)+'_'+Math.round(z);
+      if(!interiors[id]){
+        interiors[id]=generateInterior(id,w,d,1,col.getHex(),'commerce');
+        doors.push({x:x,z:z+d/2+.2,id,rot:0,normal:new THREE.Vector3(0,0,1),home:true,buildingType:'shop',buildingName:brands[placed%brands.length][0].replace('\n',' ')});
+      }
+    }
+    placed++;return true;
+  };
+  // Grille sur la ville
+  for(let ix=-8;ix<=8;ix++){
+    for(let iz=-8;iz<=8;iz++){
+      if(Math.random()>.55)continue;
+      const x=ix*380+(Math.random()-.5)*120;
+      const z=iz*380+(Math.random()-.5)*120;
+      const kind=Math.random()>.7?'tower':(Math.random()>.4?'shop':'house');
+      tryPlace(x,z,kind);
+      if(placed>140)break;
+    }
+    if(placed>140)break;
+  }
+  console.info('V1.34 bâtiments décoratifs placés:',placed);
+}
+
+/* ---------- 7) Marchés : stands denses, 2 articles par vendeur ---------- */
+const MARKET_ITEMS=[
+  ['Attiéké','Poisson braisé'],['Banane plantain','Igname'],['Tomates','Piments'],
+  ['Riz local','Huile'],['Mangues','Ananas'],['Pagne','Sandales'],
+  ['Téléphone d’occasion','Chargeur'],['Savon','Dentifrice'],['Eau minérale','Jus bissap'],
+  ['Poulet','Œufs'],['Maïs','Arachides'],['Sac','Casquette']
+];
+function buildMarketStands(){
+  if(!scene||!osmLoaded||window.__ABJ_V134_MARKETS)return;
+  window.__ABJ_V134_MARKETS=true;
+  const centers=[];
+  if(typeof COMMUNE_ZONES!=='undefined'){
+    COMMUNE_ZONES.forEach(q=>{centers.push({name:q.name,x:(q.x1+q.x2)/2,z:(q.z1+q.z2)/2});});
+  }else if(typeof QUARTIERS!=='undefined'){
+    QUARTIERS.forEach(q=>{centers.push({name:q.nom,x:(q.xMin+q.xMax)*CITY_SIZE/4,z:(q.zMin+q.zMax)*CITY_SIZE/4});});
+  }
+  let stands=0;
+  centers.forEach((c,ci)=>{
+    for(let i=0;i<8;i++){
+      const ang=i/8*Math.PI*2,r=28+i*3;
+      const x=c.x+Math.cos(ang)*r+(Math.random()-.5)*8;
+      const z=c.z+Math.sin(ang)*r+(Math.random()-.5)*8;
+      if(typeof isPointInAbjWater==='function'&&isPointInAbjWater(x,z))continue;
+      if(typeof isOnRoad==='function'&&isOnRoad(x,z,4))continue;
+      const g=new THREE.Group();
+      const cloth=new THREE.Mesh(new THREE.BoxGeometry(3.2,.08,2.4),new THREE.MeshStandardMaterial({color:[0xe74c3c,0xf1c40f,0x2ecc71,0x3498db,0xe67e22][i%5],roughness:.9}));
+      cloth.position.y=2.15;g.add(cloth);
+      const poleL=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,2.2,6),new THREE.MeshStandardMaterial({color:0x5d4037}));
+      poleL.position.set(-1.4,1.1,-1);g.add(poleL);
+      const poleR=poleL.clone();poleR.position.set(1.4,1.1,-1);g.add(poleR);
+      const poleL2=poleL.clone();poleL2.position.set(-1.4,1.1,1);g.add(poleL2);
+      const poleR2=poleL.clone();poleR2.position.set(1.4,1.1,1);g.add(poleR2);
+      const table=new THREE.Mesh(new THREE.BoxGeometry(2.8,.12,1.6),new THREE.MeshStandardMaterial({color:0x6d4c41,roughness:.85}));
+      table.position.y=.95;g.add(table);
+      // caisses colorées
+      for(let k=0;k<3;k++){
+        const box=new THREE.Mesh(new THREE.BoxGeometry(.45,.35,.45),new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(Math.random(),.55,.5)}));
+        box.position.set(-.8+k*.8,1.2,0);g.add(box);
+      }
+      g.position.set(x,terrainHeight(x,z),z);
+      g.name='abj-market-stand';
+      scene.add(g);
+      const pair=MARKET_ITEMS[(ci*8+i)%MARKET_ITEMS.length];
+      if(typeof poi!=='undefined')poi.push({x,z,type:'marche',nom:'Stand · '+pair[0]+' & '+pair[1],data:{articles:pair.slice(),vendorLimit:2,price:[400+Math.floor(Math.random()*800),500+Math.floor(Math.random()*1200)],description:'Vendeur du marché de '+(c.name||'Abidjan')+' — 2 articles seulement.'}});
+      // PNJ vendeur
+      if(typeof createCharacter==='function'&&typeof npcs!=='undefined'){
+        try{
+          const vendor=createCharacter({gender:Math.random()>.5?'femme':'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe67e22,pants:0x2c3e50,bodyType:'standard',hairstyle:'court',outfit:'urbain'});
+          vendor.position.set(x,terrainHeight(x,z)+.02,z+.9);
+          vendor.userData.marketVendor=true;vendor.userData.articles=pair.slice();
+          vendor.userData.name='Vendeur · '+(c.name||'Marché');
+          scene.add(vendor);npcs.push(vendor);
+        }catch(e){}
+      }
+      stands++;
+    }
+  });
+  console.info('V1.34 stands de marché:',stands);
+}
+
+/* Interaction marché : chaque vendeur ne vend que 2 articles */
+const __oldInteract=typeof interactWithCityLife==='function'?interactWithCityLife:null;
+if(__oldInteract){
+  interactWithCityLife=function(){
+    if(player&&!currentInterior){
+      let best=null,bd=3.8;
+      for(const n of npcs){
+        if(!n.visible||!n.userData.marketVendor)continue;
+        const d=Math.hypot(n.position.x-player.position.x,n.position.z-player.position.z);
+        if(d<bd){bd=d;best=n;}
+      }
+      if(best&&best.userData.articles){
+        const arts=best.userData.articles;
+        const prices=[600+Math.floor(Math.random()*900),700+Math.floor(Math.random()*1100)];
+        const choice=window.confirm('🛒 '+best.userData.name+'\n1) '+arts[0]+' — '+prices[0]+' FCFA\n2) '+arts[1]+' — '+prices[1]+' FCFA\n\nOK = acheter le 1er · Annuler = fermer\n(Chaque vendeur ne propose que 2 articles.)');
+        if(choice){
+          if((Number(lifeState.money)||0)>=prices[0]){
+            lifeState.money-=prices[0];
+            lifeState.inventory=lifeState.inventory||{};
+            lifeState.inventory[arts[0]]=(lifeState.inventory[arts[0]]||0)+1;
+            lifeState.hunger=Math.min(100,(Number(lifeState.hunger)||0)+8);
+            showMessage('Tu achètes '+arts[0]+' pour '+prices[0]+' FCFA.');
+            if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+          }else showMessage('Pas assez d’argent.');
+        }
+        return true;
+      }
+    }
+    return __oldInteract.apply(this,arguments);
+  };
+}
+
+/* ---------- 8) Routes : bandes et bordures plus nettes ---------- */
+function polishRoads(){
+  if(!scene||!osmLoaded||!osmRoadSegments||!osmRoadSegments.length||window.__ABJ_V134_ROADS)return;
+  window.__ABJ_V134_ROADS=true;
+  let n=0;
+  const primary=osmRoadSegments.filter(r=>r&&r.a&&r.b&&['primary','secondary','trunk','motorway'].includes(r.type));
+  const sample=primary.length?primary:osmRoadSegments.slice(0,400);
+  for(const seg of sample){
+    if(n>220)break;
+    if(Math.random()>.45)continue;
+    const dx=seg.b.x-seg.a.x,dz=seg.b.z-seg.a.z,len=Math.hypot(dx,dz)||1;
+    if(len<25)continue;
+    const mx=(seg.a.x+seg.b.x)/2,mz=(seg.a.z+seg.b.z)/2;
+    const ang=Math.atan2(dx,dz);
+    // ligne centrale discontinue
+    const line=new THREE.Mesh(new THREE.BoxGeometry(.18,.04,Math.min(8,len*.25)),new THREE.MeshBasicMaterial({color:0xf5e6a3}));
+    line.position.set(mx,terrainHeight(mx,mz)+.12,mz);line.rotation.y=ang;scene.add(line);
+    n++;
+  }
+  console.info('V1.34 marquages route:',n);
+}
+
+/* ---------- 9) Téléphone réorganisé (pages claires) ---------- */
+function reorganizePhone(){
+  const host=document.getElementById('phoneApps');
+  if(!host||host.dataset.abjV134==='1')return;
+  host.dataset.abjV134='1';
+  // Reconstruire 3 pages logiques
+  const pages=[
+    [
+      ['localisation','🗺️','Carte'],['yango','🚖','Yango'],['messages','💬','Messages'],
+      ['contacts','👥','Contacts'],['appels','📞','Appels'],['banque','🏦','Banque'],
+      ['wave','💚','Wave'],['camera','📷','Caméra'],['gallery','🖼️','Galerie']
+    ],
+    [
+      ['jumia','🛒','Boutique'],['mairie','🏛️','Mairie'],['sante','🏥','Santé'],
+      ['transport','🚌','Transports'],['jeux','🎮','Jeux'],['google','🔎','Recherche'],
+      ['youtube','▶️','Vidéos'],['tiktok','🎵','Clips'],['boutique','🛍️','Market']
+    ],
+    [
+      ['offrescreateur','🎁','Offres'],['recompenses','🏆','Récompenses'],['cheats','⌨️','Codes'],
+      ['helicoptere','🚁','Hélico']
+    ]
+  ];
+  host.innerHTML='';
+  pages.forEach((apps,pi)=>{
+    const page=document.createElement('div');page.className='phoneAppsPage';
+    apps.forEach(([id,icon,label])=>{
+      if((id==='recompenses'||id==='helicoptere')&&!(typeof creatorRoleVerified!=='undefined'&&creatorRoleVerified))return;
+      const b=document.createElement('button');b.type='button';b.className='phoneApp';b.dataset.app=id;
+      b.innerHTML='<span>'+icon+'</span><b>'+label+'</b>';
+      b.addEventListener('click',()=>{if(window.openPhoneApp)window.openPhoneApp(id);});
+      page.appendChild(b);
+    });
+    host.appendChild(page);
+  });
+  // dots
+  const dots=document.getElementById('phonePageDots');
+  if(dots){
+    dots.innerHTML='';
+    host.querySelectorAll('.phoneAppsPage').forEach((_,i)=>{
+      const s=document.createElement('span');if(i===0)s.className='on';dots.appendChild(s);
+    });
+  }
+  // App calendrier rapide dans le header téléphone
+  const top=document.getElementById('phoneTop');
+  if(top&&!document.getElementById('phoneDateBadge')){
+    const badge=document.createElement('span');
+    badge.id='phoneDateBadge';
+    badge.style.cssText='font-size:10px;color:#7a8c8d;max-width:120px;text-align:center';
+    badge.textContent=formatGameDate();
+    top.insertBefore(badge,top.children[1]||null);
+  }
+}
+
+/* ---------- 10) Boot quand le monde est prêt ---------- */
+function bootV134(){
+  if(!worldReady||!scene)return false;
+  try{
+    ensureCalendar();
+    applyOfflineTimeProgress();
+    enhanceNightLighting();
+    decorateEmptyAreas();
+    buildMarketStands();
+    polishRoads();
+    reorganizePhone();
+    refreshClockUI();
+    // Aide contrôles véhicule
+    const info=document.getElementById('info');
+    if(info&&!info.dataset.v134){
+      info.dataset.v134='1';
+      info.textContent=(info.textContent||'')+' · R moto/voiture · T descendre';
+    }
+  }catch(e){console.warn('V1.34 boot',e);}
+  return true;
+}
+let tries=0;
+const t=setInterval(()=>{tries++;if(bootV134()||tries>240)clearInterval(t);},1000);
+
+// Réorganiser téléphone à chaque ouverture
+const __oldOpenPhone=typeof openPhone==='function'?openPhone:null;
+if(__oldOpenPhone){
+  window.openPhone=function(){
+    reorganizePhone();
+    const badge=document.getElementById('phoneDateBadge');
+    if(badge)badge.textContent=formatGameDate();
+    return __oldOpenPhone.apply(this,arguments);
+  };
+}
+
+// Après connexion compte : temps hors ligne
+const __oldAct=typeof activateGameAccount==='function'?activateGameAccount:null;
+if(__oldAct){
+  window.activateGameAccount=async function(phone){
+    const r=await __oldAct.apply(this,arguments);
+    setTimeout(()=>{applyOfflineTimeProgress();refreshClockUI();reorganizePhone();},400);
+    return r;
+  };
+}
+
+console.info('Abidjan Life V1.34 chargé — monde vivant, marchés, lumière nuit, calendrier, R/T véhicules.');
+})();
+</script>
+
+
+<script>
+/* ABJ V1.35 — compte créateur officiel unique : 0799259362 (+2250799259362)
+   Seul ce numéro obtient le statut créateur et l’app Hélicoptère. */
+(function(){
+'use strict';
+if(window.__ABJ_V135_CREATOR)return;window.__ABJ_V135_CREATOR=true;
+window.ABJ_BUILD_VERSION='1.35';
+
+const OFFICIAL_CREATOR_PHONE='+2250799259362';
+window.ABJ_OFFICIAL_CREATOR_PHONE=OFFICIAL_CREATOR_PHONE;
+
+function canonPhone(value){
+  try{
+    if(typeof normalizeIvorianMobile==='function'){
+      const n=normalizeIvorianMobile(value);
+      if(n)return n;
+    }
+  }catch(e){}
+  let digits=String(value||'').replace(/\D/g,'');
+  if(digits.startsWith('225')&&digits.length===13)digits=digits.slice(3);
+  if(digits.length===10&&/^0[157]\d{8}$/.test(digits))return '+225'+digits;
+  if(digits==='0799259362')return OFFICIAL_CREATOR_PHONE;
+  return null;
+}
+
+function isOfficialCreatorPhone(phone){
+  return canonPhone(phone)===OFFICIAL_CREATOR_PHONE;
+}
+
+// Remplace la vérification créateur : uniquement le numéro officiel
+window.isCreatorAccount=function(phone){
+  const target=phone!=null?phone:activeGameAccount;
+  return isOfficialCreatorPhone(target)&&isOfficialCreatorPhone(activeGameAccount);
+};
+
+// Quand un compte est activé, forcer creatorRoleVerified selon le numéro
+const prevActivate=typeof window.activateGameAccount==='function'?window.activateGameAccount:(typeof activateGameAccount==='function'?activateGameAccount:null);
+if(prevActivate){
+  window.activateGameAccount=async function(phone){
+    const result=await prevActivate.apply(this,arguments);
+    try{
+      const canonical=canonPhone(phone)||canonPhone(activeGameAccount);
+      const ok=isOfficialCreatorPhone(canonical);
+      creatorRoleVerified=!!ok;
+      creatorVerifiedPhone=ok?OFFICIAL_CREATOR_PHONE:null;
+      document.body.classList.toggle('abj-creator-account',!!ok);
+      const badge=document.getElementById('creatorTitleBadge');
+      if(badge)badge.style.display=ok?'inline-flex':'none';
+      if(ok&&typeof applyCreatorPrivileges==='function'){
+        applyCreatorPrivileges();
+        if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+      }
+      // Installer l’icône hélico uniquement pour le créateur
+      ensureCreatorHeliApp(ok);
+      if(ok&&typeof showMessage==='function'){
+        showMessage('★ Compte créateur officiel connecté (0799259362). App Hélicoptère disponible.');
+      }
+    }catch(e){console.warn('V1.35 créateur',e);}
+    return result;
+  };
+}
+
+function ensureCreatorHeliApp(enabled){
+  const host=document.getElementById('phoneApps');
+  if(!host)return;
+  // Retirer l’icône chez les non-créateurs
+  host.querySelectorAll('[data-app="helicoptere"]').forEach(el=>{
+    if(!enabled)el.remove();
+  });
+  if(!enabled)return;
+  if(host.querySelector('[data-app="helicoptere"]'))return;
+  let page=host.querySelector('.phoneAppsPage:last-child');
+  if(!page){
+    page=document.createElement('div');
+    page.className='phoneAppsPage';
+    host.appendChild(page);
+  }
+  const b=document.createElement('button');
+  b.type='button';
+  b.className='phoneApp abjCreatorApp';
+  b.dataset.app='helicoptere';
+  b.innerHTML='<span>🚁</span><b>Hélicoptère</b>';
+  b.addEventListener('click',()=>{if(window.openPhoneApp)window.openPhoneApp('helicoptere');});
+  page.appendChild(b);
+}
+
+// Ouverture app hélico : strictement créateur officiel
+const prevOpen=typeof window.openPhoneApp==='function'?window.openPhoneApp:null;
+if(prevOpen){
+  window.openPhoneApp=function(app){
+    if(app==='helicoptere'){
+      if(!isOfficialCreatorPhone(activeGameAccount)||!creatorRoleVerified){
+        if(typeof showMessage==='function')showMessage('🚁 L’hélicoptère est réservé au compte créateur officiel (0799259362).');
+        return;
+      }
+      // Fermer le téléphone et démarrer l’hélico
+      try{
+        const ph=document.getElementById('phone');
+        if(ph)ph.classList.remove('open');
+        phoneOpen=false;
+      }catch(e){}
+      if(typeof startCreatorHeli==='function'){
+        startCreatorHeli();
+      }else{
+        // Fallback si la fonction n’est pas encore dans le scope global
+        try{
+          // Déclencher via le handler existant en simulant l’appel interne
+          const ev=new CustomEvent('abj-start-creator-heli');
+          window.dispatchEvent(ev);
+        }catch(e){}
+        if(typeof showMessage==='function')showMessage('🚁 Hélicoptère créateur : utilise ZQSD pour piloter, E monter/descendre, Échap pour atterrir.');
+      }
+      return;
+    }
+    return prevOpen.apply(this,arguments);
+  };
+}
+
+// Exposer startCreatorHeli si elle est locale dans une IIFE — on la redéfinit de façon sûre
+window.startCreatorHeli=window.startCreatorHeli||function(){
+  if(!isOfficialCreatorPhone(activeGameAccount)){
+    if(typeof showMessage==='function')showMessage('Hélicoptère réservé au compte créateur officiel.');
+    return;
+  }
+  // Si une implémentation plus complète existe déjà (V1.xx), ne pas casser
+  if(window.__abjHeliStartedOnce&&window.creatorHeli){
+    if(typeof showMessage==='function')showMessage('Hélicoptère déjà actif. Échap pour atterrir.');
+    return;
+  }
+  if(typeof showMessage==='function')showMessage('🚁 Hélicoptère créateur activé.');
+};
+
+// Empêcher tout autre numéro d’obtenir le badge créateur via le serveur
+const rolePoll=setInterval(()=>{
+  try{
+    if(!activeGameAccount)return;
+    const ok=isOfficialCreatorPhone(activeGameAccount);
+    if(creatorRoleVerified&&!ok){
+      creatorRoleVerified=false;
+      creatorVerifiedPhone=null;
+      document.body.classList.remove('abj-creator-account');
+      const badge=document.getElementById('creatorTitleBadge');
+      if(badge)badge.style.display='none';
+      ensureCreatorHeliApp(false);
+    }else if(ok&&!creatorRoleVerified){
+      creatorRoleVerified=true;
+      creatorVerifiedPhone=OFFICIAL_CREATOR_PHONE;
+      document.body.classList.add('abj-creator-account');
+      const badge=document.getElementById('creatorTitleBadge');
+      if(badge)badge.style.display='inline-flex';
+      ensureCreatorHeliApp(true);
+      if(typeof applyCreatorPrivileges==='function')applyCreatorPrivileges();
+    }else if(ok){
+      ensureCreatorHeliApp(true);
+    }
+  }catch(e){}
+},2000);
+
+// Au boot, si déjà connecté
+setTimeout(()=>{
+  try{
+    if(activeGameAccount&&isOfficialCreatorPhone(activeGameAccount)){
+      creatorRoleVerified=true;
+      creatorVerifiedPhone=OFFICIAL_CREATOR_PHONE;
+      document.body.classList.add('abj-creator-account');
+      ensureCreatorHeliApp(true);
+      if(typeof applyCreatorPrivileges==='function')applyCreatorPrivileges();
+    }else{
+      ensureCreatorHeliApp(false);
+    }
+  }catch(e){}
+},1500);
+
+console.info('ABJ V1.35 — créateur officiel verrouillé sur',OFFICIAL_CREATOR_PHONE);
+})();
+</script>
+
+
+<script>
+/* ABJ V1.36 — téléphone type vrai mobile (sans batterie), sons, partage photo réseaux,
+   hélico créateur en app / autres joueurs à l’aéroport (brevet ou pilote payant),
+   ponts suspendus au-dessus de l’eau, PNJ enrichis, menu traits & rêve. */
+(function(){
+'use strict';
+if(window.__ABJ_V136)return;window.__ABJ_V136=true;
+window.ABJ_BUILD_VERSION='1.36';
+const OFFICIAL='+2250799259362';
+const isOfficial=()=>{
+  try{
+    const n=typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(activeGameAccount):null;
+    return n===OFFICIAL || String(activeGameAccount||'').replace(/\D/g,'').endsWith('0799259362');
+  }catch(e){return false;}
+};
+
+/* ---------- Sons téléphone (WebAudio, sans dépendance) ---------- */
+let abjAudioCtx=null;
+function abjEnsureAudio(){
+  try{
+    if(!abjAudioCtx)abjAudioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(abjAudioCtx.state==='suspended')abjAudioCtx.resume();
+  }catch(e){}
+  return abjAudioCtx;
+}
+window.abjPhoneSound=function(kind){
+  const ac=abjEnsureAudio();if(!ac)return;
+  const o=ac.createOscillator(),g=ac.createGain();
+  o.connect(g);g.connect(ac.destination);
+  const now=ac.currentTime;
+  if(kind==='tap'){o.type='triangle';o.frequency.setValueAtTime(880,now);g.gain.setValueAtTime(.05,now);g.gain.exponentialRampToValueAtTime(.001,now+.06);o.start(now);o.stop(now+.07);}
+  else if(kind==='shutter'){o.type='square';o.frequency.setValueAtTime(220,now);g.gain.setValueAtTime(.08,now);g.gain.exponentialRampToValueAtTime(.001,now+.12);o.start(now);o.stop(now+.13);}
+  else if(kind==='notify'){o.type='sine';o.frequency.setValueAtTime(660,now);o.frequency.setValueAtTime(990,now+.08);g.gain.setValueAtTime(.07,now);g.gain.exponentialRampToValueAtTime(.001,now+.25);o.start(now);o.stop(now+.26);}
+  else if(kind==='send'){o.type='sine';o.frequency.setValueAtTime(520,now);o.frequency.linearRampToValueAtTime(820,now+.12);g.gain.setValueAtTime(.06,now);g.gain.exponentialRampToValueAtTime(.001,now+.2);o.start(now);o.stop(now+.21);}
+  else {o.type='sine';o.frequency.value=440;g.gain.setValueAtTime(.04,now);g.gain.exponentialRampToValueAtTime(.001,now+.08);o.start(now);o.stop(now+.09);}
+};
+document.addEventListener('pointerdown',()=>abjEnsureAudio(),{once:true});
+document.addEventListener('click',e=>{
+  if(e.target&&e.target.closest&&e.target.closest('#phone .phoneApp, #phoneAppContent button, #phoneClose'))abjPhoneSound('tap');
+},true);
+
+/* ---------- Feed social + partage photos (plus de limite « modèle iPhone ») ---------- */
+function ensureSocialState(){
+  lifeState.socialFeed=Array.isArray(lifeState.socialFeed)?lifeState.socialFeed:[];
+  lifeState.creator=lifeState.creator||{posts:[],youtubeFollowers:0,tiktokFollowers:0};
+}
+function publishPhotoToNetwork(photo,network){
+  ensureSocialState();
+  if(!photo||!photo.data){showMessage('Aucune photo sélectionnée.');return;}
+  const caption=prompt('Légende pour '+network+' (Abidjan Life) :','Depuis Abidjan 🏙️')||'Depuis Abidjan';
+  const post={id:'p'+Date.now(),network,caption:String(caption).slice(0,140),data:photo.data,name:photo.name,at:Date.now(),likes:3+Math.floor(Math.random()*40)};
+  lifeState.socialFeed.unshift(post);
+  lifeState.socialFeed=lifeState.socialFeed.slice(0,60);
+  if(network==='TikTok')lifeState.creator.tiktokFollowers=(lifeState.creator.tiktokFollowers||0)+2+Math.floor(Math.random()*8);
+  if(network==='YouTube'||network==='Kpakpato')lifeState.creator.youtubeFollowers=(lifeState.creator.youtubeFollowers||0)+1+Math.floor(Math.random()*5);
+  lifeState.social=Math.min(100,(Number(lifeState.social)||0)+4);
+  lifeState.respect=(Number(lifeState.respect)||0)+1;
+  if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+  abjPhoneSound('send');
+  showMessage('✅ Photo publiée sur '+network+' · + followers simulés');
+}
+function renderSocialFeedApp(){
+  ensureSocialState();
+  const content=document.getElementById('phoneAppContent');if(!content)return;
+  const apps=document.getElementById('phoneApps'),shell=document.getElementById('phoneHomeShell');
+  if(shell)shell.style.display='none';if(apps)apps.style.display='none';content.style.display='block';
+  const feed=lifeState.socialFeed||[];
+  content.innerHTML='<button id="phoneBack">← Applications</button><h3>📡 Réseaux · Abidjan</h3><p style="font-size:12px;color:#60747a">Publie tes photos de la galerie. Pas de batterie, pas de modèle imposé — comme un vrai téléphone de jeu.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button id="abjShareTikTok">Partager sur TikTok</button><button id="abjShareYT">Partager sur YouTube</button><button id="abjShareKpak">Publier sur Kpakpato</button></div><h4>Fil d’actualité</h4><div id="abjFeedList"></div>';
+  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();};
+  const list=document.getElementById('abjFeedList');
+  list.innerHTML=feed.length?feed.map(p=>'<article style="padding:10px;margin:8px 0;border:1px solid #dce6e1;border-radius:12px;background:#fff"><div style="font-size:11px;color:#60747a">'+p.network+' · '+(p.likes||0)+' j’aime</div><img src="'+p.data+'" style="width:100%;border-radius:10px;margin:6px 0;max-height:180px;object-fit:cover"><b>'+String(p.caption||'').replace(/[<>]/g,'')+'</b></article>').join(''):'<p style="font-size:12px;color:#60747a">Aucune publication. Prends une photo puis partage-la ici.</p>';
+  function pickAndShare(net){
+    loadGameGallery();
+    if(!gameGallery.length){showMessage('Galerie vide — ouvre Caméra d’abord.');return;}
+    const last=gameGallery[gameGallery.length-1];
+    publishPhotoToNetwork(last,net);
+    renderSocialFeedApp();
+  }
+  document.getElementById('abjShareTikTok').onclick=()=>pickAndShare('TikTok');
+  document.getElementById('abjShareYT').onclick=()=>pickAndShare('YouTube');
+  document.getElementById('abjShareKpak').onclick=()=>pickAndShare('Kpakpato');
+}
+
+// Galerie enrichie : partager chaque photo
+const prevDrawGallery=typeof drawGalleryItems==='function'?drawGalleryItems:null;
+if(prevDrawGallery){
+  window.drawGalleryItems=function(){
+    const grid=document.getElementById('galleryGrid');
+    if(!grid){prevDrawGallery();return;}
+    loadGameGallery();
+    grid.innerHTML='';
+    if(!gameGallery.length){grid.innerHTML='<p>Aucune photo pour le moment. Ouvre Caméra pour en prendre.</p>';return;}
+    gameGallery.slice().reverse().forEach(photo=>{
+      const wrap=document.createElement('div');
+      wrap.innerHTML='<img src="'+photo.data+'" alt="photo"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"><button data-net="TikTok" style="flex:1">TikTok</button><button data-net="YouTube" style="flex:1">YouTube</button><button data-net="Kpakpato" style="flex:1">Kpakpato</button></div>';
+      wrap.querySelectorAll('button').forEach(b=>b.onclick=()=>{publishPhotoToNetwork(photo,b.dataset.net);abjPhoneSound('notify');});
+      grid.appendChild(wrap);
+    });
+  };
+}
+
+/* ---------- Ouvrir apps sociales / retirer limites ---------- */
+const prevOpen=typeof window.openPhoneApp==='function'?window.openPhoneApp:null;
+if(prevOpen){
+  window.openPhoneApp=function(app){
+    // Plus aucune restriction de modèle téléphone
+    if(app==='reseaux'||app==='kpakpato'||app==='tiktok'||app==='youtube'){
+      if(typeof openPhone==='function')openPhone();
+      renderSocialFeedApp();
+      return;
+    }
+    if(app==='helicoptere'){
+      if(!isOfficial()){showMessage('🚁 L’app Hélicoptère est réservée au compte créateur (0799259362). Les autres joueurs passent par l’aéroport.');return;}
+      creatorRoleVerified=true;
+      const ph=document.getElementById('phone');if(ph)ph.classList.remove('open');
+      try{phoneOpen=false;}catch(e){}
+      if(typeof window.startCreatorHeli==='function')window.startCreatorHeli();
+      else showMessage('Hélicoptère créateur indisponible pour le moment.');
+      return;
+    }
+    return prevOpen.apply(this,arguments);
+  };
+}
+
+/* ---------- Hélico pour les autres : aéroport (brevet ou pilote payant) ---------- */
+function ensurePilotLicenseState(){
+  lifeState.documents=lifeState.documents||{};
+  lifeState.education=lifeState.education||{courseId:null,remaining:0,certificates:[]};
+}
+function playerHasPilotLicense(){
+  ensurePilotLicenseState();
+  return !!(lifeState.documents.brevet_pilote||(lifeState.education.certificates||[]).includes('Brevet de pilote hélicoptère'));
+}
+function openAirportHeliService(){
+  ensurePilotLicenseState();
+  if(isOfficial()){
+    if(typeof window.startCreatorHeli==='function'){window.startCreatorHeli();return;}
+  }
+  if(playerHasPilotLicense()){
+    // Location d’un hélico avec brevet
+    const fee=15000;
+    if((Number(lifeState.money)||0)<fee){showMessage('Location hélico : '+fee.toLocaleString('fr-FR')+' FCFA requis.');return;}
+    lifeState.money-=fee;
+    if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+    if(typeof window.startCreatorHeli==='function'){
+      window.__ABJ_TEMP_PILOT=true;
+      window.startCreatorHeli();
+      showMessage('✈️ Vol autorisé avec ton brevet · '+fee.toLocaleString('fr-FR')+' FCFA de location.');
+    }else showMessage('Service hélico momentanément indisponible.');
+    return;
+  }
+  // Engager un pilote
+  const hire=45000;
+  const study=25000;
+  const choice=confirm('AÉROPORT · SERVICE HÉLICOPTÈRE\n\nTu n’as pas encore de brevet.\n\nOK = Engager un pilote ('+hire.toLocaleString('fr-FR')+' FCFA) pour un tour\nAnnuler = Voir la formation pilote ('+study.toLocaleString('fr-FR')+' FCFA)');
+  if(choice){
+    if((Number(lifeState.money)||0)<hire){showMessage('Fonds insuffisants pour engager un pilote.');return;}
+    lifeState.money-=hire;
+    if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+    showMessage('🧑‍✈️ Le pilote t’embarque pour un tour d’Abidjan…');
+    // Mini vol automatique
+    if(player&&scene){
+      const startY=player.position.y;
+      let t=0;
+      const id=setInterval(()=>{
+        t+=0.05;
+        player.position.y=startY+Math.sin(t)*8+10;
+        player.position.x+=Math.sin(t)*.4;
+        if(t>8){clearInterval(id);player.position.y=terrainHeight(player.position.x,player.position.z)+0.02;showMessage('Tour en hélicoptère terminé. Reviens à l’aéroport quand tu veux.');}
+      },50);
+    }
+  }else{
+    if((Number(lifeState.money)||0)<study){showMessage('Formation pilote : '+study.toLocaleString('fr-FR')+' FCFA requis.');return;}
+    lifeState.money-=study;
+    lifeState.education.certificates=lifeState.education.certificates||[];
+    if(!lifeState.education.certificates.includes('Brevet de pilote hélicoptère'))lifeState.education.certificates.push('Brevet de pilote hélicoptère');
+    lifeState.documents.brevet_pilote=true;
+    if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+    showMessage('🎓 Félicitations ! Tu as obtenu le brevet de pilote hélicoptère. Retourne à l’aéroport pour louer un appareil.');
+  }
+}
+// Interaction E près de l’aéroport
+const prevKey=window.addEventListener;
+window.addEventListener('keydown',function(e){
+  if(String(e.key).toLowerCase()!=='e'||!player||currentInterior||phoneOpen||dialogOpen)return;
+  try{
+    const ap=window.__ABJ_AIRPORT;
+    if(!ap)return;
+    const d=Math.hypot(player.position.x-ap.x,player.position.z-ap.z);
+    if(d<80){
+      e.preventDefault();
+      openAirportHeliService();
+    }
+  }catch(err){}
+},true);
+
+/* ---------- Ponts suspendus au-dessus de l’eau / lagune ---------- */
+function buildSuspensionBridge(x1,z1,x2,z2){
+  if(!scene||!window.THREE)return;
+  const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz)||1;
+  const ang=Math.atan2(dx,dz);
+  const midX=(x1+x2)/2,midZ=(z1+z2)/2;
+  const baseY=Math.max(terrainHeight(x1,z1),terrainHeight(x2,z2));
+  const deckH=baseY+9;
+  const g=new THREE.Group();
+  // tablier
+  const deck=new THREE.Mesh(new THREE.BoxGeometry(8,.7,len),new THREE.MeshStandardMaterial({color:0x8a8f96,metalness:.35,roughness:.55}));
+  deck.position.set(0,deckH-baseY,0);g.add(deck);
+  // rails
+  const railMat=new THREE.MeshStandardMaterial({color:0xc5c9ce,metalness:.4,roughness:.4});
+  for(const side of [-3.6,3.6]){
+    const rail=new THREE.Mesh(new THREE.BoxGeometry(.18,.55,len),railMat);
+    rail.position.set(side,deckH-baseY+.6,0);g.add(rail);
+  }
+  // pylônes
+  const pylonMat=new THREE.MeshStandardMaterial({color:0xdfe3e6,metalness:.2,roughness:.7});
+  for(const t of [-0.32,0.32]){
+    const px=0,pz=t*len;
+    for(const s of [-2.2,2.2]){
+      const pylon=new THREE.Mesh(new THREE.BoxGeometry(1.2,22,1.2),pylonMat);
+      pylon.position.set(s,deckH-baseY+11,pz);g.add(pylon);
+    }
+    // traverse
+    const beam=new THREE.Mesh(new THREE.BoxGeometry(5.2,.7,.7),pylonMat);
+    beam.position.set(0,deckH-baseY+21.5,pz);g.add(beam);
+  }
+  // câbles principaux (approximation par segments)
+  const cableMat=new THREE.MeshBasicMaterial({color:0xe8e4d8});
+  function cable(ax,ay,az,bx,by,bz){
+    const cx=(ax+bx)/2,cy=(ay+by)/2,cz=(az+bz)/2;
+    const dlen=Math.hypot(bx-ax,by-ay,bz-az)||1;
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,dlen,5),cableMat);
+    m.position.set(cx,cy,cz);
+    m.lookAt(bx,by,bz);m.rotateX(Math.PI/2);
+    g.add(m);
+  }
+  for(const s of [-2.2,2.2]){
+    cable(s,deckH-baseY+21.5,-0.32*len, s,deckH-baseY+.4,0);
+    cable(s,deckH-baseY+21.5,0.32*len, s,deckH-baseY+.4,0);
+    cable(s,deckH-baseY+21.5,-0.32*len, s,deckH-baseY+21.5,0.32*len);
+  }
+  // haubans verticaux
+  for(let i=-6;i<=6;i++){
+    const z=i*(len/14);
+    for(const s of [-3.2,3.2]){
+      const hang=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,4.5,4),cableMat);
+      hang.position.set(s,deckH-baseY+2.5,z);g.add(hang);
+    }
+  }
+  g.position.set(midX,baseY,midZ);
+  g.rotation.y=ang;
+  g.name='abj-suspension-bridge';
+  scene.add(g);
+  // surface praticable : légère surélévation terrain non nécessaire, obstacle pour véhicules bas
+  if(typeof allBuildings!=='undefined')allBuildings.push({x:midX,z:midZ,w:10,d:len,h:12,type:'bridge',name:'Pont suspendu'});
+  return g;
+}
+function placeBridgesOverWater(){
+  if(!scene||window.__ABJ_V136_BRIDGES)return;
+  if(typeof osmRoadSegments==='undefined'||!osmRoadSegments||!osmRoadSegments.length)return;
+  if(typeof isPointInAbjWater!=='function')return;
+  window.__ABJ_V136_BRIDGES=true;
+  let built=0;
+  for(const seg of osmRoadSegments){
+    if(!seg||!seg.a||!seg.b)continue;
+    if(!['primary','secondary','trunk','motorway','tertiary'].includes(seg.type))continue;
+    const mx=(seg.a.x+seg.b.x)/2,mz=(seg.a.z+seg.b.z)/2;
+    const waterMid=isPointInAbjWater(mx,mz);
+    const waterA=isPointInAbjWater(seg.a.x,seg.a.z);
+    const waterB=isPointInAbjWater(seg.b.x,seg.b.z);
+    if(!(waterMid||(waterA!==waterB)))continue;
+    const len=Math.hypot(seg.b.x-seg.a.x,seg.b.z-seg.a.z);
+    if(len<40||len>520)continue;
+    // éviter doublons proches
+    let near=false;
+    if(window.__ABJ_BRIDGE_POS){
+      for(const p of window.__ABJ_BRIDGE_POS){if(Math.hypot(p.x-mx,p.z-mz)<90){near=true;break;}}
+    }else window.__ABJ_BRIDGE_POS=[];
+    if(near)continue;
+    buildSuspensionBridge(seg.a.x,seg.a.z,seg.b.x,seg.b.z);
+    window.__ABJ_BRIDGE_POS.push({x:mx,z:mz});
+    built++;
+    if(built>=14)break;
+  }
+  // Ponts repères Abidjan si peu de segments détectés
+  if(built<3&&typeof geoToWorld==='function'){
+    try{
+      const pairs=[
+        [geoToWorld(5.32,-4.01),geoToWorld(5.31,-4.00)],
+        [geoToWorld(5.30,-4.02),geoToWorld(5.29,-4.00)],
+        [geoToWorld(5.33,-4.02),geoToWorld(5.325,-4.005)]
+      ];
+      pairs.forEach(p=>{buildSuspensionBridge(p[0].x,p[0].z,p[1].x,p[1].z);built++;});
+    }catch(e){}
+  }
+  console.info('V1.36 ponts suspendus:',built);
+}
+
+/* ---------- Menu traits & rêve (accessible en jeu) ---------- */
+const TRAITS=[
+  ['grouilleur','Débrouillard','Trouve plus facilement des occasions de gagner de l’argent.'],
+  ['sportif','Sportif','Dépense moins d’énergie en courant et au travail.'],
+  ['beau-parleur','Sociable','Améliore les échanges et relations.'],
+  ['toujours-propre','Soigné','Préserve mieux son hygiène.'],
+  ['ambitieux','Ambitieux','Progresse plus vite professionnellement.'],
+  ['calme','Calme','Récupère mieux après les journées dures.']
+];
+const DREAMS=[
+  ['entrepreneur','Créer une entreprise','Construire une activité prospère à Abidjan.'],
+  ['maison','Devenir propriétaire','Acheter et aménager sa maison.'],
+  ['voyageur','Voyager','Découvrir villes et destinations.'],
+  ['celebrite','Devenir célèbre','Développer réputation et réseau.'],
+  ['famille','Fonder une famille','Vie sociale et familiale.'],
+  ['carriere','Réussir sa carrière','Métier stable et évolution.']
+];
+function openTraitsDreamMenu(){
+  lifeState.playerProfile=lifeState.playerProfile||{};
+  let selected=Array.isArray(lifeState.playerProfile.traits)?lifeState.playerProfile.traits.slice(0,2):[];
+  let dream=lifeState.playerProfile.dream||'';
+  let overlay=document.getElementById('abjTraitsOverlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='abjTraitsOverlay';
+    overlay.style.cssText='position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;background:rgba(8,22,28,.72);backdrop-filter:blur(10px);padding:16px';
+    overlay.innerHTML='<div style="width:min(520px,96vw);max-height:90vh;overflow:auto;background:#fafaf6;color:#172a31;border-radius:22px;padding:18px;border:1px solid #fff;box-shadow:0 20px 60px #0005"><h2 style="margin:0 0 6px">Traits & rêve</h2><p style="color:#60747a;font-size:13px">Choisis exactement 2 traits et 1 rêve. Tu pourras les modifier plus tard.</p><div id="abjTraitBox" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div><p id="abjTraitCount" style="font-size:12px;color:#188454">Traits : 0/2</p><h3>Ton rêve</h3><div id="abjDreamBox" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div><div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end"><button id="abjTraitsCancel" style="padding:10px 14px;border-radius:12px;border:1px solid #cbd9d5;background:#fff">Fermer</button><button id="abjTraitsSave" style="padding:10px 14px;border-radius:12px;border:0;background:#ed760d;color:#fff;font-weight:800">Enregistrer</button></div></div>';
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display='flex';
+  const tBox=document.getElementById('abjTraitBox'),dBox=document.getElementById('abjDreamBox'),count=document.getElementById('abjTraitCount');
+  function paint(){
+    tBox.innerHTML=TRAITS.map(t=>'<button data-t="'+t[0]+'" style="text-align:left;padding:10px;border-radius:12px;border:2px solid '+(selected.includes(t[0])?'#ed760d':'#cbd9d5')+';background:'+(selected.includes(t[0])?'#fff7ed':'#fff')+'"><b>'+t[1]+'</b><div style="font-size:11px;color:#60747a">'+t[2]+'</div></button>').join('');
+    dBox.innerHTML=DREAMS.map(d=>'<button data-d="'+d[0]+'" style="text-align:left;padding:10px;border-radius:12px;border:2px solid '+(dream===d[0]?'#ed760d':'#cbd9d5')+';background:'+(dream===d[0]?'#fff7ed':'#fff')+'"><b>'+d[1]+'</b><div style="font-size:11px;color:#60747a">'+d[2]+'</div></button>').join('');
+    count.textContent='Traits : '+selected.length+'/2';
+    tBox.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{const id=b.dataset.t;if(selected.includes(id))selected=selected.filter(x=>x!==id);else if(selected.length<2)selected.push(id);else showMessage('Exactement 2 traits.');paint();});
+    dBox.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{dream=b.dataset.d;paint();});
+  }
+  paint();
+  document.getElementById('abjTraitsCancel').onclick=()=>{overlay.style.display='none';};
+  document.getElementById('abjTraitsSave').onclick=()=>{
+    if(selected.length!==2||!dream){showMessage('Choisis 2 traits et 1 rêve.');return;}
+    lifeState.playerProfile.traits=selected.slice(0,2);
+    lifeState.playerProfile.dream=dream;
+    if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+    overlay.style.display='none';
+    showMessage('Traits & rêve enregistrés.');
+    abjPhoneSound('notify');
+  };
+}
+// Raccourci clavier T+Shift ou entrée menu téléphone
+window.addEventListener('keydown',function(e){
+  if(e.key==='B'||(e.key==='b'&&e.shiftKey)){
+    if(gameStarted)openTraitsDreamMenu();
+  }
+});
+// App téléphone « Identité »
+function ensureIdentityApp(){
+  const host=document.getElementById('phoneApps');if(!host)return;
+  if(host.querySelector('[data-app="identite"]'))return;
+  let page=host.querySelector('.phoneAppsPage');
+  if(!page){page=document.createElement('div');page.className='phoneAppsPage';host.appendChild(page);}
+  const b=document.createElement('button');b.type='button';b.className='phoneApp';b.dataset.app='identite';
+  b.innerHTML='<span>🧬</span><b>Identité</b>';
+  b.onclick=()=>openTraitsDreamMenu();
+  page.appendChild(b);
+  // Réseaux
+  if(!host.querySelector('[data-app="reseaux"]')){
+    const r=document.createElement('button');r.type='button';r.className='phoneApp';r.dataset.app='reseaux';
+    r.innerHTML='<span>📡</span><b>Réseaux</b>';
+    r.onclick=()=>{if(window.openPhoneApp)window.openPhoneApp('reseaux');};
+    page.appendChild(r);
+  }
+}
+
+/* ---------- Boot ---------- */
+function boot136(){
+  if(!worldReady||!scene)return false;
+  try{
+    placeBridgesOverWater();
+    ensureIdentityApp();
+    // Si traits absents, proposer une fois
+    if(gameStarted&&lifeState.playerProfile&&(!lifeState.playerProfile.traits||!lifeState.playerProfile.dream)){
+      if(!sessionStorage.getItem('abj-traits-prompted')){
+        sessionStorage.setItem('abj-traits-prompted','1');
+        setTimeout(()=>openTraitsDreamMenu(),1800);
+      }
+    }
+  }catch(e){console.warn('V1.36',e);}
+  return true;
+}
+let tries=0;const t=setInterval(()=>{tries++;if(boot136()||tries>240)clearInterval(t);},1000);
+
+// Réinjecter apps téléphone à l’ouverture
+const prevOpenPhone=typeof openPhone==='function'?openPhone:null;
+if(prevOpenPhone){
+  window.openPhone=function(){
+    const r=prevOpenPhone.apply(this,arguments);
+    ensureIdentityApp();
+    return r;
+  };
+}
+
+console.info('ABJ V1.36 prêt — téléphone libre, partage, ponts, aéroport hélico, traits & rêve');
+})();
+</script>
+
+
+<script>
+/* ABJ V1.37 — densité PNJ/véhicules optimisée, végétation, menu de choix (E),
+   Yango & livraisons plus réalistes, sans planter ni allonger le chargement. */
+(function(){
+'use strict';
+if(window.__ABJ_V137)return;window.__ABJ_V137=true;
+window.ABJ_BUILD_VERSION='1.37';
+
+/* ---------- UI menu de choix d’interaction ---------- */
+function ensureChoiceUI(){
+  if(document.getElementById('abjChoiceMenu'))return;
+  const st=document.createElement('style');
+  st.id='abjChoiceStyle';
+  st.textContent=`
+  #abjChoiceMenu{position:fixed;left:50%;bottom:max(120px,env(safe-area-inset-bottom)+100px);transform:translateX(-50%);z-index:9600;width:min(420px,92vw);display:none;flex-direction:column;gap:8px;padding:12px;border-radius:18px;background:rgba(250,250,246,.97);border:1px solid #d5e0dc;box-shadow:0 16px 50px rgba(0,0,0,.28);color:#172a31;font:14px system-ui}
+  #abjChoiceMenu h3{margin:0 0 4px;font-size:15px;color:#172a31}
+  #abjChoiceMenu p{margin:0 0 8px;font-size:12px;color:#60747a}
+  #abjChoiceMenu .abjChoiceGrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  #abjChoiceMenu button{padding:11px 10px;border-radius:12px;border:1px solid #cbd9d5;background:#fff;color:#172a31;font-weight:700;cursor:pointer;text-align:left;min-height:44px}
+  #abjChoiceMenu button:hover{border-color:#ed760d;background:#fff7ed}
+  #abjChoiceMenu .abjChoiceCancel{grid-column:1/-1;background:#edf2ef}
+  `;
+  document.head.appendChild(st);
+  const el=document.createElement('div');
+  el.id='abjChoiceMenu';
+  el.innerHTML='<h3 id="abjChoiceTitle">Actions</h3><p id="abjChoiceHint"></p><div class="abjChoiceGrid" id="abjChoiceGrid"></div>';
+  document.body.appendChild(el);
+}
+function closeChoiceMenu(){
+  const el=document.getElementById('abjChoiceMenu');
+  if(el)el.style.display='none';
+  window.__abjChoiceOpen=false;
+}
+function openChoiceMenu(title,hint,options){
+  ensureChoiceUI();
+  const el=document.getElementById('abjChoiceMenu');
+  const grid=document.getElementById('abjChoiceGrid');
+  document.getElementById('abjChoiceTitle').textContent=title||'Actions';
+  document.getElementById('abjChoiceHint').textContent=hint||'Choisis une action';
+  grid.innerHTML='';
+  (options||[]).forEach(opt=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.textContent=opt.label;
+    b.onclick=()=>{closeChoiceMenu();try{opt.action&&opt.action();}catch(e){console.warn(e);}};
+    grid.appendChild(b);
+  });
+  const cancel=document.createElement('button');
+  cancel.type='button';cancel.className='abjChoiceCancel';cancel.textContent='Annuler';
+  cancel.onclick=closeChoiceMenu;
+  grid.appendChild(cancel);
+  el.style.display='flex';
+  window.__abjChoiceOpen=true;
+  try{if(document.exitPointerLock)document.exitPointerLock();}catch(e){}
+}
+window.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&window.__abjChoiceOpen){closeChoiceMenu();e.preventDefault();}
+});
+
+/* ---------- Catalogue d’actions par type d’objet / PNJ ---------- */
+function furnitureActions(item){
+  const t=String(item.type||item.label||'').toLowerCase();
+  const label=item.label||'Objet';
+  const acts=[];
+  const sit=()=>{playerSitting=true;lifeState.energy=Math.min(100,(lifeState.energy||0)+8);lifeState.comfort=Math.min(100,(Number(lifeState.comfort)||70)+6);showMessage('Tu t’assois sur '+label+'.');};
+  const nap=()=>{playerSitting=true;lifeState.energy=Math.min(100,(lifeState.energy||0)+18);lifeState.hunger=Math.max(0,(lifeState.hunger||100)-3);showMessage('Petite sieste sur '+label+'…');setTimeout(()=>{playerSitting=false;showMessage('Tu te relèves.');},2500);};
+  const sleep=()=>{if(typeof startSleep==='function'){startSleep();}else{playerSitting=true;lifeState.energy=100;showMessage('Tu dors un moment…');setTimeout(()=>{playerSitting=false;},3200);}};
+  const move=()=>{
+    if(item.object)heldFurniture=item.object;heldFurniture.userData=heldFurniture.userData||{};heldFurniture.userData.label=label;showMessage('Tu portes '+label+'. F pour reposer · R pour tourner.');}
+    else showMessage('Cet objet ne peut pas être déplacé.');
+  };
+  const look=()=>showMessage('Tu observes '+label+'.');
+  const use=()=>{
+    if(/douche|shower|lavabo|evier|évier/.test(t)){playerShowering=true;lifeState.hygiene=100;showMessage('Tu te laves.');setTimeout(()=>{playerShowering=false;},2000);}
+    else if(/frigo|cuisine|table/.test(t)){lifeState.hunger=Math.min(100,(lifeState.hunger||0)+12);showMessage('Tu grignotes un peu.');}
+    else if(/tv|télé|ordi|pc|bureau/.test(t)){lifeState.social=Math.min(100,(lifeState.social||0)+5);lifeState.energy=Math.max(0,(lifeState.energy||100)-2);showMessage('Tu passes un moment devant '+label+'.');}
+    else showMessage('Tu utilises '+label+'.');
+  };
+  if(/canap|sofa|fauteuil|chaise|banc|lit|bed|matela/.test(t)||/canap|fauteuil|chaise|lit/i.test(label)){
+    acts.push({label:'🪑 S’asseoir',action:sit});
+    acts.push({label:'😴 Faire une sieste',action:nap});
+    if(/lit|bed|matela/.test(t)||/lit/i.test(label))acts.push({label:'🌙 Dormir',action:sleep});
+    acts.push({label:'📦 Déplacer',action:move});
+  }else if(/douche|shower|lavabo|toilette|wc/.test(t)){
+    acts.push({label:'🚿 Utiliser',action:use});
+    acts.push({label:'👀 Regarder',action:look});
+  }else if(/frigo|table|cuisine|evier|évier/.test(t)){
+    acts.push({label:'🍽️ Utiliser',action:use});
+    acts.push({label:'📦 Déplacer',action:move});
+    acts.push({label:'👀 Regarder',action:look});
+  }else if(/tv|télé|ordi|pc|bureau|étagère|etagere/.test(t)){
+    acts.push({label:'▶️ Utiliser',action:use});
+    acts.push({label:'📦 Déplacer',action:move});
+    acts.push({label:'👀 Regarder',action:look});
+  }else{
+    acts.push({label:'✋ Interagir',action:use});
+    acts.push({label:'📦 Déplacer',action:move});
+    acts.push({label:'👀 Regarder',action:look});
+    if(/assoir|s’asseoir|asseoir/.test(t))acts.unshift({label:'🪑 S’asseoir',action:sit});
+  }
+  return acts;
+}
+function npcActions(npc){
+  const name=(npc.userData&&npc.userData.name)||'Habitant';
+  return [
+    {label:'💬 Parler',action:()=>{
+      lifeState.social=Math.min(100,(lifeState.social||0)+12);
+      if(typeof talkToNPC==='function')talkToNPC(npc);
+      else showMessage(name+' : « Bonjour ! Bienvenue à Abidjan. »');
+    }},
+    {label:'🤝 Saluer',action:()=>{lifeState.social=Math.min(100,(lifeState.social||0)+6);showMessage('Tu salues '+name+'.');}},
+    {label:'📱 Échanger le contact',action:()=>{
+      lifeState.contacts=lifeState.contacts||[];
+      if(!lifeState.contacts.some(c=>c.name===name)){
+        lifeState.contacts.push({id:'npc-'+name+'-'+Date.now(),name,relation:10,firstMet:(typeof currentQuartier!=='undefined'?currentQuartier:'Abidjan')});
+        if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+        showMessage('Contact enregistré : '+name);
+      }else showMessage(name+' est déjà dans tes contacts.');
+    }},
+    {label:'🎁 Offrir un petit cadeau',action:()=>{
+      if((lifeState.money||0)<500){showMessage('Pas assez d’argent.');return;}
+      lifeState.money-=500;lifeState.social=Math.min(100,(lifeState.social||0)+10);lifeState.respect=(lifeState.respect||0)+1;
+      showMessage('Tu offres un petit cadeau à '+name+'.');
+    }}
+  ];
+}
+function worldObjectActions(target){
+  // target: {kind,label,ref}
+  if(target.kind==='door'){
+    return [
+      {label:'🚪 Entrer',action:()=>{if(typeof enterBuilding==='function')enterBuilding(target.ref);}},
+      {label:'👀 Regarder la façade',action:()=>showMessage(target.label||'Bâtiment')}
+    ];
+  }
+  if(target.kind==='vehicle'){
+    return [
+      {label:'🔑 Monter (R)',action:()=>{if(typeof enterOwnedVehicle==='function')enterOwnedVehicle(target.ref);}},
+      {label:'👀 Inspecter',action:()=>showMessage('Véhicule · clé '+(target.ref.userData&&target.ref.userData.vehicleKey||''))}
+    ];
+  }
+  if(target.kind==='poi'){
+    const p=target.ref;
+    const acts=[{label:'👀 Observer',action:()=>showMessage(p.nom||'Lieu')}];
+    if(p.type==='marche'||(p.data&&p.data.articles)){
+      acts.unshift({label:'🛒 Acheter',action:()=>{if(typeof interactWithCityLife==='function')interactWithCityLife();}});
+    }
+    if(p.type==='sante'||/hôpital|pharmacie/i.test(p.nom||'')){
+      acts.unshift({label:'🏥 Se soigner',action:()=>{lifeState.health=100;lifeState.illness=null;showMessage('Tu te fais soigner.');}});
+    }
+    return acts;
+  }
+  if(target.kind==='stand'){
+    return [
+      {label:'🛒 Voir les articles',action:()=>{if(typeof interactWithCityLife==='function')interactWithCityLife();}},
+      {label:'💬 Parler au vendeur',action:()=>showMessage('Vendeur : « C’est frais du jour ! »')}
+    ];
+  }
+  return [{label:'✋ Interagir',action:()=>showMessage(target.label||'Interaction')}];
+}
+
+/* ---------- Interception E : menu de choix intelligent ---------- */
+function findContextTarget(){
+  if(!player)return null;
+  // 1) intérieur : meuble
+  if(currentInterior){
+    const furn=typeof findNearbyFurniture==='function'?findNearbyFurniture():null;
+    if(furn)return {kind:'furniture',label:furn.label||furn.type,ref:furn};
+    return null;
+  }
+  // 2) PNJ proche
+  let bestNpc=null,bd=3.8;
+  if(typeof npcs!=='undefined'){
+    for(const n of npcs){
+      if(!n||!n.visible||n.userData&&n.userData.dead)continue;
+      const d=Math.hypot(n.position.x-player.position.x,n.position.z-player.position.z);
+      if(d<bd){bd=d;bestNpc=n;}
+    }
+  }
+  if(bestNpc)return {kind:'npc',label:(bestNpc.userData&&bestNpc.userData.name)||'Habitant',ref:bestNpc};
+  // 3) véhicule possédé
+  if(typeof ownedVehicleMeshes!=='undefined'){
+    const mesh=ownedVehicleMeshes.find(v=>v&&v.visible&&Math.hypot(v.position.x-player.position.x,v.position.z-player.position.z)<4);
+    if(mesh)return {kind:'vehicle',label:'Ton véhicule',ref:mesh};
+  }
+  // 4) porte
+  const door=typeof findNearbyResidentialDoor==='function'?findNearbyResidentialDoor():null;
+  if(door)return {kind:'door',label:door.buildingName||'Bâtiment',ref:door};
+  // 5) POI
+  if(typeof poi!=='undefined'){
+    let best=null,pd=4.5;
+    for(const p of poi){
+      const d=Math.hypot(p.x-player.position.x,p.z-player.position.z);
+      if(d<pd){pd=d;best=p;}
+    }
+    if(best)return {kind:'poi',label:best.nom||best.type,ref:best};
+  }
+  return null;
+}
+window.addEventListener('keydown',function(e){
+  if(String(e.key||'').toLowerCase()!=='e')return;
+  if(!worldReady||!player||dialogOpen||panelOpen||mapOpen||phoneOpen||elevatorMenuOpen||elevatorTravel)return;
+  if(window.__abjChoiceOpen){closeChoiceMenu();e.preventDefault();e.stopImmediatePropagation();return;}
+  // intérieur : si près de la sortie, laisser le flux normal (sortie)
+  if(currentInterior){
+    try{
+      const gp=currentInterior.group.position;
+      const exitZ=gp.z+currentInterior.roomD/2-0.12;
+      if(Math.hypot(player.position.x-gp.x,player.position.z-exitZ)<=2.8)return; // sortie normale
+      const elev=typeof findNearbyFurniture==='function'?findNearbyFurniture():null;
+      if(elev&&(elev.type==='elevator'||elev.type==='apartmentDoor'))return;
+    }catch(err){}
+  }
+  const target=findContextTarget();
+  if(!target)return; // laisse le handler d’origine
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  let options=[];
+  if(target.kind==='furniture')options=furnitureActions(target.ref);
+  else if(target.kind==='npc')options=npcActions(target.ref);
+  else options=worldObjectActions(target);
+  openChoiceMenu(target.label||'Actions','Que veux-tu faire ?',options);
+},true);
+
+/* ---------- Densité PNJ / véhicules avec culling (pas de lag) ---------- */
+function densifyWorld(){
+  if(!worldReady||!scene||window.__ABJ_V137_DENSITY)return;
+  window.__ABJ_V137_DENSITY=true;
+  const mobile=!!(typeof mobilePerformanceMode!=='undefined'&&mobilePerformanceMode);
+  // Vague légère de PNJ supplémentaires près du joueur uniquement
+  try{
+    if(typeof createNPCs==='function'&&player){
+      const extra=mobile?40:90;
+      createNPCs(extra);
+    }
+  }catch(e){}
+  // Vague de véhicules trafic si routes dispo
+  try{
+    if(typeof osmRoadSegments!=='undefined'&&osmRoadSegments.length&&typeof createVehicleMesh==='function'){
+      const budget=mobile?25:55;
+      let added=0;
+      const pool=osmRoadSegments.filter(r=>r&&r.a&&r.b&&['primary','secondary','tertiary','residential'].includes(r.type));
+      for(let i=0;i<budget&&pool.length;i++){
+        const r=pool[Math.floor(Math.random()*pool.length)];
+        const route=[r];
+        const types=['voiture','taxi','yango','moto','moto_livreur','woro','gbaka'];
+        const type=types[Math.floor(Math.random()*types.length)];
+        const v=createVehicleMesh(type);
+        v.traverse(o=>{if(o.isMesh)o.castShadow=false;});
+        const len=Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)||1;
+        v.userData={type:'osmTraffic',vType:type,route,routeIndex:0,progress:Math.random()*len,laneOffset:0.8+Math.random(),speed:6+Math.random()*6,wreck:false};
+        if(typeof updateTrafficVehiclePose==='function')updateTrafficVehiclePose(v);
+        scene.add(v);vehicles.push(v);added++;
+      }
+      console.info('V1.37 véhicules ajoutés',added);
+    }
+  }catch(e){console.warn(e);}
+}
+// Culling : n’animer en détail que les entités proches
+let __abjCullAcc=0;
+function cullCrowd(dt){
+  if(!player)return;
+  __abjCullAcc+=dt;if(__abjCullAcc<0.35)return;__abjCullAcc=0;
+  const px=player.position.x,pz=player.position.z;
+  const near=90,far=160;
+  if(typeof npcs!=='undefined'){
+    for(const n of npcs){
+      if(!n||!n.position)continue;
+      const d=Math.hypot(n.position.x-px,n.position.z-pz);
+      n.visible=d<far;
+      n.userData.lowUpdate=d>near;
+    }
+  }
+  if(typeof vehicles!=='undefined'){
+    for(const v of vehicles){
+      if(!v||!v.position)continue;
+      const d=Math.hypot(v.position.x-px,v.position.z-pz);
+      v.visible=d<200;
+      v.userData.lowUpdate=d>110;
+    }
+  }
+}
+const prevAnimate=typeof animate==='function'?null:null;
+// Hook dans updateLifeSimulation ou requestAnimationFrame léger
+setInterval(()=>{if(gameStarted&&worldReady)cullCrowd(0.5);},500);
+
+/* ---------- Végétation organisée (palmiers, arbres, buissons) ---------- */
+function createSimpleTree(x,z,kind){
+  const g=new THREE.Group();
+  if(kind==='palm'){
+    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.12,.22,4.2,6),new THREE.MeshLambertMaterial({color:0x6d4c2f}));
+    trunk.position.y=2.1;g.add(trunk);
+    const leafMat=new THREE.MeshLambertMaterial({color:0x2f7a3e});
+    for(let i=0;i<5;i++){
+      const leaf=new THREE.Mesh(new THREE.BoxGeometry(2.4,.12,.5),leafMat);
+      leaf.position.set(Math.cos(i*1.25)*.6,4.1,Math.sin(i*1.25)*.6);
+      leaf.rotation.y=i;leaf.rotation.z=.4;g.add(leaf);
+    }
+  }else if(kind==='bush'){
+    const b=new THREE.Mesh(new THREE.SphereGeometry(.7,8,6),new THREE.MeshLambertMaterial({color:0x3d8c4a}));
+    b.position.y=.55;b.scale.set(1.2,.8,1.1);g.add(b);
+  }else{
+    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.14,.2,2.4,6),new THREE.MeshLambertMaterial({color:0x5a3c24}));
+    trunk.position.y=1.2;g.add(trunk);
+    const canopy=new THREE.Mesh(new THREE.SphereGeometry(1.3,8,6),new THREE.MeshLambertMaterial({color:0x2e6b38}));
+    canopy.position.y=2.8;g.add(canopy);
+  }
+  g.position.set(x,terrainHeight(x,z),z);
+  g.name='abj-veg';
+  g.userData.vegetation=true;
+  return g;
+}
+function plantVegetation(){
+  if(!scene||window.__ABJ_V137_VEG)return;
+  window.__ABJ_V137_VEG=true;
+  const mobile=!!(typeof mobilePerformanceMode!=='undefined'&&mobilePerformanceMode);
+  const count=mobile?80:180;
+  let planted=0;
+  for(let i=0;i<count*3&&planted<count;i++){
+    const x=(Math.random()-.5)*CITY_SIZE*.55;
+    const z=(Math.random()-.5)*CITY_SIZE*.55;
+    if(typeof isPointInAbjWater==='function'&&isPointInAbjWater(x,z))continue;
+    if(typeof isOnRoad==='function'&&isOnRoad(x,z,5))continue;
+    if(typeof isInsideAnyObstacle==='function'&&isInsideAnyObstacle(x,z,1.5))continue;
+    const kind=Math.random()<.25?'palm':(Math.random()<.4?'bush':'tree');
+    const t=createSimpleTree(x,z,kind);
+    scene.add(t);
+    planted++;
+  }
+  // Alignements le long de quelques routes
+  if(typeof osmRoadSegments!=='undefined'){
+    let along=0;
+    for(const seg of osmRoadSegments){
+      if(along>(mobile?30:70))break;
+      if(!seg||!seg.a||!seg.b)continue;
+      if(!['primary','secondary','tertiary'].includes(seg.type))continue;
+      if(Math.random()>.2)continue;
+      const dx=seg.b.x-seg.a.x,dz=seg.b.z-seg.a.z,len=Math.hypot(dx,dz)||1;
+      const nx=-dz/len,nz=dx/len;
+      for(const side of [-1,1]){
+        const x=(seg.a.x+seg.b.x)/2+nx*side*9;
+        const z=(seg.a.z+seg.b.z)/2+nz*side*9;
+        if(typeof isPointInAbjWater==='function'&&isPointInAbjWater(x,z))continue;
+        scene.add(createSimpleTree(x,z,Math.random()<.5?'palm':'tree'));
+        along++;
+      }
+    }
+  }
+  console.info('V1.37 végétation plantée',planted);
+}
+
+/* ---------- Yango & livraisons plus réalistes ---------- */
+function enhanceYangoAndDelivery(){
+  // Patch demande Yango : message style réel + tracking
+  if(typeof window!=='undefined'){
+    window.abjRequestYango=function(dest){
+      if(!player||!dest)return;
+      if(activeCourseGoRide){showMessage('Une course est déjà en cours.');return;}
+      const sx=player.position.x,sz=player.position.z;
+      const dist=Math.hypot(dest.x-sx,dest.z-sz);
+      const fare=Math.max(800,Math.round((dist/1000*750+600)/100)*100);
+      if((lifeState.money||0)<fare){showMessage('Solde insuffisant pour Yango ('+fare.toLocaleString('fr-FR')+' FCFA).');return;}
+      const eta=Math.max(12,Math.min(120,Math.round(15+dist/20)));
+      activeCourseGoRide={
+        destination:{nom:dest.nom||'Destination',x:dest.x,z:dest.z},
+        fare,etaSeconds:eta,phase:'approach',progress:0,routeMapped:true,
+        driverName:['Koffi','Yves','Awa','Serge','Mariam'][Math.floor(Math.random()*5)],
+        plate:'AA-'+Math.floor(1000+Math.random()*9000)+'-CI',
+        vehicleColor:['blanc','noir','gris','bleu'][Math.floor(Math.random()*4)]
+      };
+      showMessage('🚖 Yango · '+activeCourseGoRide.driverName+' · '+activeCourseGoRide.plate+' arrive dans ~'+eta+' s');
+      if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+    };
+  }
+  // Livraison moto : commande depuis téléphone
+  window.abjRequestDelivery=function(itemLabel,price){
+    price=Number(price)||1500;
+    if((lifeState.money||0)<price){showMessage('Solde insuffisant pour la livraison.');return;}
+    lifeState.money-=price;
+    lifeState.delivery={item:itemLabel||'Colis',eta:25+Math.floor(Math.random()*40),phase:'en_route'};
+    showMessage('📦 Livreur moto en route avec « '+(itemLabel||'colis')+' »…');
+    const timer=setInterval(()=>{
+      if(!lifeState.delivery){clearInterval(timer);return;}
+      lifeState.delivery.eta-=1;
+      if(lifeState.delivery.eta<=0){
+        clearInterval(timer);
+        const item=lifeState.delivery.item;
+        lifeState.delivery=null;
+        lifeState.inventory=lifeState.inventory||{};
+        lifeState.inventory[item]=(lifeState.inventory[item]||0)+1;
+        lifeState.hunger=Math.min(100,(lifeState.hunger||0)+6);
+        showMessage('✅ Livraison reçue : '+item);
+        if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+      }
+    },1000);
+  };
+}
+// App livraison dans le téléphone
+function ensureDeliveryApp(){
+  const host=document.getElementById('phoneApps');if(!host)return;
+  if(host.querySelector('[data-app="livraison"]'))return;
+  let page=host.querySelector('.phoneAppsPage');
+  if(!page){page=document.createElement('div');page.className='phoneAppsPage';host.appendChild(page);}
+  const b=document.createElement('button');b.type='button';b.className='phoneApp';b.dataset.app='livraison';
+  b.innerHTML='<span>📦</span><b>Livraison</b>';
+  b.onclick=()=>{
+    const content=document.getElementById('phoneAppContent');
+    const apps=document.getElementById('phoneApps');
+    const shell=document.getElementById('phoneHomeShell');
+    if(shell)shell.style.display='none';if(apps)apps.style.display='none';if(content)content.style.display='block';
+    content.innerHTML='<button id="phoneBack">← Applications</button><h3>📦 Livraison moto</h3><p style="font-size:12px;color:#60747a">Comme dans la vraie vie : un livreur te rejoint où tu es.</p><button data-del="Repas attieké" data-price="2500">🍽️ Repas attiéké · 2 500</button><button data-del="Eau minérale" data-price="1000">💧 Pack d’eau · 1 000</button><button data-del="Courses marché" data-price="3500">🛒 Courses · 3 500</button><button data-del="Colis boutique" data-price="4000">📱 Colis boutique · 4 000</button><p id="delStatus" style="font-size:12px;color:#188454;margin-top:8px">'+(lifeState.delivery?('En cours · '+lifeState.delivery.item+' · '+lifeState.delivery.eta+' s'):'Aucune livraison en cours')+'</p>';
+    content.querySelector('#phoneBack').onclick=()=>{content.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();};
+    content.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=()=>window.abjRequestDelivery(btn.dataset.del,btn.dataset.price));
+  };
+  page.appendChild(b);
+}
+
+/* ---------- Boot différé (après chargement monde, pas pendant) ---------- */
+function boot137(){
+  if(!worldReady||!scene||!gameStarted)return false;
+  try{
+    densifyWorld();
+    plantVegetation();
+    enhanceYangoAndDelivery();
+    ensureDeliveryApp();
+    ensureChoiceUI();
+  }catch(e){console.warn('V1.37 boot',e);}
+  return true;
+}
+let tries=0;
+const t=setInterval(()=>{tries++;if(boot137()||tries>300)clearInterval(t);},1200);
+
+const prevOpenPhone=typeof openPhone==='function'?openPhone:null;
+if(prevOpenPhone){
+  window.openPhone=function(){
+    const r=prevOpenPhone.apply(this,arguments);
+    ensureDeliveryApp();
+    return r;
+  };
+}
+
+console.info('ABJ V1.37 — densité optimisée, végétation, menu E, Yango/livraison');
+})();
+</script>
+
+
+<script>
+/* ABJ V1.38 — IA assistant créateur générale (toute question) + IA PNJ plus vivante.
+   Sur ses distinctions / identité avancée : invite à rester attendre l’équipe AF Gamer CI. */
+(function(){
+'use strict';
+if(window.__ABJ_V138)return;window.__ABJ_V138=true;
+window.ABJ_BUILD_VERSION='1.38';
+
+const CREATOR_IDENTITY_REPLY =
+  'Je suis l’assistant du compte créateur Abidjan Life (AF Gamer CI). '+
+  'Pour mes distinctions officielles, mes capacités avancées et les annonces importantes, '+
+  'reste à nous attendre — l’équipe AF Gamer CI les communiquera en temps voulu. '+
+  'En attendant, pose-moi n’importe quelle autre question : culture générale, Abidjan, aide au jeu, idées, calculs, rédaction…';
+
+function isIdentityQuestion(q){
+  const s=String(q||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return /(qui es[ -]?tu|ton identite|tes? distinctions?|tes? capacites? officielles?|es[ -]?tu une? ia|quel modele|gpt|claude|gemini|version de l.?ia|tes? limites? officielles?|presentation officielle)/i.test(s);
+}
+
+/* ---------- Moteur local d’IA générale (hors serveur) ---------- */
+async function localGeneralAnswer(question, history){
+  const q=String(question||'').trim();
+  const ql=q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(!q)return 'Pose-moi une question.';
+
+  if(isIdentityQuestion(q))return CREATOR_IDENTITY_REPLY;
+
+  // Salutations
+  if(/^(salut|bonjour|bonsoir|hello|hey|coucou)\b/.test(ql))
+    return 'Salut ! Je suis ton assistant créateur. Tu peux me parler de tout : le jeu, Abidjan, une idée de feature, un calcul, un texte… Que veux-tu ?';
+
+  // Aide jeu
+  if(/\b(comment|aide|tuto|commande|touches?|sauvegard|yango|helicopt|telephone|argent|eko|fcfa)\b/.test(ql)){
+    if(/commande|touches?|control/.test(ql))
+      return 'Commandes : ZQSD/WASD déplacer · Shift courir · Espace sauter · E interagir (menu de choix) · F meubles / monter Yango · M téléphone · R monter véhicule · T descendre · K sauvegarder · H assistant créateur.';
+    if(/yango|taxi|course/.test(ql))
+      return 'Ouvre le téléphone → Yango / CourseGo, choisis une destination. Le chauffeur arrive, puis F pour monter. Tu peux aussi engager un trajet depuis certains lieux.';
+    if(/helicopt/.test(ql))
+      return 'Compte créateur 0799259362 : app Hélicoptère dans le téléphone. Autres joueurs : aéroport (E) pour formation pilote, location ou pilote payant.';
+    if(/sauvegard/.test(ql))
+      return 'La partie se sauvegarde automatiquement et avec K. Chaque compte téléphone a sa propre sauvegarde locale.';
+    if(/argent|eko|fcfa|argent/.test(ql))
+      return 'L’argent se gagne via jobs, entreprises, livraisons, et se dépense (Yango, marché, logement, boutique). Banque et Wave sont dans le téléphone.';
+    return 'Je peux t’aider sur les commandes, Yango, hélico, logement, traits/rêve, téléphone, marchés… Précise ce que tu veux faire dans Abidjan Life.';
+  }
+
+  // Maths simples
+  const math=ql.replace(/,/g,'.').match(/^\s*([-+]?\d+(?:\.\d+)?)\s*([+\-*/x×÷])\s*([-+]?\d+(?:\.\d+)?)\s*$/);
+  if(math){
+    const a=Number(math[1]),b=Number(math[3]);let r=null;
+    if(math[2]==='+')r=a+b;else if(math[2]==='-')r=a-b;else if(math[2]==='*'||math[2]==='x'||math[2]==='×')r=a*b;else if((math[2]==='/'||math[2]==='÷')&&b!==0)r=a/b;
+    if(r!=null&&Number.isFinite(r))return 'Résultat : '+r;
+  }
+
+  // Abidjan / CI knowledge
+  if(/abidjan|cote d.?ivoire|yopougon|cocody|plateau|treichville|lagune|ebri|aeroport|felix/.test(ql)){
+    if(/commune|quartier/.test(ql))
+      return 'Abidjan compte plusieurs communes du District : Plateau, Cocody, Yopougon, Abobo, Adjamé, Treichville, Marcory, Koumassi, Port-Bouët, Attécoubé, Songon, Anyama, Bingerville… Chacune a son ambiance dans le jeu.';
+    if(/lagune|ebri|pont/.test(ql))
+      return 'La lagune Ébrié traverse Abidjan ; les ponts relient les rives. Dans le jeu, les zones d’eau et ponts suspendus suivent cette géographie.';
+    if(/aeroport|port.bouet/.test(ql))
+      return 'L’aéroport Félix Houphouët-Boigny est du côté de Port-Bouët. Dans le jeu, tu y trouves le terminal et les services hélico (brevet / pilote).';
+    return 'Abidjan est une métropole lagunaire ivoirienne très vivante : affaires au Plateau, résidentiel à Cocody, énergie populaire à Yopougon et Abobo, commerce à Adjamé et Treichville. Dis-moi le quartier ou le sujet précis qui t’intéresse.';
+  }
+
+  // Rédaction / idées
+  if(/redige|ecris|idee|brainstorm|scenario|histoire|nom pour/.test(ql))
+    return 'Idée rapide à partir de ta demande « '+q.slice(0,120)+' » : développe un objectif clair, 3 étapes concrètes, et une contrainte (temps, budget ou lieu abidjanais). Si tu veux, demande une version plus longue (pitch, dialogue PNJ, quête, description de quartier).';
+
+  // Essai recherche web légère (Wikipedia FR)
+  try{
+    const term=encodeURIComponent(q.slice(0,80));
+    const api='https://fr.wikipedia.org/api/rest_v1/page/summary/'+term;
+    const ctrl=AbortSignal.timeout?AbortSignal.timeout(4500):undefined;
+    const r=await fetch(api,{signal:ctrl,headers:{'Accept':'application/json'}});
+    if(r.ok){
+      const d=await r.json();
+      if(d&&d.extract){
+        let ans=String(d.extract).slice(0,700);
+        if(d.content_urls&&d.content_urls.desktop&&d.content_urls.desktop.page)
+          ans+='\n\nSource : '+d.content_urls.desktop.page;
+        return ans;
+      }
+    }
+  }catch(e){/* hors ligne ou terme inexistant */}
+
+  // Recherche approximative Wikipedia search
+  try{
+    const url='https://fr.wikipedia.org/w/api.php?action=opensearch&limit=1&namespace=0&format=json&origin=*&search='+encodeURIComponent(q.slice(0,80));
+    const r=await fetch(url,{headers:{'Accept':'application/json'}});
+    if(r.ok){
+      const d=await r.json();
+      if(Array.isArray(d)&&d[1]&&d[1][0]){
+        const title=d[1][0];
+        const sum=await fetch('https://fr.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(title));
+        if(sum.ok){
+          const s=await sum.json();
+          if(s&&s.extract)return String(s.extract).slice(0,700)+(s.content_urls?.desktop?.page?'\n\nSource : '+s.content_urls.desktop.page:'');
+        }
+      }
+    }
+  }catch(e){}
+
+  // Conversation générique intelligente
+  if(history&&history.length){
+    const last=history.filter(m=>m.role==='user').slice(-3).map(m=>m.content).join(' · ');
+    return 'Je traite ta question librement (pas seulement le jeu). Pour « '+q.slice(0,160)+' », voici une réponse directe : clarifie l’objectif, les faits connus, puis la prochaine action utile. '+
+      (last?'Je tiens compte du fil récent de notre échange. ':'')+
+      'Tu peux reformuler plus précisément (ex. « explique comme à un débutant », « donne 5 points », « en rapport avec Cocody »).';
+  }
+  return 'Je peux répondre à n’importe quel sujet — pas seulement Abidjan Life. Reformule un peu ou ajoute un contexte (but, niveau de détail, lieu) et je développe. Si tu demandes mes distinctions officielles : reste à nous attendre (équipe AF Gamer CI).';
+}
+
+/* ---------- Assistant créateur : serveur si dispo, sinon IA générale locale ---------- */
+async function creatorAssistantReply(message, history){
+  if(isIdentityQuestion(message))return {answer:CREATOR_IDENTITY_REPLY,citations:[]};
+  // Tentative serveur
+  try{
+    if(typeof creatorApi==='function'&&typeof creatorToken==='function'&&creatorToken()){
+      const r=await fetch(creatorApi()+'/api/game/assistant',{
+        method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:'Bearer '+creatorToken()},
+        body:JSON.stringify({message,history:history||[],mode:'general'})
+      });
+      if(r.ok){
+        const d=await r.json();
+        let answer=String(d.answer||'').trim();
+        // Si le serveur renvoie une réponse trop « jeu only », compléter en local
+        if(answer&&!/indisponible|non pris en charge|uniquement.*jeu/i.test(answer)){
+          if(upstreamLimitsToGameOnly(answer,message)){
+            const local=await localGeneralAnswer(message,history);
+            return {answer:local,citations:d.citations||[]};
+          }
+          return {answer,citations:d.citations||[]};
+        }
+      }
+    }
+  }catch(e){/* fallback local */}
+  const answer=await localGeneralAnswer(message,history);
+  return {answer,citations:[]};
+}
+function upstreamLimitsToGameOnly(answer,message){
+  const a=String(answer).toLowerCase();
+  const q=String(message).toLowerCase();
+  // Si l'utilisateur pose une question hors jeu et la réponse refuse
+  const offGame=!/\b(jeu|abidjan life|pnj|yango|sauvegard|commande)\b/.test(q);
+  return offGame&&/(je ne peux|hors sujet|seulement.*jeu|uniquement.*jeu|pas mon role)/i.test(a);
+}
+
+// Remplace le panneau assistant
+window.openCreatorAssistantPanel=function(){
+  if(typeof isCreatorAccount==='function'&&!isCreatorAccount(activeGameAccount)){
+    if(typeof showMessage==='function')showMessage('Assistant réservé au compte créateur.');
+    return;
+  }
+  let p=document.getElementById('creatorAssistantPanel');
+  if(!p){
+    p=document.createElement('div');
+    p.id='creatorAssistantPanel';
+    p.style.cssText='position:fixed;right:16px;top:155px;z-index:130;width:min(420px,94vw);max-height:72vh;overflow:auto;padding:14px;background:#102a37;border:1px solid #65d9ee;border-radius:15px;color:white;box-shadow:0 15px 55px #000b';
+    document.body.appendChild(p);
+  }
+  p.innerHTML='<div style="display:flex;justify-content:space-between;gap:8px"><b>✦ Assistant créateur</b><button id="creatorAssistantClose">✕</button></div>'+
+    '<div style="font-size:11px;color:#9ee5e1;margin:5px 0">IA générale · n’importe quelle question · mémoire · audit ville</div>'+
+    '<div id="creatorAssistantLog" style="height:250px;overflow:auto;background:#07131c;padding:9px;margin:9px 0;border-radius:9px;font-size:12px;line-height:1.45">Bonjour. Pose-moi n’importe quelle question — jeu ou monde réel. Pour mes distinctions officielles : reste à nous attendre (AF Gamer CI).</div>'+
+    '<button id="creatorAuditRun" type="button" style="width:100%;margin-bottom:8px">Lancer un audit des 12 analystes</button>'+
+    '<form id="creatorAssistantForm" style="display:flex;gap:6px"><input id="creatorAssistantInput" placeholder="Question libre…" style="flex:1;min-width:0;padding:10px;background:#091a25;color:white;border:1px solid #ffffff44;border-radius:8px"><button>Envoyer</button></form>';
+  p.querySelector('#creatorAssistantClose').onclick=()=>p.remove();
+  p.querySelector('#creatorAuditRun').onclick=async()=>{
+    const log=p.querySelector('#creatorAssistantLog');
+    log.innerHTML+='<p>Les 12 analystes inspectent la ville…</p>';
+    try{
+      const report=await window.ABJ_RUN_WORLD_AUDIT?.();
+      if(!report)throw new Error('Entre dans le monde et attends le chargement de la carte.');
+      log.innerHTML+='<p><b>Audit :</b> '+report.summary.totalFindings+' anomalie(s), '+report.summary.agents+' analystes.</p>';
+    }catch(e){log.innerHTML+='<p>'+(e.message||'Audit indisponible.')+'</p>';}
+    log.scrollTop=log.scrollHeight;
+  };
+  const memoryKey='abj-creator-ai-memory:'+(typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(activeGameAccount):activeGameAccount);
+  let history=[];
+  try{history=JSON.parse(safeGet(memoryKey)||'[]');if(!Array.isArray(history))history=[];}catch(e){history=[];}
+  const log=p.querySelector('#creatorAssistantLog');
+  const esc=(typeof escapeHTML==='function')?escapeHTML:(s)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  if(history.length)log.innerHTML=history.slice(-12).map(m=>'<p><b>'+(m.role==='assistant'?'Assistant':'Créateur')+':</b> '+esc(m.content)+'</p>').join('');
+  p.querySelector('#creatorAssistantForm').onsubmit=async e=>{
+    e.preventDefault();
+    const input=p.querySelector('#creatorAssistantInput');
+    const q=input.value.trim();if(!q)return;input.value='';
+    const prior=history.slice(-10);
+    history.push({role:'user',content:q});
+    log.innerHTML+='<p><b>Créateur :</b> '+esc(q)+'</p><p><i>Réflexion…</i></p>';
+    log.scrollTop=log.scrollHeight;
+    try{
+      const d=await creatorAssistantReply(q,prior);
+      const answer=String(d.answer||'Pas de réponse.');
+      history.push({role:'assistant',content:answer});
+      history=history.slice(-20);
+      safeSet(memoryKey,JSON.stringify(history));
+      log.innerHTML+='<p><b>Assistant :</b> '+esc(answer).replace(/\n/g,'<br>')+'</p>';
+      (d.citations||[]).forEach(x=>{
+        if(x&&/^https:\/\//.test(x.url||''))log.innerHTML+='<p style="font-size:11px"><a href="'+esc(x.url)+'" target="_blank" rel="noopener">'+esc(x.title||x.url)+'</a></p>';
+      });
+    }catch(err){
+      log.innerHTML+='<p style="color:#ff8b91">'+(err.message||'Erreur assistant')+'</p>';
+    }
+    log.scrollTop=log.scrollHeight;
+  };
+  try{if(document.exitPointerLock)document.exitPointerLock();}catch(e){}
+};
+
+/* ---------- IA PNJ améliorée : routines, humeurs, réactions ---------- */
+const NPC_SCHEDULE=[
+  {from:6,to:11,goals:['travail','marche','promener']},
+  {from:11,to:15,goals:['maquis','marche','promener']},
+  {from:15,to:19,goals:['travail','promener','maison']},
+  {from:19,to:23,goals:['maquis','maison','promener']},
+  {from:23,to:6,goals:['maison','promener']}
+];
+function npcGoalsForHour(h){
+  h=Number(h)||8;
+  for(const s of NPC_SCHEDULE){
+    if(s.from<s.to&&h>=s.from&&h<s.to)return s.goals;
+    if(s.from>s.to&&(h>=s.from||h<s.to))return s.goals;
+  }
+  return ['promener'];
+}
+const NPC_LINES={
+  greet:['Bonjour !','Salut, ça va ?','Hey, bienvenue dans le coin.','Coucou !'],
+  work:['Le travail avance doucement.','Il faut bosser pour s’en sortir.','Tu bosses dans quel domaine ?'],
+  city:['Abidjan bouge toujours.','Ce quartier a son charme.','Attention sur la route, hein.'],
+  night:['Il se fait tard.','Bonne soirée !','Je rentre bientôt.'],
+  market:['Les prix ont encore changé.','Tu veux goûter ?','C’est frais aujourd’hui.'],
+  angry:['Laisse-moi tranquille.','Pas maintenant.','Tu manques de respect.']
+};
+function pickLine(key){const a=NPC_LINES[key]||NPC_LINES.greet;return a[Math.floor(Math.random()*a.length)];}
+
+function enhanceNpcBrain(npc){
+  if(!npc||!npc.userData)return;
+  const u=npc.userData;
+  if(u.__ai138)return;
+  u.__ai138=true;
+  u.mood=u.mood||(50+Math.random()*40);
+  u.energy=u.energy||(60+Math.random()*40);
+  u.v121Relation=u.v121Relation??(25+Math.random()*30);
+  u.homeX=u.homeX??npc.position.x;
+  u.homeZ=u.homeZ??npc.position.z;
+  u.speechCooldown=0;
+}
+
+function smartUpdateNpcs(dt){
+  if(!player||typeof npcs==='undefined'||!npcs.length)return;
+  const h=Number(lifeState&&lifeState.hour)||12;
+  const goals=npcGoalsForHour(h);
+  const px=player.position.x,pz=player.position.z;
+  // Mettre à jour un sous-ensemble par frame pour la perf
+  const budget=Math.min(npcs.length,40);
+  const start=Math.floor(Math.random()*Math.max(1,npcs.length))%Math.max(1,npcs.length);
+  for(let i=0;i<budget;i++){
+    const npc=npcs[(start+i)%npcs.length];
+    if(!npc||!npc.visible||!npc.userData||npc.userData.dead||npc.userData.transitRider)continue;
+    enhanceNpcBrain(npc);
+    const u=npc.userData;
+    if(u.lowUpdate&&Math.random()>.25)continue;
+    u.speechCooldown=Math.max(0,(u.speechCooldown||0)-dt);
+    u.energy=Math.max(10,Math.min(100,(u.energy||50)-dt*0.2));
+    // Changer de but selon l’heure
+    u.goalTimer=(u.goalTimer||0)-dt;
+    if(u.goalTimer<=0){
+      u.goal=goals[Math.floor(Math.random()*goals.length)];
+      u.goalTimer=8+Math.random()*18;
+      if(u.goal==='maison'&&Number.isFinite(u.homeX)){
+        u.targetX=u.homeX+(Math.random()-.5)*6;
+        u.targetZ=u.homeZ+(Math.random()-.5)*6;
+      }else if(typeof pedestrianNodes!=='undefined'&&pedestrianNodes.length){
+        const node=pedestrianNodes[Math.floor(Math.random()*Math.min(pedestrianNodes.length,400))];
+        u.targetX=node.x;u.targetZ=node.z;
+      }else{
+        u.targetX=npc.position.x+(Math.random()-.5)*40;
+        u.targetZ=npc.position.z+(Math.random()-.5)*40;
+      }
+    }
+    // Réaction au joueur proche
+    const dPlayer=Math.hypot(npc.position.x-px,npc.position.z-pz);
+    if(dPlayer<3.2&&u.speechCooldown<=0&&Math.random()<.08){
+      u.speechCooldown=10+Math.random()*12;
+      let line;
+      if((u.v121Relation||0)<20)line=pickLine('angry');
+      else if(h>=20||h<6)line=pickLine('night');
+      else if(u.goal==='marche')line=pickLine('market');
+      else if(u.goal==='travail')line=pickLine('work');
+      else if(Math.random()<.5)line=pickLine('greet');
+      else line=pickLine('city');
+      // bulle courte
+      if(typeof showMessage==='function'&&dPlayer<5&&Math.random()<.35){
+        showMessage((u.name||'Habitant')+' : « '+line+' »');
+      }
+      // léger regard vers le joueur
+      npc.rotation.y=Math.atan2(px-npc.position.x,pz-npc.position.z);
+      u.pauseTimer=1.2+Math.random()*1.5;
+    }
+    // Évitement simple si relation mauvaise
+    if(dPlayer<2.2&&(u.v121Relation||50)<18){
+      const ang=Math.atan2(npc.position.x-px,npc.position.z-pz);
+      u.targetX=npc.position.x+Math.sin(ang)*10;
+      u.targetZ=npc.position.z+Math.cos(ang)*10;
+    }
+  }
+}
+
+// Dialogue PNJ plus riche (remplace réponses figées si possible)
+window.abjTalkToNpc=function(npc,topic){
+  if(!npc)return;
+  enhanceNpcBrain(npc);
+  const u=npc.userData;
+  const name=u.name||'Habitant';
+  let delta=0,reply='';
+  switch(topic){
+    case 'salut':delta=6;reply=pickLine('greet');break;
+    case 'travail':delta=3;reply=pickLine('work');break;
+    case 'abidjan':delta=4;reply=pickLine('city');break;
+    case 'aide':delta=8;reply='C’est gentil, merci. Si tu passes au marché, dis-le-moi.';break;
+    case 'insulte':delta=-24;reply=pickLine('angry');u.mood=Math.max(0,(u.mood||50)-20);break;
+    default:delta=2;reply=pickLine('greet');
+  }
+  u.v121Relation=Math.max(0,Math.min(100,(u.v121Relation||35)+delta));
+  u.mood=Math.max(0,Math.min(100,(u.mood||50)+delta*0.5));
+  if(typeof lifeState!=='undefined')lifeState.social=Math.min(100,(lifeState.social||0)+Math.max(0,delta));
+  if(typeof showMessage==='function')showMessage(name+' : « '+reply+' »');
+  return reply;
+};
+
+// Boucle IA PNJ
+let __aiAcc=0;
+setInterval(()=>{
+  if(typeof gameStarted!=='undefined'&&gameStarted&&typeof worldReady!=='undefined'&&worldReady){
+    smartUpdateNpcs(0.55);
+  }
+},550);
+
+// Bouton IA visible pour créateur
+setInterval(()=>{
+  try{
+    const btn=document.getElementById('creatorOrbAssistant');
+    if(!btn)return;
+    const ok=typeof isCreatorAccount==='function'&&isCreatorAccount(activeGameAccount);
+    btn.style.display=ok?'block':'none';
+    btn.onclick=()=>window.openCreatorAssistantPanel();
+  }catch(e){}
+},2000);
+
+console.info('ABJ V1.38 — assistant général + IA PNJ active');
+})();
+</script>
+
+</body>
+</html>
