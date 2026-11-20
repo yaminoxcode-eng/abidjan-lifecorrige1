@@ -11,7 +11,7 @@
 <meta name="application-name" content="Abidjan Life">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Abidjan Life V1.38 — IA PNJ avancée & assistant créateur général</title>
+<title>Abidjan Life V1.39 — Commandes créateur, mobilité et ville vivante</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
   * { box-sizing: border-box; }
@@ -11412,7 +11412,12 @@ function buildBusinessDistrict(){
   }
   const sign=new THREE.Mesh(new THREE.BoxGeometry(15,2.1,.35),new THREE.MeshStandardMaterial({color:0x101b27,emissive:brand.color,emissiveIntensity:.12}));
   sign.position.set(0,h-.8,9.8);g.add(sign);
-  const plaque=new THREE.Mesh(new THREE.BoxGeometry(10,.65,.42),new THREE.MeshBasicMaterial({color:brand.color}));plaque.position.set(0,h-.8,10.02);g.add(plaque);
+  const plaqueCanvas=document.createElement('canvas');plaqueCanvas.width=1024;plaqueCanvas.height=160;
+  const plaqueCtx=plaqueCanvas.getContext('2d');plaqueCtx.fillStyle='#101b27';plaqueCtx.fillRect(0,0,1024,160);
+  plaqueCtx.fillStyle='#ffffff';plaqueCtx.font='bold 58px Arial';plaqueCtx.textAlign='center';plaqueCtx.textBaseline='middle';plaqueCtx.fillText(brand.name,512,82,980);
+  const plaqueTexture=new THREE.CanvasTexture(plaqueCanvas);
+  const plaque=new THREE.Mesh(new THREE.PlaneGeometry(14,2.2),new THREE.MeshBasicMaterial({map:plaqueTexture,transparent:false,side:THREE.DoubleSide}));
+  plaque.position.set(0,h-.8,10.04);g.add(plaque);
   g.position.set(spot.x,terrainHeight(spot.x,spot.z),spot.z);g.rotation.y=yaw;g.userData={businessHQ:true,businessName:brand.name};scene.add(g);
   if(typeof addObstacle==='function')addObstacle(spot.x,spot.z,23,19,h);
   if(typeof allBuildings!=='undefined'&&Array.isArray(allBuildings))allBuildings.push({x:spot.x,z:spot.z,w:23,d:19,h,type:'business-hq',name:brand.name});
