@@ -9196,7 +9196,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   const t=document.createElement('div');t.id='abjUpdateToast';
   t.style.cssText='position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);z-index:9000;width:min(420px,92vw);padding:12px 14px;border:1px solid #e9c77b;border-radius:16px;background:rgba(10,26,40,.96);color:#fff;font:13px system-ui;box-shadow:0 10px 34px #000a;display:flex;gap:10px;align-items:center';
   const txt=document.createElement('div');txt.style.flex='1';
-  txt.innerHTML='<b style="color:#ffe0a0">🚀 Mise à jour disponible</b><br><span style="color:#c9d9e3">Version '+String(m.version).replace(/[<>&]/g,'')+' — installe-la quand tu veux, ta partie est sauvegardée.</span>';
+  txt.innerHTML='<b style="color:#ffe0a0">🚀 Mise à jour disponible</b><br><span style="color:#c9d9e3">Version '+String(m.version).replace(/[<>&]/g,'')+(Number(m.clientSizeBytes)>0?' · '+(Number(m.clientSizeBytes)/1048576).toFixed(2)+' Mo':'')+' — installe-la quand tu veux, ta partie est sauvegardée.</span>';
   const go=document.createElement('button');go.textContent='Installer';go.style.cssText='border:0;border-radius:9px;padding:9px 12px;background:#e5b85e;color:#17232c;font-weight:900;cursor:pointer';
   const no=document.createElement('button');no.textContent='Plus tard';no.style.cssText='border:1px solid #ffffff40;border-radius:9px;padding:9px 10px;background:transparent;color:#fff;cursor:pointer';
   go.onclick=()=>{t.remove();window.__abjUpdateAccepted=m.version;try{if(typeof saveLifeProgress==='function')saveLifeProgress(false);}catch(e){}proceed();};
