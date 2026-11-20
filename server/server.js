@@ -21,8 +21,9 @@ const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 const mailTransport = SMTP_HOST && SMTP_USER && SMTP_PASS ? nodemailer.createTransport({host:SMTP_HOST,port:SMTP_PORT,secure:SMTP_PORT===465,auth:{user:SMTP_USER,pass:SMTP_PASS}}) : null;
-const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.26.0';
+const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.40.0';
 const DEFAULT_CLIENT_URL = process.env.CLIENT_URL || '';
+const CLIENT_SIZE_BYTES = Math.max(0, Number(process.env.CLIENT_SIZE_BYTES) || 1026940);
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const persistentStorageEnabled = !!(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
@@ -261,6 +262,7 @@ app.get('/api/updates/latest', (_req, res) =>
     minVersion: updateManifest.minVersion,
     clientUrl: updateManifest.clientUrl,
     releaseNotes: updateManifest.releaseNotes,
+    clientSizeBytes: CLIENT_SIZE_BYTES,
     publishedAt: updateManifest.publishedAt,
     rollbackAvailable: !!updateManifest.previous
   })
@@ -309,6 +311,7 @@ app.get('/api/admin/updates/status', requireUpdateAdmin, (_req, res) => {
       minVersion: updateManifest.minVersion,
       clientUrl: updateManifest.clientUrl,
       releaseNotes: updateManifest.releaseNotes,
+      clientSizeBytes: CLIENT_SIZE_BYTES,
       publishedAt: updateManifest.publishedAt,
       rollbackAvailable: !!updateManifest.previous
     },
