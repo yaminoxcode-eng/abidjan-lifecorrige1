@@ -6,10 +6,11 @@ Le service Render connecté utilise actuellement la branche `main`. La branche `
 1. Ouvre le SQL Editor du projet Supabase.
 2. Pour une nouvelle base, exécute `supabase/migrations/20261119_abidjan_life_core.sql`.
 3. Pour une base ayant déjà reçu la migration initiale, exécute ensuite `supabase/migrations/20261121_allow_shared_email_accounts.sql`.
-4. Dans Render > service `abidjan-lifecorrige1` > Environment, ajoute `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY`.
-5. La clé `service_role` reste uniquement sur Render. Ne la colle jamais dans le client ou GitHub.
+4. Dans les réglages Data API du projet, vérifie que le schéma `public` est exposé : le serveur utilise l'API REST Supabase (`/rest/v1`). Les nouveaux projets ne publient plus automatiquement les nouveaux schémas/tables via la Data API.
+5. Dans Render > service `abidjan-lifecorrige1` > Environment, ajoute `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY`.
+6. La clé `service_role` reste uniquement sur Render. Ne la colle jamais dans le client ou GitHub.
 
-Le schéma conserve le téléphone comme identifiant unique du compte. Une même adresse e-mail peut être associée à plusieurs comptes téléphoniques ; elle sert de contact de récupération. L'index e-mail est non unique.
+Le schéma conserve le téléphone comme identifiant unique du compte. Une même adresse e-mail peut être associée à plusieurs comptes téléphoniques ; elle sert de contact de récupération. L'index e-mail est non unique. Les tables restent protégées par RLS et le serveur utilise exclusivement la clé `service_role`.
 
 ## 2. Sécurité des sessions et du compte créateur
 - Définis `JWT_SECRET` comme une valeur aléatoire longue et stable. Le fallback temporaire du code actuel génère une nouvelle clé à chaque redémarrage et invalide les sessions précédentes.
