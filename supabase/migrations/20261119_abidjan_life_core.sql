@@ -14,7 +14,8 @@ create table if not exists public.game_accounts (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-create unique index if not exists game_accounts_email_lower_uq on public.game_accounts (lower(email));
+-- E-mail is a reusable recovery contact; phone is the unique account identifier.
+create index if not exists game_accounts_email_lower_idx on public.game_accounts (lower(email));
 
 create table if not exists public.creator_reports (
   id uuid primary key default gen_random_uuid(),
