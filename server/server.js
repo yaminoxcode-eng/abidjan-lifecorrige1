@@ -829,6 +829,16 @@ app.get('/api/account/role', auth, (req,res)=>{
   res.set('Cache-Control','no-store').json({ok:true,creator,title:creator?'Créateur du jeu':'Citoyen',privileges:creator?['creator_dashboard','account_management','moderation','world_management','creator_tools']:[]});
 });
 
+// Le code secret est redemandé à chaque lancement du compte créateur,
+// y compris lorsqu'un jeton de connexion est déjà mémorisé sur l'appareil.
+app.post('/api/creator/verify-launch', auth, requireCreator, (req,res)=>{
+  if(!rateLimit(req.ip + ':creator-launch', 5, 60000))
+    return res.status(429).json({verified:false,error:'Trop de tentatives. Réessaie dans une minute.'});
+  if(!creatorIdentityCodeValid(req.body?.creatorCode))
+    return res.status(401).json({verified:false,error:'Code secret incorrect. Le monde reste verrouillé.'});
+  res.set('Cache-Control','no-store').json({ok:true,verified:true});
+});
+
 app.get('/api/creator/rewards', auth, requireCreator, (_req,res)=>{
   const accountsList=[...accounts.values()].map(a=>{
     refreshCreatorGemBalance(a);
