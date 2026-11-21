@@ -3753,12 +3753,12 @@ function createVehicles(count) {
     const pos = -CITY_SIZE / 2 + Math.random() * CITY_SIZE;
     const type = Math.random() < 0.32 ? 'gbaka' : Math.random() < 0.55 ? 'taxi' : Math.random() < 0.75 ? 'moto' : 'voiture';
     const v = createVehicleMesh(type);
-    v.userData = {
+    v.userData = Object.assign(v.userData || {}, {
       type, isHorizontal: isH, roadLine: line, dir, laneOffset,
       speed: type === 'moto' ? 0.19 : type === 'gbaka' ? 0.11 : 0.15,
       baseSpeed: type === 'moto' ? 0.19 : type === 'gbaka' ? 0.11 : 0.15,
       pos, health: 100, exploding: false, wreck: false
-    };
+    });
     if (isH) { v.position.set(pos, 0.02, line + laneOffset); v.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2; }
     else { v.position.set(line - laneOffset, 0.02, pos); v.rotation.y = dir > 0 ? 0 : Math.PI; }
     scene.add(v);
@@ -3767,6 +3767,8 @@ function createVehicles(count) {
 }
 
 function createVehicleMesh(type) {
+  if(window.ABJ3DModels&&type==='gbaka')return window.ABJ3DModels.createGbaka(THREE);
+  if(window.ABJ3DModels&&type==='taxi')return window.ABJ3DModels.createTaxi(THREE);
   const g = new THREE.Group();
   const glassMat = new THREE.MeshLambertMaterial({ color: 0x88aacc, transparent: true, opacity: 0.55 });
   const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
