@@ -383,6 +383,14 @@ button,input,select{font:inherit}
     <div id="accountRegisterFields" style="display:none">
       <label for="accountEmail">Adresse e-mail</label>
       <input id="accountEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com">
+      <label for="accountBirthDate">Date de naissance</label>
+      <input id="accountBirthDate" type="date" autocomplete="bday" max="2026-11-21">
+      <label for="accountBirthPlace">Commune de naissance</label>
+      <select id="accountBirthPlace"><option value="">Choisir une commune</option><option>Anyama</option><option>Abobo</option><option>Songon</option><option>Yopougon</option><option>Attécoubé</option><option>Adjamé</option><option>Cocody</option><option>Bingerville</option><option>Le Plateau</option><option>Treichville</option><option>Marcory</option><option>Koumassi</option><option>Port-Bouët</option></select>
+      <div id="accountRegistrationCodeWrap"><label for="accountRegistrationCode">Code reçu par e-mail</label>
+        <input id="accountRegistrationCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Code à 6 chiffres">
+        <button type="button" id="accountSendRegistrationCode">Envoyer / renvoyer le code</button>
+      </div>
       <div id="accountConfirmWrap"><label for="accountPasswordConfirm">Confirmer le mot de passe</label>
       <div style="display:flex;gap:6px;align-items:center">
         <input id="accountPasswordConfirm" type="password" placeholder="Retape le mot de passe" autocomplete="new-password" style="flex:1">
@@ -394,6 +402,10 @@ button,input,select{font:inherit}
       <p style="font-size:12px;color:#c5d8e4">Saisis le numéro et l'adresse e-mail liés à ton compte. Un code sera envoyé à cette adresse si elle correspond.</p>
       <label for="accountRecoverEmail">Adresse e-mail du compte</label>
       <input id="accountRecoverEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com">
+      <label for="accountRecoverBirthDate">Date de naissance enregistrée</label>
+      <input id="accountRecoverBirthDate" type="date" max="2026-11-21">
+      <label for="accountRecoverBirthPlace">Commune de naissance</label>
+      <select id="accountRecoverBirthPlace"><option value="">Choisir une commune</option><option>Anyama</option><option>Abobo</option><option>Songon</option><option>Yopougon</option><option>Attécoubé</option><option>Adjamé</option><option>Cocody</option><option>Bingerville</option><option>Le Plateau</option><option>Treichville</option><option>Marcory</option><option>Koumassi</option><option>Port-Bouët</option></select>
       <button type="button" id="accountSendRecoveryCode">Envoyer le code de vérification</button>
       <label for="accountRecoveryCode">Code reçu par e-mail</label>
       <input id="accountRecoveryCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Code à 6 chiffres">
@@ -789,7 +801,12 @@ function setAccountFieldVisibility(){
   const back=document.getElementById('accountBack');
   const passLabel=document.querySelector('label[for="accountPassword"]');
   const recovery=accountFlow==='recoverEmail'||accountFlow==='reset';
+  const registering=accountFlow==='registerInfo'||accountFlow==='register';
   const hidePass=recovery||accountFlow==='registerInfo';
+  const registrationCodeWrap=document.getElementById('accountRegistrationCodeWrap');
+  const sendRegistration=document.getElementById('accountSendRegistrationCode');
+  if(registrationCodeWrap)registrationCodeWrap.style.display=registering?'block':'none';
+  if(sendRegistration)sendRegistration.style.display=accountFlow==='registerInfo'?'block':'none';
   if(login)login.style.display=['login','registerInfo','register','recoverEmail','reset'].includes(accountFlow)?'block':'none';
   if(reg)reg.style.display=(accountFlow==='register'||accountFlow==='registerInfo')?'block':'none';
   const cw=document.getElementById('accountConfirmWrap');if(cw)cw.style.display=accountFlow==='register'?'block':'none';
@@ -828,7 +845,7 @@ function openAccountGate(){
   const conf=document.getElementById('accountPasswordConfirm'); if(conf){conf.value='';conf.type='password';}
   const np=document.getElementById('accountNewPassword'); if(np){np.value='';np.type='password';}
   const npc=document.getElementById('accountNewPasswordConfirm'); if(npc){npc.value='';npc.type='password';}
-  ['accountEmail','accountRecoverEmail','accountRecoveryCode','accountParentName','accountPetName','accountSport','accountRecoverParent','accountRecoverPet','accountRecoverSport'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['accountEmail','accountRecoverEmail','accountRecoveryCode','accountRegistrationCode','accountBirthDate','accountBirthPlace','accountRecoverBirthDate','accountRecoverBirthPlace','accountParentName','accountPetName','accountSport','accountRecoverParent','accountRecoverPet','accountRecoverSport'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const bd=document.getElementById('accountBirthDay'); if(bd) bd.value='';
   const bm=document.getElementById('accountBirthMonth'); if(bm) bm.value='';
   document.getElementById('accountTitle').textContent='Connexion';
@@ -843,7 +860,10 @@ function openRegisterFlow(){
   document.getElementById('accountTitle').textContent='Créer un compte';
   document.getElementById('accountIntro').textContent='Étape 1 : saisis ton numéro mobile ivoirien et ton adresse e-mail. Si les informations sont correctes, tu pourras choisir ton mot de passe.';
   document.getElementById('accountEmail').value='';
-  showAccountStatus('Renseigne ton numéro et ton e-mail, puis appuie sur « Continuer ».', false);
+  document.getElementById('accountBirthDate').value='';
+  document.getElementById('accountBirthPlace').value='';
+  document.getElementById('accountRegistrationCode').value='';
+  showAccountStatus('Renseigne ton numéro, ton e-mail et tes informations de naissance. Envoie ensuite le code de vérification.', false);
   document.getElementById('accountPassword').value='';
   const conf=document.getElementById('accountPasswordConfirm'); if(conf) conf.value='';
   setAccountFieldVisibility();
@@ -857,6 +877,8 @@ function openRecoverFlow(){
   document.getElementById('accountTitle').textContent='Mot de passe oublié';
   document.getElementById('accountIntro').textContent='Vérifie ton identité avec le numéro et l’adresse e-mail enregistrés.';
   document.getElementById('accountRecoverEmail').value='';
+  document.getElementById('accountRecoverBirthDate').value='';
+  document.getElementById('accountRecoverBirthPlace').value='';
   document.getElementById('accountRecoveryCode').value='';
   document.getElementById('accountRecoveryCodeNotice').textContent='';
   showAccountStatus('Un code sera envoyé à ton adresse si elle correspond au compte.',false);
@@ -872,6 +894,26 @@ function showAccountStatus(msg, isError){
   status.style.color=isError?'#ffb4a8':'#ffe0a0';
   try{status.scrollIntoView({block:'nearest',behavior:'smooth'});}catch(e){}
 }
+async function sendRegistrationCode(){
+  const phone=normalizeIvorianMobile(document.getElementById('accountPhone').value);
+  const email=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
+  const birthDate=String(document.getElementById('accountBirthDate').value||'');
+  const birthPlace=String(document.getElementById('accountBirthPlace').value||'');
+  if(!phone){showAccountStatus('Saisis un numéro mobile ivoirien valide.',true);return;}
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showAccountStatus('Adresse e-mail invalide.',true);return;}
+  if(!birthDate||!birthPlace){showAccountStatus('Renseigne ta date et ta commune de naissance.',true);return;}
+  const btn=document.getElementById('accountSendRegistrationCode');if(btn){btn.disabled=true;btn.textContent='Envoi…';}
+  try{
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+    const r=await fetch(api+'/api/auth/register-email-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,email})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(d.error||'Envoi du code impossible.');
+    showAccountStatus('Code envoyé par e-mail. Vérifie aussi tes courriers indésirables.',false);
+  }catch(e){showAccountStatus(e.message||'Envoi du code impossible.',true);}
+  finally{if(btn){btn.disabled=false;btn.textContent='Renvoyer le code';}}
+}
+document.getElementById('accountSendRegistrationCode').addEventListener('click',sendRegistrationCode);
+
 async function accountContinue(){
   const status=document.getElementById('accountStatus');
   const cont=document.getElementById('accountContinue');
@@ -916,9 +958,13 @@ async function accountContinue(){
 
   if(accountFlow==='registerInfo'){
     const em=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
-    if(!em||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){showAccountStatus('Informations incorrectes : l’adresse e-mail est fausse ou vide. Vérifie-la puis réessaie.',true);return;}
+    const birthDate=String(document.getElementById('accountBirthDate').value||'');
+    const birthPlace=String(document.getElementById('accountBirthPlace').value||'');
+    const emailCode=String(document.getElementById('accountRegistrationCode').value||'').replace(/\D/g,'');
+    if(!em||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){showAccountStatus('Adresse e-mail invalide.',true);return;}
     if(findGameAccount(accounts,phone)){showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».',true);return;}
-    if(Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone&&String(a&&a.email||'').trim().toLowerCase()===em)){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.',true);return;}
+    if(!birthDate||!birthPlace){showAccountStatus('Renseigne ta date et ta commune de naissance.',true);return;}
+    if(emailCode.length!==6){showAccountStatus('Envoie le code e-mail puis saisis les 6 chiffres reçus.',true);return;}
     accountFlow='register';
     document.getElementById('accountTitle').textContent='Choisis ton mot de passe';
     document.getElementById('accountIntro').textContent='Étape 2 : informations validées. Choisis un mot de passe (8 caractères minimum), confirme-le puis crée ton compte.';
@@ -932,14 +978,12 @@ async function accountContinue(){
     if(pass.length<8){showAccountStatus('Choisis un mot de passe d’au moins 8 caractères.',true);return;}
     const email=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
     if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showAccountStatus('Informations incorrectes : adresse e-mail fausse ou vide.',true);return;}
-    const emailTaken=email && Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone && String(a&&a.email||'').trim().toLowerCase()===email);
-    if(emailTaken){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.',true);return;}
     const confirm=document.getElementById('accountPasswordConfirm').value;
     if(pass!==confirm){showAccountStatus('Les deux mots de passe ne correspondent pas.',true);return;}
     const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
     let response,data;
     try{
-      response=await fetchWithCreatorCode(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
+      response=await fetchWithCreatorCode(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email,emailCode:document.getElementById('accountRegistrationCode').value,birthDate:document.getElementById('accountBirthDate').value,birthPlace:document.getElementById('accountBirthPlace').value,name:document.getElementById('creatorName')?.value||'Mon personnage'})});
       data=await response.json().catch(()=>({}));
     }catch(registrationError){
       console.warn('Réponse de création de compte interrompue, vérification de la session…',registrationError);
@@ -991,7 +1035,7 @@ async function accountContinue(){
     if(np!==npc){showAccountStatus('Les deux mots de passe ne correspondent pas.',true);return;}
     if(!email||code.length!==6){showAccountStatus('Saisis l’adresse e-mail et le code à 6 chiffres.',true);return;}
     const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
-    const response=await fetch(api+'/api/auth/reset-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:pendingAccountPhone,email,code,password:np})});
+    const response=await fetch(api+'/api/auth/reset-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:pendingAccountPhone,email,code,password:np,birthDate:document.getElementById('accountRecoverBirthDate').value,birthPlace:document.getElementById('accountRecoverBirthPlace').value})});
     const data=await response.json().catch(()=>({}));
     if(!response.ok){showAccountStatus(data.error||'La récupération a échoué.',true);return;}
     const login=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:pendingAccountPhone,password:np})});
