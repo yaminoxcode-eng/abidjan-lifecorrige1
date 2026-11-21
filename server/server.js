@@ -21,9 +21,9 @@ const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 const mailTransport = SMTP_HOST && SMTP_USER && SMTP_PASS ? nodemailer.createTransport({host:SMTP_HOST,port:SMTP_PORT,secure:SMTP_PORT===465,auth:{user:SMTP_USER,pass:SMTP_PASS}}) : null;
-const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.40.0';
+const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.41.0';
 const DEFAULT_CLIENT_URL = process.env.CLIENT_URL || '';
-const CLIENT_SIZE_BYTES = Math.max(0, Number(process.env.CLIENT_SIZE_BYTES) || 1027033);
+const CLIENT_SIZE_BYTES = Math.max(0, Number(process.env.CLIENT_SIZE_BYTES) || 1031946);
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const persistentStorageEnabled = !!(SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY);
@@ -32,7 +32,7 @@ let updateManifest = {
   version: DEFAULT_GAME_VERSION,
   minVersion: process.env.MIN_GAME_VERSION || DEFAULT_GAME_VERSION,
   clientUrl: DEFAULT_CLIENT_URL,
-  releaseNotes: process.env.RELEASE_NOTES || 'Version initiale du système de mises à jour.',
+  releaseNotes: process.env.RELEASE_NOTES || 'V1.41.0 : siège AF GAMER CI accessible, accueil public, bureaux, salle de contrôle et suite privée du créateur ; autorisations du compte créateur vérifiées par le serveur.',
   publishedAt: new Date().toISOString(),
   previous: null,
   history: []
