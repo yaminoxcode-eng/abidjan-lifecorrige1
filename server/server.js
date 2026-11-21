@@ -211,7 +211,8 @@ function refreshCreatorGemBalance(account) {
   account.profile.creatorRewards=(account.profile.creatorRewards||[]).filter(x=>Number(x.expiresAt)>now);
   const timed=account.profile.creatorRewards.reduce((sum,x)=>sum+Math.max(0,Math.floor(Number(x.gems)||0)),0);
   account.profile.purchasedGems=Math.max(0,Math.floor(Number(account.profile.purchasedGems)||0));
-  account.profile.gems=timed+account.profile.purchasedGems;
+  account.profile.earnedGems=Math.max(0,Math.floor(Number(account.profile.earnedGems)||0));
+  account.profile.gems=timed+account.profile.purchasedGems+account.profile.earnedGems;
   return account.profile.gems;
 }
 function publicPlayer(account, id) {
@@ -828,6 +829,47 @@ app.get('/api/account/role', auth, (req,res)=>{
   const creator=isCreatorPhone(req.phone);
   res.set('Cache-Control','no-store').json({ok:true,creator,title:creator?'Créateur du jeu':'Citoyen',privileges:creator?['creator_dashboard','account_management','moderation','world_management','creator_tools']:[]});
 });
+function ensureDailyMissionState(account){
+  account.profile=account.profile||{};
+  const today=new Date().toISOString().slice(0,10);
+  let state=account.profile.dailyMissions;
+  if(!state||state.date!==today){
+    state={date:today,login:1,walkMeters:0,minutesPlayed:0,claimed:{}};
+    account.profile.dailyMissions=state;
+  }
+  state.claimed=state.claimed&&typeof state.claimed==='object'?state.claimed:{};
+  state.walkMeters=Math.max(0,Number(state.walkMeters)||0);
+  state.minutesPlayed=Math.max(0,Number(state.minutesPlayed)||0);
+  return state;
+}
+const DAILY_MISSIONS=[
+  {id:'daily_login',title:'Se connecter à Abidjan',description:'Ouvre ta partie aujourd’hui.',target:1,reward:5,unit:'connexion'},
+  {id:'daily_walk',title:'Découvrir la ville',description:'Parcours 500 mètres à pied dans Abidjan.',target:500,reward:15,unit:'m'},
+  {id:'daily_play',title:'Prendre le temps de vivre',description:'Reste actif dans le monde pendant 10 minutes.',target:10,reward:10,unit:'min'}
+];
+app.get('/api/missions/daily',auth,async(req,res)=>{
+  const account=accounts.get(req.phone),state=ensureDailyMissionState(account);
+  try{await persistAccount(account);}catch(e){return res.status(503).json({error:'Progression quotidienne non sauvegardée.'});}
+  const progress={daily_login:state.login,daily_walk:Math.floor(state.walkMeters),daily_play:Math.floor(state.minutesPlayed)};
+  res.set('Cache-Control','no-store').json({
+    date:state.date,gems:refreshCreatorGemBalance(account),
+    missions:DAILY_MISSIONS.map(m=>({...m,progress:Math.min(m.target,progress[m.id]||0),claimed:!!state.claimed[m.id],completed:(progress[m.id]||0)>=m.target}))
+  });
+});
+app.post('/api/missions/claim',auth,async(req,res)=>{
+  const account=accounts.get(req.phone),state=ensureDailyMissionState(account);
+  const id=clean(req.body?.id,40),mission=DAILY_MISSIONS.find(m=>m.id===id);
+  if(!mission)return res.status(404).json({error:'Mission quotidienne inconnue.'});
+  if(state.claimed[id])return res.status(409).json({error:'Cette récompense a déjà été récupérée aujourd’hui.'});
+  const progress={daily_login:state.login,daily_walk:state.walkMeters,daily_play:state.minutesPlayed};
+  if((Number(progress[id])||0)<mission.target)return res.status(409).json({error:'Mission pas encore terminée.'});
+  const old=JSON.parse(JSON.stringify(account.profile));
+  account.profile.earnedGems=(Number(account.profile.earnedGems)||0)+mission.reward;
+  state.claimed[id]=Date.now();
+  try{await persistAccount(account);}catch(error){account.profile=old;return res.status(503).json({error:'Récompense non sauvegardée. Réessaie.'});}
+  res.json({ok:true,reward:mission.reward,gems:refreshCreatorGemBalance(account)});
+});
+
 
 // Le code secret est redemandé à chaque lancement du compte créateur,
 // y compris lorsqu'un jeton de connexion est déjà mémorisé sur l'appareil.
@@ -968,7 +1010,8 @@ io.on('connection', (socket) => {
     version: clean(socket.handshake.auth?.gameVersion, 32) || 'inconnue',
     lastUpdate: 0,
     lastPersist: 0,
-    lastWorldSync: 0
+    lastWorldSync: 0,
+    lastMissionMinute: Math.floor(Date.now()/60000)
   };
 
   activePlayers.set(socket.id, state);
@@ -1053,7 +1096,19 @@ io.on('connection', (socket) => {
       Math.abs(pos.x) <= 25000 &&
       Math.abs(pos.z) <= 25000
     ) {
-      state.moving = Math.hypot(pos.x - (Number(state.position?.x) || 0), pos.z - (Number(state.position?.z) || 0)) > 0.025;
+      const previousPosition=state.position||{x:pos.x,z:pos.z};
+      const travelled=Math.hypot(pos.x-(Number(previousPosition.x)||0),pos.z-(Number(previousPosition.z)||0));
+      if(travelled>0.03&&travelled<10){
+        const missionState=ensureDailyMissionState(account);
+        missionState.walkMeters=Math.min(100000,missionState.walkMeters+travelled);
+      }
+      const currentMinute=Math.floor(Date.now()/60000);
+      if(currentMinute>(state.lastMissionMinute||currentMinute)){
+        const missionState=ensureDailyMissionState(account);
+        missionState.minutesPlayed=Math.min(1440,missionState.minutesPlayed+Math.min(1,currentMinute-state.lastMissionMinute));
+        state.lastMissionMinute=currentMinute;
+      }
+      state.moving = travelled > 0.025;
       state.position = {
         x: pos.x,
         z: pos.z,
