@@ -51,3 +51,15 @@ Le bouton de rollback remet le manifeste sur l’URL unique de la version préc�
 - Syntaxe JavaScript serveur vérifiée avec `node --check`.
 - Syntaxe des scripts inline du jeu vérifiée avec `node --check`.
 - Vérification navigateur, installation npm, build Docker et déploiements Render/Vercel restent à effectuer.
+
+
+## 7. Préparation multijoueur évolutive (branche staging)
+
+La branche `staging/multiplayer-free-tier` ajoute un premier niveau d'optimisation réseau : les joueurs sont répartis en cellules spatiales calculées depuis leurs coordonnées, et les événements `player:joined`, `player:moved` et `player:left` ne sont transmis qu'aux cellules voisines. Le client conserve les mêmes noms d'événements Socket.IO.
+
+- Taille par défaut d'une cellule : 750 unités de jeu.
+- Réglage facultatif : variable Render `MULTIPLAYER_ZONE_SIZE` (100 à 5000 unités).
+- Le compteur global reste diffusé à tous les clients.
+- L'état global du monde et les messages directs restent globaux/directs.
+
+**Limite importante :** ce découpage réduit les diffusions inutiles, mais ne transforme pas encore le serveur en cluster. Les sessions actives, les comptes chargés et l'état du monde restent en mémoire du processus. Le service Render actuel reste une seule instance gratuite. Il faut encore un stockage/pub-sub partagé, une gestion des zones serveur, des tests de reconnexion et des tests de charge avant toute mise en production ou annonce de capacité élevée.
