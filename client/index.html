@@ -2069,7 +2069,7 @@ function buildAbidjanRooftopDetails(){
     const side=(i%2?1:-1),x=b.x+side*Math.min( b.w*.22,2.1),z=b.z-Math.min(b.d*.18,1.6);
     const rot=((Math.floor(Math.abs(b.x*13+b.z*7))%4)*Math.PI/2);
     dummy.position.set(x,y,z);dummy.rotation.set(0,rot,0);dummy.scale.set(1,1,1);dummy.updateMatrix();acUnits.setMatrixAt(i,dummy.matrix);
-    dummy.position.set(x,y,z+.42);dummy.rotation.set(0,rot,0);dummy.scale.set(1,1,1);dummy.updateMatrix();grilles.setMatrixAt(i,dummy.matrix);
+    dummy.position.set(x+Math.sin(rot)*.42,y,z+Math.cos(rot)*.42);dummy.rotation.set(0,rot,0);dummy.scale.set(1,1,1);dummy.updateMatrix();grilles.setMatrixAt(i,dummy.matrix);
   }
   for(let i=0;i<tankRows.length;i++){
     const b=tankRows[i],x=b.x-Math.min(b.w*.2,2.4),z=b.z+Math.min(b.d*.18,1.8);
