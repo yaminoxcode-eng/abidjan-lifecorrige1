@@ -1701,10 +1701,15 @@ function generateCity() {
     requestAnimationFrame(addTrafficBatch);
   }).catch(err => {
     console.warn('Données cartographiques OSM indisponibles, conservation du quartier urbain de secours :', err);
-    osmRoadSegments.length = 0;
-    trafficRoadSegments.length = 0;
-    trafficGraph.clear();
-    optional('quartier urbain de secours', buildPlayableUrbanCore);
+    // Préservation stricte de la ville : ne jamais effacer les routes ou le graphe
+    // déjà chargés, même si une étape ultérieure du chargement cartographique échoue.
+    // Le quartier de secours n'est créé que si aucune donnée urbaine n'a été récupérée.
+    const hasRecoveredCityData = osmRoadSegments.length > 0 || allBuildings.length > 0;
+    if (!hasRecoveredCityData) {
+      optional('quartier urbain de secours', buildPlayableUrbanCore);
+    } else {
+      console.info('Carte partiellement récupérée : conservation des routes et bâtiments déjà chargés.');
+    }
     optional('siège AF GAMER', createAFGamerHQ);
     optional('auto-écoles', createDrivingSchools);
     optional('dépôts de transport', createTransitDepots);
