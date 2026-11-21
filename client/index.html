@@ -11497,6 +11497,41 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
 })();
 </script>
 
+<script>
+/* ABIDJAN LIFE V1.41.0 — autorité créateur vérifiée par le serveur. */
+(function(){
+ 'use strict';
+ if(window.__ABJ_V141_AUTH)return;window.__ABJ_V141_AUTH=true;
+ window.ABJ_BUILD_VERSION='1.41.0';
+ const OFFICIAL='+2250799259362';
+ const canonical=v=>{try{return typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(v):null;}catch(e){return null;}};
+ const api=()=>String(window.ABJ_ONLINE_SERVER||'').replace(/[/]$/,'');
+ async function verifyCreatorRole(){
+  const phone=canonical(activeGameAccount),token=phone&&safeGet('abj-online-token:'+phone);
+  let verified=false;
+  if(phone===OFFICIAL&&token){
+   try{const response=await fetch(api()+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const data=await response.json().catch(()=>({}));verified=!!(response.ok&&data.ok&&data.creator===true&&Array.isArray(data.privileges)&&data.privileges.includes('creator_dashboard'));}catch(e){console.warn('Vérification du rôle créateur indisponible',e);}
+  }
+  creatorRoleVerified=verified;creatorVerifiedPhone=verified?OFFICIAL:null;
+  document.body.classList.toggle('abj-creator-account',verified);
+  const badge=document.getElementById('creatorTitleBadge');if(badge)badge.style.display=verified?'inline-flex':'none';
+  if(verified){if(typeof applyCreatorPrivileges==='function')applyCreatorPrivileges();}
+  else{if(creatorOrb)creatorOrb.visible=false;const orbBtn=document.getElementById('creatorOrbAssistant');if(orbBtn)orbBtn.style.display='none';}
+  return verified;
+ }
+ window.isCreatorAccount=function(phone){return creatorRoleVerified===true&&canonical(phone==null?activeGameAccount:phone)===OFFICIAL&&canonical(activeGameAccount)===OFFICIAL;};
+ isCreatorAccount=window.isCreatorAccount;
+ const previousActivate=window.activateGameAccount;
+ if(typeof previousActivate==='function'){
+  window.activateGameAccount=async function(phone){const result=await previousActivate.apply(this,arguments);await verifyCreatorRole();return result;};
+ }
+ window.ABJ_VERIFY_CREATOR_ROLE=verifyCreatorRole;
+ setTimeout(()=>{if(activeGameAccount)verifyCreatorRole();},1200);
+ setInterval(()=>{if(activeGameAccount)verifyCreatorRole();},15000);
+ console.info('Abidjan Life V1.41.0 — autorité créateur liée au rôle serveur.');
+})();
+</script>
+
 <script id="abj-creator-launch-verification">
 (function(){
  'use strict';
