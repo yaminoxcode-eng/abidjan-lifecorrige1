@@ -950,6 +950,12 @@ app.post('/api/rewards/exchange-gems',auth,async(req,res)=>{
   const purchased=Math.min(remaining,Number(account.profile.purchasedGems)||0);
   account.profile.purchasedGems=Math.max(0,(Number(account.profile.purchasedGems)||0)-purchased);remaining-=purchased;
   if(remaining){for(const reward of account.profile.creatorRewards||[]){const take=Math.min(remaining,Math.max(0,Number(reward.gems)||0));reward.gems-=take;remaining-=take;if(!remaining)break;}}
+  if(remaining){
+    const earned=Math.min(remaining,Number(account.profile.earnedGems)||0);
+    account.profile.earnedGems=Math.max(0,(Number(account.profile.earnedGems)||0)-earned);
+    remaining-=earned;
+  }
+  if(remaining){account.profile=previousProfile;return res.status(409).json({error:'Solde de gemmes indisponible.'});}
   account.save=account.save&&typeof account.save==='object'?account.save:{};
   const gameMoney=amount*1000000;
   account.save.bankBalance=Math.max(0,Number(account.save.bankBalance)||0)+gameMoney;
