@@ -1,4 +1,4 @@
-name: Server syntax check
+name: Server syntax and unit tests
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  syntax:
+  syntax-and-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,3 +18,5 @@ jobs:
           node-version: 20
       - name: Check server JavaScript syntax
         run: node --check server/server.js
+      - name: Run spatial zone unit tests
+        run: node --test server/*.test.js
