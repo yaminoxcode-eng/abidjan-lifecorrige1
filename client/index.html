@@ -11575,5 +11575,51 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
  }
 })();
 </script>
+<script id="abj-daily-gem-missions">
+(function(){
+ 'use strict';
+ if(window.__ABJ_DAILY_GEM_MISSIONS)return;window.__ABJ_DAILY_GEM_MISSIONS=true;
+ const $=id=>document.getElementById(id);
+ const api=()=>String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+ const token=()=>{try{return activeGameAccount&&safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount));}catch(e){return null;}};
+ function addTile(){
+  const host=$('phoneApps');if(!host||host.querySelector('[data-app="missionsquotidiennes"]'))return;
+  let page=host.querySelector('.phoneAppsPage:last-child');
+  if(!page||page.querySelectorAll('.phoneApp').length>=9){page=document.createElement('div');page.className='phoneAppsPage';host.appendChild(page);}
+  const b=document.createElement('button');b.type='button';b.className='phoneApp';b.dataset.app='missionsquotidiennes';b.innerHTML='<span>💎</span><b>Missions & gemmes</b>';b.addEventListener('click',()=>openMissions());page.appendChild(b);
+ }
+ function openMissions(){
+  if(typeof openPhone==='function')openPhone();
+  const apps=$('phoneApps'),content=$('phoneAppContent'),shell=$('phoneHomeShell');
+  if(!content)return;if(apps)apps.style.display='none';if(shell)shell.style.display='none';content.style.display='block';
+  loadMissions();
+ }
+ async function loadMissions(){
+  const content=$('phoneAppContent');if(!content)return;
+  content.innerHTML='<button id="abjMissionsBack">← Applications</button><h3>💎 Missions quotidiennes</h3><p style="color:#60747a;font-size:13px">Accomplis des activités dans Abidjan et récupère des gemmes. Les progrès sont suivis par le serveur.</p><p>Chargement des missions…</p>';
+  $('abjMissionsBack').onclick=()=>{content.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();};
+  const t=token();if(!t){content.insertAdjacentHTML('beforeend','<p>Connecte-toi à ton compte pour suivre tes missions.</p>');return;}
+  try{
+   const r=await fetch(api()+'/api/missions/daily',{headers:{Authorization:'Bearer '+t},cache:'no-store'}),d=await r.json();
+   if(!r.ok)throw new Error(d.error||'Missions indisponibles.');
+   const rows=(d.missions||[]).map(m=>{
+    const pct=Math.max(0,Math.min(100,100*Number(m.progress||0)/Math.max(1,Number(m.target||1))));
+    const amount=m.id==='daily_walk'?Math.round(m.progress)+' / '+m.target+' m':m.id==='daily_play'?Math.round(m.progress)+' / '+m.target+' min':(m.claimed?'Effectuée':'À faire');
+    return '<article style="padding:13px;margin:10px 0;border:1px solid #cbd9d5;border-radius:15px;background:#fff;color:#172a31"><b>'+m.title+'</b><p style="margin:5px 0;color:#60747a;font-size:12px">'+m.description+'</p><div style="height:7px;background:#e8efed;border-radius:8px;overflow:hidden"><i style="display:block;height:100%;width:'+pct+'%;background:#188454"></i></div><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:9px;font-size:12px"><span>'+amount+'</span><b>+'+m.reward+' 💎</b></div><button data-claim="'+m.id+'" '+(!m.completed||m.claimed?'disabled':'')+' style="margin-top:9px;width:100%;padding:10px;border-radius:10px;border:1px solid #cbd9d5;background:'+(m.completed&&!m.claimed?'#ed760d':'#e8efed')+';color:'+(m.completed&&!m.claimed?'#fff':'#60747a')+';font-weight:800">'+(m.claimed?'Récompense récupérée':m.completed?'Récupérer les gemmes':'Mission en cours')+'</button></article>';
+   }).join('');
+   content.innerHTML='<button id="abjMissionsBack">← Applications</button><h3>💎 Missions quotidiennes</h3><section style="padding:14px;border-radius:14px;background:#e7f7ef;color:#172a31"><b>Solde : '+Number(d.gems||0).toLocaleString('fr-FR')+' gemmes</b><div style="font-size:11px;color:#60747a;margin-top:4px">Les missions se renouvellent chaque jour.</div></section>'+rows;
+   $('abjMissionsBack').onclick=()=>{content.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();};
+   content.querySelectorAll('[data-claim]').forEach(btn=>btn.onclick=async()=>{
+    btn.disabled=true;btn.textContent='Récupération…';
+    try{const cr=await fetch(api()+'/api/missions/claim',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({id:btn.dataset.claim})}),cd=await cr.json();if(!cr.ok)throw new Error(cd.error||'Récompense indisponible.');await loadMissions();if(typeof showMessage==='function')showMessage('+'+cd.reward+' gemmes ajoutées à ton compte.');}
+    catch(e){btn.disabled=false;btn.textContent='Réessayer';if(typeof showMessage==='function')showMessage(e.message||'Erreur de récupération.');}
+   });
+  }catch(e){content.innerHTML='<button id="abjMissionsBack">← Applications</button><h3>💎 Missions quotidiennes</h3><p style="color:#b33">'+String(e.message||'Service indisponible.')+'</p>';const b=$('abjMissionsBack');if(b)b.onclick=()=>{content.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();};}
+ }
+ const original=window.openPhoneApp;
+ if(typeof original==='function'&&!window.__ABJ_MISSIONS_PHONE_WRAPPED){window.__ABJ_MISSIONS_PHONE_WRAPPED=true;window.openPhoneApp=function(app){if(app==='missionsquotidiennes'){openMissions();return;}return original.apply(this,arguments);};}
+ let tries=0;const timer=setInterval(()=>{tries++;addTile();if(tries>300)clearInterval(timer);},1000);
+})();
+</script>
 </body>
 </html>
