@@ -155,6 +155,48 @@
     return group;
   }
 
+
+  function createSotraBus(THREE, options) {
+    options = options || {};
+    var group = new THREE.Group();
+    group.name = 'Abidjan_SOTRA_Bus';
+    group.userData.wheels = [];
+    var blue = mat(THREE, options.color || 0x1976a5);
+    var orange = mat(THREE, 0xf29c38);
+    var glass = new THREE.MeshStandardMaterial({ color: 0x8db9c7, roughness: 0.24, metalness: 0.06, transparent: true, opacity: 0.78 });
+    var rubber = mat(THREE, 0x17191b);
+    var metal = mat(THREE, 0xb7c0c4, 0.38);
+    var dark = mat(THREE, 0x293136);
+    var lamp = mat(THREE, 0xfff0c2, 0.35);
+
+    box(THREE, group, [2.45, 2.35, 8.2], [0, 1.48, 0], blue, 'sotra-main-body');
+    box(THREE, group, [2.48, 0.48, 8.22], [0, 0.55, 0], orange, 'sotra-lower-band');
+    box(THREE, group, [2.22, 0.16, 8.05], [0, 2.68, 0], blue, 'sotra-roof');
+    // Individual window panels keep the bus readable from both sides.
+    box(THREE, group, [1.82, 0.82, 0.045], [0, 2.23, 4.115], glass, 'sotra-windshield');
+    box(THREE, group, [1.82, 0.72, 0.045], [0, 2.18, -4.115], glass, 'sotra-rear-window');
+    [-1, 1].forEach(function (side) {
+      [-2.72, -1.52, -0.32, 0.88, 2.08].forEach(function (z) {
+        box(THREE, group, [0.035, 0.78, 0.91], [side * 1.232, 2.2, z], glass, 'sotra-side-window');
+        box(THREE, group, [0.045, 0.055, 0.96], [side * 1.253, 1.77, z], metal, 'sotra-window-trim');
+      });
+      box(THREE, group, [0.14, 0.16, 0.34], [side * 1.32, 1.86, 3.25], dark, 'sotra-mirror');
+      wheel(THREE, group, side * 1.08, 0.48, 2.65, 0.43, rubber, metal);
+      wheel(THREE, group, side * 1.08, 0.48, -2.65, 0.43, rubber, metal);
+    });
+    box(THREE, group, [2.25, 0.16, 0.16], [0, 0.48, 4.17], dark, 'sotra-front-bumper');
+    box(THREE, group, [2.25, 0.16, 0.16], [0, 0.48, -4.17], dark, 'sotra-rear-bumper');
+    [-0.82, 0.82].forEach(function (x) {
+      box(THREE, group, [0.38, 0.22, 0.07], [x, 1.12, 4.17], lamp, 'sotra-headlight');
+      box(THREE, group, [0.28, 0.25, 0.07], [x, 1.0, -4.17], mat(THREE, 0xc9282d), 'sotra-tail-light');
+    });
+    box(THREE, group, [1.1, 0.42, 0.08], [0, 2.93, 3.72], dark, 'sotra-destination-board');
+    box(THREE, group, [1.62, 0.12, 0.08], [0, 2.95, -0.05], orange, 'sotra-roof-marker');
+    group.userData.vehicleType = 'bus';
+    group.userData.transitLine = 'SOTRA simulée';
+    return group;
+  }
+
   function createMarketStall(THREE, options) {
     options = options || {};
     var group = new THREE.Group();
@@ -205,6 +247,7 @@
     decorateCharacter: decorateCharacter,
     createTaxi: createTaxi,
     createGbaka: createGbaka,
+    createSotraBus: createSotraBus,
     createMarketStall: createMarketStall,
     createShopFront: createShopFront
   };
