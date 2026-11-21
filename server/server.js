@@ -466,7 +466,7 @@ app.post('/api/auth/register', async (req,res) => {
   const phone=phoneOf(req.body.phone), password=String(req.body.password||'');
   const email=clean(req.body.email,120).toLowerCase();
   if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
-  if(isCreatorPhone(phone)) {
+  if(isCreatorPhone(phone) && CREATOR_IDENTITY_CODE) {
     if (!rateLimit(req.ip + ':creator-identity', 5, 60000)) return res.status(429).json({error:'Trop de tentatives de vérification. Réessaie dans une minute.'});
     if (!req.body.creatorCode) return res.status(428).json({codeRequired:true,error:'Quel est ton code secret ?'});
     if (!creatorIdentityCodeValid(req.body.creatorCode)) return res.status(401).json({error:'Code secret incorrect. Identité du créateur non confirmée.'});
@@ -574,7 +574,7 @@ app.post('/api/auth/login', async (req, res) => {
   const phone = phoneOf(req.body.phone);
   const password = String(req.body.password || '');
 
-  if (isCreatorPhone(phone)) {
+  if (isCreatorPhone(phone) && CREATOR_IDENTITY_CODE) {
     if (!rateLimit(req.ip + ':creator-identity', 5, 60000)) return res.status(429).json({error:'Trop de tentatives de vérification. Réessaie dans une minute.'});
     if (!req.body.creatorCode) return res.status(428).json({codeRequired:true,error:'Quel est ton code secret ?'});
     if (!creatorIdentityCodeValid(req.body.creatorCode)) return res.status(401).json({error:'Code secret incorrect. Identité du créateur non confirmée.'});
