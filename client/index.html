@@ -1626,8 +1626,10 @@ function resolveVehicleCollisions(pos, radius) {
 function generateCity() {
   worldReady = false;
   outdoorGround = createAbidjanTerrain();
+  let worldOpened = false;
 
-  // Les éléments secondaires ne doivent jamais empêcher l'entrée dans le monde.
+  // Le quartier de secours doit être visible immédiatement : la carte OSM peut
+  // prendre du temps ou être temporairement inaccessible depuis le navigateur.
   const optional = (label, build) => {
     try { return build(); }
     catch (error) {
@@ -1636,14 +1638,26 @@ function generateCity() {
     }
   };
   const openWorld = (statusText) => {
-    // Le monde devient jouable dès que le terrain et le joueur existent.
-    // Les enrichissements (trafic, éclairage, etc.) continuent ensuite sans bloquer l'entrée.
     worldReady = true;
     const status = document.getElementById('mapStatus');
     if (status && statusText) status.textContent = statusText;
-    optional('position de départ', () => startPlayerAtHome());
+    if (!worldOpened) {
+      worldOpened = true;
+      optional('position de départ', () => startPlayerAtHome());
+    }
     if (mapOpen) optional('actualisation de la carte', () => drawBigMap());
   };
+
+  // Construire routes, trottoirs et premiers bâtiments avant d'attendre Overpass.
+  // Les données géographiques détaillées d'Abidjan viennent ensuite compléter la ville.
+  requestAnimationFrame(() => {
+    optional('quartier urbain immédiat', buildPlayableUrbanCore);
+    if (!npcPopulationCreated) {
+      optional('premiers habitants', () => createNPCs(mobilePerformanceMode ? 80 : 140));
+      npcPopulationCreated = true;
+    }
+    openWorld('Quartier urbain prêt · chargement des routes et bâtiments détaillés d’Abidjan…');
+  });
 
   loadAbidjanOSM().then(() => {
     const status = document.getElementById('mapStatus');
@@ -1662,9 +1676,7 @@ function generateCity() {
       npcPopulationCreated = true;
     }
 
-    // Ouvrir le monde avant le trafic : la création des véhicules n'est pas une condition
-    // nécessaire pour jouer et ne doit plus laisser la barre bloquée à 93 %.
-    openWorld((status ? status.textContent : '') + ' · monde jouable');
+    openWorld((status ? status.textContent : '') + ' · carte détaillée chargée');
 
     const trafficTarget = mobilePerformanceMode ? 80 : 180;
     let trafficRemaining = trafficTarget;
@@ -1681,14 +1693,11 @@ function generateCity() {
     };
     requestAnimationFrame(addTrafficBatch);
   }).catch(err => {
-    console.warn('Données OSM indisponibles, démarrage du quartier de secours :', err);
+    console.warn('Données cartographiques OSM indisponibles, conservation du quartier urbain de secours :', err);
     osmRoadSegments.length = 0;
     trafficRoadSegments.length = 0;
     trafficGraph.clear();
-
-    // Ce noyau urbain de secours est déjà présent dans le projet mais n'était jamais appelé.
-    // Il permet de jouer même lorsque les serveurs cartographiques sont indisponibles.
-    optional('noyau urbain de secours', buildPlayableUrbanCore);
+    optional('quartier urbain de secours', buildPlayableUrbanCore);
     optional('siège AF GAMER', createAFGamerHQ);
     optional('auto-écoles', createDrivingSchools);
     optional('dépôts de transport', createTransitDepots);
@@ -1698,10 +1707,9 @@ function generateCity() {
       optional('population de secours', () => createNPCs(mobilePerformanceMode ? 80 : 150));
       npcPopulationCreated = true;
     }
-    openWorld('Mode de secours actif : ville jouable, certaines données cartographiques seront rechargées plus tard.');
+    openWorld('Mode cartographique de secours : routes, trottoirs et bâtiments de quartier actifs. Les données détaillées seront réessayées plus tard.');
   });
 }
-
 // ============================================================
 // NOYAU URBAIN GARANTI — quartier dense inspiré du Plateau
 // Fonctionne même si les serveurs cartographiques sont indisponibles.
