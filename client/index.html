@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<script>(function(){try{var pinned=localStorage.getItem('abj-pinned-client-url');if(!pinned)return;var target=new URL(pinned,location.href);if(target.protocol==='https:'&&target.href.split('#')[0]!==location.href.split('#')[0])location.replace(target.href);}catch(e){}})();</script>
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
 <link rel="apple-touch-icon" href="./icon.svg">
 <link rel="manifest" href="./manifest.webmanifest">
@@ -7515,10 +7516,11 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    const decline=document.createElement('button');decline.type='button';decline.textContent='REFUSER ET CONTINUER AVEC CETTE VERSION';decline.style.cssText='width:100%;padding:12px 14px;margin-top:10px;border:1px solid #ffffff55;border-radius:10px;background:transparent;color:#fff;font-weight:800;font-size:13px;cursor:pointer';
    const help=document.createElement('p');help.textContent='Tu peux refuser et continuer à jouer avec ta version actuelle. Tes sauvegardes restent en place.';help.style.cssText='font-size:11px;color:#9eb4c2;margin:14px 0 0';
    panel.append(title,apology,version,notes,track,percent,status,button,decline,help);overlay.appendChild(panel);document.body.appendChild(overlay);
-   decline.addEventListener('click',()=>{try{localStorage.setItem(declinedKey,'1');}catch(e){}overlay.remove();});
+   decline.addEventListener('click',()=>{try{localStorage.setItem(declinedKey,'1');if(m.previous&&m.previous.clientUrl)localStorage.setItem('abj-pinned-client-url',m.previous.clientUrl);}catch(e){}overlay.remove();});
 
    button.addEventListener('click',async()=>{
     if(button.disabled)return;
+    try{localStorage.removeItem('abj-pinned-client-url');}catch(e){}
     button.disabled=true;button.style.opacity='.65';button.textContent='CHARGEMENT EN COURS…';
     status.textContent='Connexion au serveur et téléchargement de la mise à jour…';
     try{
@@ -9254,7 +9256,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   const go=document.createElement('button');go.textContent='Installer';go.style.cssText='border:0;border-radius:9px;padding:9px 12px;background:#e5b85e;color:#17232c;font-weight:900;cursor:pointer';
   const no=document.createElement('button');no.textContent='Plus tard';no.style.cssText='border:1px solid #ffffff40;border-radius:9px;padding:9px 10px;background:transparent;color:#fff;cursor:pointer';
   go.onclick=()=>{t.remove();window.__abjUpdateAccepted=m.version;try{if(typeof saveLifeProgress==='function')saveLifeProgress(false);}catch(e){}proceed();};
-  no.onclick=()=>{t.remove();try{sessionStorage.setItem(later,'1');localStorage.setItem(declined,'1');}catch(e){}};
+  no.onclick=()=>{t.remove();try{sessionStorage.setItem(later,'1');localStorage.setItem(declined,'1');if(m.previous&&m.previous.clientUrl)localStorage.setItem('abj-pinned-client-url',m.previous.clientUrl);}catch(e){}};
   t.append(txt,go,no);document.body.appendChild(t);
   setTimeout(()=>{if(t.parentNode&&!window.__abjUpdateAccepted)t.style.opacity='.92';},100);
  };
