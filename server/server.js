@@ -157,13 +157,6 @@ function phoneOf(v) {
 }
 
 const CREATOR_ACCOUNT_PHONE = phoneOf(process.env.CREATOR_ACCOUNT_PHONE || '');
-const CREATOR_IDENTITY_CODE = String(process.env.CREATOR_IDENTITY_CODE || '');
-function creatorIdentityCodeValid(value) {
-  const supplied = String(value || '');
-  if (!CREATOR_IDENTITY_CODE || supplied.length !== CREATOR_IDENTITY_CODE.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(CREATOR_IDENTITY_CODE));
-}
-
 function answer(v) {
   return clean(v, 100).toLowerCase()
     .normalize('NFD')
@@ -468,11 +461,6 @@ app.post('/api/auth/register', async (req,res) => {
   const phone=phoneOf(req.body.phone), password=String(req.body.password||'');
   const email=clean(req.body.email,120).toLowerCase();
   if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
-  if(isCreatorPhone(phone) && CREATOR_IDENTITY_CODE) {
-    if (!rateLimit(req.ip + ':creator-identity', 5, 60000)) return res.status(429).json({error:'Trop de tentatives de vérification. Réessaie dans une minute.'});
-    if (!req.body.creatorCode) return res.status(428).json({codeRequired:true,error:'Quel est ton code secret ?'});
-    if (!creatorIdentityCodeValid(req.body.creatorCode)) return res.status(401).json({error:'Code secret incorrect. Identité du créateur non confirmée.'});
-  }
   if(password.length<8||password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
   if(email && !/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
   if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
@@ -575,12 +563,6 @@ app.post('/api/auth/migrate-local', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   const phone = phoneOf(req.body.phone);
   const password = String(req.body.password || '');
-
-  if (isCreatorPhone(phone) && CREATOR_IDENTITY_CODE) {
-    if (!rateLimit(req.ip + ':creator-identity', 5, 60000)) return res.status(429).json({error:'Trop de tentatives de vérification. Réessaie dans une minute.'});
-    if (!req.body.creatorCode) return res.status(428).json({codeRequired:true,error:'Quel est ton code secret ?'});
-    if (!creatorIdentityCodeValid(req.body.creatorCode)) return res.status(401).json({error:'Code secret incorrect. Identité du créateur non confirmée.'});
-  }
 
   if (!rateLimit(req.ip + ':login', 15)) {
     return res.status(429).json({
@@ -906,16 +888,6 @@ app.post('/api/missions/claim',auth,async(req,res)=>{
   res.json({ok:true,reward,baseReward:mission.reward,multiplier,gems:refreshCreatorGemBalance(account)});
 });
 
-
-// Le code secret est redemandé à chaque lancement du compte créateur,
-// y compris lorsqu'un jeton de connexion est déjà mémorisé sur l'appareil.
-app.post('/api/creator/verify-launch', auth, requireCreator, (req,res)=>{
-  if(!rateLimit(req.ip + ':creator-launch', 5, 60000))
-    return res.status(429).json({verified:false,error:'Trop de tentatives. Réessaie dans une minute.'});
-  if(!creatorIdentityCodeValid(req.body?.creatorCode))
-    return res.status(401).json({verified:false,error:'Code secret incorrect. Le monde reste verrouillé.'});
-  res.set('Cache-Control','no-store').json({ok:true,verified:true});
-});
 
 app.get('/api/creator/rewards', auth, requireCreator, (_req,res)=>{
   const accountsList=[...accounts.values()].map(a=>{
