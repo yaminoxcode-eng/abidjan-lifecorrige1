@@ -1299,6 +1299,7 @@ function init() {
   const mobileLite = window.innerWidth < 700 || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   mobilePerformanceMode=mobileLite;
   renderer = new THREE.WebGLRenderer({ antialias: !mobileLite && window.devicePixelRatio < 1.5, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+  if (THREE.SRGBEncoding !== undefined) renderer.outputEncoding = THREE.SRGBEncoding;
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.domElement.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none;z-index:0';
   renderer.shadowMap.enabled = !mobileLite;
@@ -4152,7 +4153,7 @@ function enterBuilding(door) {
   movementState.onGround=true;movementState.yVelocity=0;
   player.rotation.y=Math.PI; cameraYaw=0; cameraPitch=1.08; cameraZoom=1;
   // Vue plongeante isométrique dans la maison : on voit le plan, les cloisons et les meubles.
-  camera.position.set(player.position.x+5.2,player.position.y+18.5,player.position.z+6.8);
+  camera.position.set(player.position.x+1.2,player.position.y+18.5,player.position.z+1.2);
   camera.lookAt(player.position.x,player.position.y+0.25,player.position.z);camera.updateMatrixWorld();
   npcs.forEach(n=>n.visible=false); vehicles.forEach(v=>v.visible=false);
   if(outdoorGround)outdoorGround.visible=false;if(laguneMesh)laguneMesh.visible=false;
