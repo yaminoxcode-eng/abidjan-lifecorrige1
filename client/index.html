@@ -7483,6 +7483,8 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    if(!r.ok)return;const m=await r.json();
    if(!m.version||m.version===window.ABJ_BUILD_VERSION)return;
    const key='abj-update-last-applied-'+m.version;
+   const declinedKey='abj-update-declined-'+m.version;
+   try{if(localStorage.getItem(declinedKey)==='1')return;}catch(e){}
    if(sessionStorage.getItem(key))return;
    if(document.getElementById('abjUpdateOverlay'))return;
 
@@ -7500,8 +7502,10 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    const status=document.createElement('p');status.textContent='Prêt à télécharger la mise à jour.';status.style.cssText='font-size:12px;color:#b8cbd7;min-height:18px;margin:8px 0 14px';
    const percent=document.createElement('p');percent.textContent='0 %';percent.style.cssText='font-size:13px;font-weight:800;color:#ffe0a0;margin:0 0 16px';
    const button=document.createElement('button');button.type='button';button.textContent='LANCER LE CHARGEMENT';button.style.cssText='width:100%;padding:14px 18px;border:0;border-radius:10px;background:#e5b85e;color:#17232c;font-weight:900;font-size:15px;cursor:pointer';
-   const help=document.createElement('p');help.textContent='Le jeu et tes sauvegardes restent en place pendant la préparation.';help.style.cssText='font-size:11px;color:#9eb4c2;margin:14px 0 0';
-   panel.append(title,apology,version,notes,track,percent,status,button,help);overlay.appendChild(panel);document.body.appendChild(overlay);
+   const decline=document.createElement('button');decline.type='button';decline.textContent='REFUSER ET CONTINUER AVEC CETTE VERSION';decline.style.cssText='width:100%;padding:12px 14px;margin-top:10px;border:1px solid #ffffff55;border-radius:10px;background:transparent;color:#fff;font-weight:800;font-size:13px;cursor:pointer';
+   const help=document.createElement('p');help.textContent='Tu peux refuser et continuer à jouer avec ta version actuelle. Tes sauvegardes restent en place.';help.style.cssText='font-size:11px;color:#9eb4c2;margin:14px 0 0';
+   panel.append(title,apology,version,notes,track,percent,status,button,decline,help);overlay.appendChild(panel);document.body.appendChild(overlay);
+   decline.addEventListener('click',()=>{try{localStorage.setItem(declinedKey,'1');}catch(e){}overlay.remove();});
 
    button.addEventListener('click',async()=>{
     if(button.disabled)return;
@@ -9230,7 +9234,8 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  /* 1) Notification de mise à jour dans le jeu (non bloquante) */
  window.abjShowUpdateToast=function(m,proceed){
   const later='abj-update-later-'+m.version;
-  try{if(sessionStorage.getItem(later))return;}catch(e){}
+  const declined='abj-update-declined-'+m.version;
+  try{if(localStorage.getItem(declined)==='1'||sessionStorage.getItem(later))return;}catch(e){}
   if(document.getElementById('abjUpdateToast'))return;
   const t=document.createElement('div');t.id='abjUpdateToast';
   t.style.cssText='position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);z-index:9000;width:min(420px,92vw);padding:12px 14px;border:1px solid #e9c77b;border-radius:16px;background:rgba(10,26,40,.96);color:#fff;font:13px system-ui;box-shadow:0 10px 34px #000a;display:flex;gap:10px;align-items:center';
@@ -9239,7 +9244,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   const go=document.createElement('button');go.textContent='Installer';go.style.cssText='border:0;border-radius:9px;padding:9px 12px;background:#e5b85e;color:#17232c;font-weight:900;cursor:pointer';
   const no=document.createElement('button');no.textContent='Plus tard';no.style.cssText='border:1px solid #ffffff40;border-radius:9px;padding:9px 10px;background:transparent;color:#fff;cursor:pointer';
   go.onclick=()=>{t.remove();window.__abjUpdateAccepted=m.version;try{if(typeof saveLifeProgress==='function')saveLifeProgress(false);}catch(e){}proceed();};
-  no.onclick=()=>{t.remove();try{sessionStorage.setItem(later,'1');}catch(e){}};
+  no.onclick=()=>{t.remove();try{sessionStorage.setItem(later,'1');localStorage.setItem(declined,'1');}catch(e){}};
   t.append(txt,go,no);document.body.appendChild(t);
   setTimeout(()=>{if(t.parentNode&&!window.__abjUpdateAccepted)t.style.opacity='.92';},100);
  };
