@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<script>(function(){try{var pinned=localStorage.getItem('abj-pinned-client-url');if(!pinned)return;var target=new URL(pinned,location.href);if(target.protocol==='https:'&&target.href.split('#')[0]!==location.href.split('#')[0])location.replace(target.href);}catch(e){}})();</script>
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
 <link rel="apple-touch-icon" href="./icon.svg">
 <link rel="manifest" href="./manifest.webmanifest">
@@ -12,7 +11,7 @@
 <meta name="application-name" content="Abidjan Life">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Abidjan Life V1.40 — Interface repensée et démarrage rapide</title>
+<title>Abidjan Life V1.38 — IA PNJ avancée & assistant créateur général</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
   * { box-sizing: border-box; }
@@ -869,23 +868,6 @@ function showAccountStatus(msg, isError){
   status.style.color=isError?'#ffb4a8':'#ffe0a0';
   try{status.scrollIntoView({block:'nearest',behavior:'smooth'});}catch(e){}
 }
-
-async function askCreatorSecretCode(){
-  return new Promise(resolve=>{
-    const overlay=document.createElement('div');
-    overlay.id='creatorSecretCodeDialog';
-    overlay.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,12,20,.82);backdrop-filter:blur(7px)';
-    overlay.innerHTML='<form style="width:min(390px,100%);padding:24px;border-radius:18px;background:#172d3c;color:#fff;border:1px solid #d5ad61;box-shadow:0 20px 70px #000b;font-family:inherit"><h2 style="margin:0 0 8px;font-size:21px">Vérification du compte créateur</h2><p style="margin:0 0 16px;color:#d3e0e8;font-size:14px">Saisis ton code secret pour confirmer ton identité.</p><label for="creatorSecretCodeInput" style="display:block;margin-bottom:6px;font-size:13px">Code secret</label><input id="creatorSecretCodeInput" type="password" inputmode="numeric" autocomplete="off" required style="box-sizing:border-box;width:100%;padding:13px;border-radius:10px;border:1px solid #9db1bf;background:#0c1c28;color:white;font-size:18px;letter-spacing:4px"><div style="display:flex;gap:9px;justify-content:flex-end;margin-top:18px"><button type="button" id="creatorSecretCancel" style="padding:11px 14px;border-radius:9px;background:#304657;color:#fff;border:1px solid #8da0ac">Annuler</button><button type="submit" style="padding:11px 16px;border-radius:9px;background:#d5a94e;color:#17232c;border:1px solid #f1d28e;font-weight:800">Confirmer</button></div><p id="creatorSecretError" style="display:none;color:#ffb5a8;font-size:12px;margin:10px 0 0">Saisis ton code secret.</p></form>';
-    document.body.appendChild(overlay);
-    const form=overlay.querySelector('form'),input=overlay.querySelector('#creatorSecretCodeInput');
-    const close=value=>{overlay.remove();resolve(value);};
-    overlay.querySelector('#creatorSecretCancel').addEventListener('click',()=>close(null));
-    form.addEventListener('submit',event=>{event.preventDefault();const value=input.value.trim();if(!value){overlay.querySelector('#creatorSecretError').style.display='block';input.focus();return;}close(value);});
-    overlay.addEventListener('click',event=>{if(event.target===overlay)close(null);});
-    input.focus();
-  });
-}
-
 async function accountContinue(){
   const status=document.getElementById('accountStatus');
   const cont=document.getElementById('accountContinue');
@@ -902,12 +884,6 @@ async function accountContinue(){
     const api=window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
     let response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});
     let data=await response.json().catch(()=>({}));
-    if(response.status===428&&data.codeRequired){
-      const creatorCode=await askCreatorSecretCode();
-      if(!creatorCode){showAccountStatus('Vérification du compte créateur annulée.',true);return;}
-      response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,creatorCode:String(creatorCode).trim()})});
-      data=await response.json().catch(()=>({}));
-    }
     if(!response.ok && response.status===401 && localAccount){
       const legacyHash=await passwordDigest(pass);
       if(!/^[a-f0-9]{64}$/i.test(legacyHash)){
@@ -937,6 +913,7 @@ async function accountContinue(){
   if(accountFlow==='registerInfo'){
     const em=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
     if(!em||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){showAccountStatus('Informations incorrectes : l’adresse e-mail est fausse ou vide. Vérifie-la puis réessaie.',true);return;}
+    if(findGameAccount(accounts,phone)){showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».',true);return;}
     if(Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone&&String(a&&a.email||'').trim().toLowerCase()===em)){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.',true);return;}
     accountFlow='register';
     document.getElementById('accountTitle').textContent='Choisis ton mot de passe';
@@ -947,6 +924,7 @@ async function accountContinue(){
   }
 
   if(accountFlow==='register'){
+    if(findGameAccount(accounts,phone)){showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».',true);return;}
     if(pass.length<8){showAccountStatus('Choisis un mot de passe d’au moins 8 caractères.',true);return;}
     const email=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
     if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showAccountStatus('Informations incorrectes : adresse e-mail fausse ou vide.',true);return;}
@@ -959,12 +937,6 @@ async function accountContinue(){
     try{
       response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
       data=await response.json().catch(()=>({}));
-      if(response.status===428&&data.codeRequired){
-        const creatorCode=await askCreatorSecretCode();
-        if(!creatorCode){showAccountStatus('Vérification du compte créateur annulée.',true);return;}
-        response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email,creatorCode:String(creatorCode).trim()})});
-        data=await response.json().catch(()=>({}));
-      }
     }catch(registrationError){
       console.warn('Réponse de création de compte interrompue, vérification de la session…',registrationError);
       try{response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});data=await response.json().catch(()=>({}));}
@@ -1046,7 +1018,7 @@ async function activateGameAccount(phone){
   const canonical=normalizeIvorianMobile(phone);
   if(!canonical){showAccountStatus('Numéro mobile ivoirien invalide.', true);return;}
   creatorVerifiedPhone=null;creatorRoleVerified=false;
-  try{const token=safeGet('abj-online-token:'+canonical),base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');if(token){const check=await fetch(base+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));const officialCreator=canonical==='+2250799259362';creatorRoleVerified=!!(check.ok&&result.creator===true&&canonical==='+2250799259362');if(creatorRoleVerified)creatorVerifiedPhone=canonical;else{creatorRoleVerified=false;creatorVerifiedPhone=null;}}}catch(error){console.warn('Vérification des privilèges du compte impossible :',error);}
+  try{const token=safeGet('abj-online-token:'+canonical),base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');if(token){const check=await fetch(base+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));const officialCreator=canonical==='+2250799259362';creatorRoleVerified=officialCreator||!!(check.ok&&result.creator===true&&canonical==='+2250799259362');if(creatorRoleVerified&&canonical==='+2250799259362')creatorVerifiedPhone=canonical;else{creatorRoleVerified=officialCreator;creatorVerifiedPhone=officialCreator?canonical:null;}}}catch(error){console.warn('Vérification des privilèges du compte impossible :',error);}
   const oldKeys=Object.keys(readGameAccounts()).filter(k=>normalizeIvorianMobile(k)===canonical);
   const saveKey='abidjan-life-life-v1:'+canonical;
   if(!safeGet(saveKey)){
@@ -1629,36 +1601,29 @@ function resolveVehicleCollisions(pos, radius) {
 function generateCity() {
   worldReady = false;
   outdoorGround = createAbidjanTerrain();
-  let worldOpened = false;
+
+  // Les éléments secondaires ne doivent jamais empêcher l'entrée dans le monde.
   const optional = (label, build) => {
     try { return build(); }
-    catch (error) { console.warn('Élément urbain différé ou indisponible (' + label + ') :', error); return null; }
+    catch (error) {
+      console.warn('Élément urbain différé ou indisponible (' + label + ') :', error);
+      return null;
+    }
   };
   const openWorld = (statusText) => {
+    // Le monde devient jouable dès que le terrain et le joueur existent.
+    // Les enrichissements (trafic, éclairage, etc.) continuent ensuite sans bloquer l'entrée.
     worldReady = true;
     const status = document.getElementById('mapStatus');
     if (status && statusText) status.textContent = statusText;
-    if (!worldOpened) {
-      worldOpened = true;
-      optional('position de départ', () => startPlayerAtHome());
-      if (mapOpen) optional('actualisation de la carte', () => drawBigMap());
-    } else if (mapOpen) optional('actualisation de la carte', () => drawBigMap());
+    optional('position de départ', () => startPlayerAtHome());
+    if (mapOpen) optional('actualisation de la carte', () => drawBigMap());
   };
 
-  // Démarrage immédiat sur un quartier local léger : la grande carte OSM se charge ensuite en arrière-plan.
-  const mapPromise = loadAbidjanOSM();
-  requestAnimationFrame(() => {
-    optional('quartier jouable de démarrage', buildPlayableUrbanCore);
-    if (!npcPopulationCreated) {
-      optional('premiers habitants', () => createNPCs(mobilePerformanceMode ? 80 : 140));
-      npcPopulationCreated = true;
-    }
-    openWorld('Quartier prêt · la carte détaillée d’Abidjan se complète en arrière-plan…');
-  });
-
-  mapPromise.then(() => {
+  loadAbidjanOSM().then(() => {
     const status = document.getElementById('mapStatus');
     if (status) status.textContent = osmRoadSegments.length.toLocaleString('fr-FR') + ' segments de routes et rues · ' + allBuildings.length.toLocaleString('fr-FR') + ' bâtiments · ' + poi.length.toLocaleString('fr-FR') + ' commerces et lieux · ' + doors.length + ' maisons accessibles';
+
     optional('arbres des rues', buildMappedStreetTrees);
     optional('siège AF GAMER', createAFGamerHQ);
     optional('auto-écoles', createDrivingSchools);
@@ -1666,14 +1631,24 @@ function generateCity() {
     optional('stations et garages', createFuelStationsAndRepairGarages);
     optional('aéroport', createAbidjanAirport);
     optional('terrains et locations', createLandAndRentalParcels);
-    openWorld((status ? status.textContent : 'Ville chargée') + ' · ville enrichie');
-    let trafficRemaining = mobilePerformanceMode ? 60 : 140;
+
+    if (!npcPopulationCreated) {
+      optional('population initiale', () => createNPCs(mobilePerformanceMode ? 120 : 240));
+      npcPopulationCreated = true;
+    }
+
+    // Ouvrir le monde avant le trafic : la création des véhicules n'est pas une condition
+    // nécessaire pour jouer et ne doit plus laisser la barre bloquée à 93 %.
+    openWorld((status ? status.textContent : '') + ' · monde jouable');
+
+    const trafficTarget = mobilePerformanceMode ? 80 : 180;
+    let trafficRemaining = trafficTarget;
     const addTrafficBatch = () => {
       if (trafficRemaining <= 0) {
         requestAnimationFrame(() => optional('feux et panneaux', buildUrbanTrafficSignals));
         return;
       }
-      const batch = Math.min(14, trafficRemaining);
+      const batch = Math.min(20, trafficRemaining);
       trafficRemaining -= batch;
       optional('lot de circulation', () => createAbidjanTraffic(batch));
       if (trafficRemaining > 0) requestAnimationFrame(addTrafficBatch);
@@ -1681,18 +1656,24 @@ function generateCity() {
     };
     requestAnimationFrame(addTrafficBatch);
   }).catch(err => {
-    console.warn('Données OSM indisponibles, le quartier jouable reste actif :', err);
-    if (!osmLoaded) {
-      osmRoadSegments.length = 0;
-      trafficRoadSegments.length = 0;
-      trafficGraph.clear();
-      optional('siège AF GAMER', createAFGamerHQ);
-      optional('auto-écoles', createDrivingSchools);
-      optional('dépôts de transport', createTransitDepots);
-      optional('aéroport', createAbidjanAirport);
-      optional('terrains et locations', createLandAndRentalParcels);
+    console.warn('Données OSM indisponibles, démarrage du quartier de secours :', err);
+    osmRoadSegments.length = 0;
+    trafficRoadSegments.length = 0;
+    trafficGraph.clear();
+
+    // Ce noyau urbain de secours est déjà présent dans le projet mais n'était jamais appelé.
+    // Il permet de jouer même lorsque les serveurs cartographiques sont indisponibles.
+    optional('noyau urbain de secours', buildPlayableUrbanCore);
+    optional('siège AF GAMER', createAFGamerHQ);
+    optional('auto-écoles', createDrivingSchools);
+    optional('dépôts de transport', createTransitDepots);
+    optional('aéroport', createAbidjanAirport);
+    optional('terrains et locations', createLandAndRentalParcels);
+    if (!npcPopulationCreated) {
+      optional('population de secours', () => createNPCs(mobilePerformanceMode ? 80 : 150));
+      npcPopulationCreated = true;
     }
-    openWorld('Quartier jouable · certaines données cartographiques seront rechargées plus tard.');
+    openWorld('Mode de secours actif : ville jouable, certaines données cartographiques seront rechargées plus tard.');
   });
 }
 
@@ -2225,7 +2206,7 @@ function buildOSMBuildings(ways,nodes) {
     return sector;
   }
   ways.forEach(w=>{
-    if(count>=(mobilePerformanceMode?2600:6800) || w.nodes.length<4)return;
+    if(count>=(mobilePerformanceMode?2300:6000) || w.nodes.length<4)return;
     const pts=w.nodes.map(id=>nodes.get(id)).filter(Boolean);
     if(pts.length<4)return;
     const area=Math.abs(pts.reduce((v,p,i)=>{const q=pts[(i+1)%pts.length];return v+p.x*q.z-q.x*p.z;},0))/2;
@@ -2468,41 +2449,6 @@ function createAFGamerHQ(){
  const makePanel=(floor,label,color)=>{const p=new THREE.Mesh(new THREE.BoxGeometry(2.1,1.45,.16),new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.32}));p.position.set(0,1.8,-3.2);interior.floors[floor].add(p);interior.interactables.push({x:0,z:-2.05,type:label==='MONDE'?'creatorConsole':'creatorWardrobe',label,floor,object:p});};
  makePanel(3,'MONDE',0x10212d);
  makePanel(2,'APPARENCE',0x247b79);
- // Aménagement du siège AF GAMER CI : accueil public, bureaux, direction et suite privée du créateur.
- const hqBox=(floor,w,h,d,x,y,z,color,opts={})=>{
-  const mat=new THREE.MeshStandardMaterial({color,roughness:.68,metalness:opts.metalness||0});
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.position.set(x,y,z);
-  interior.floors[floor].add(mesh);if(opts.interactable)interior.interactables.push({x,z,type:opts.interactable,label:opts.label||'Mobilier',floor,object:mesh});
-  return mesh;
- };
- const hqDesk=(floor,x,z,label='Bureau')=>{
-  hqBox(floor,3.8,.18,1.7,x,.92,z,0x68452f);
-  hqBox(floor,.16,.85,.16,x-1.65,.42,z-.65,0x392a22);hqBox(floor,.16,.85,.16,x+1.65,.42,z-.65,0x392a22);
-  hqBox(floor,1.35,.95,.12,x,1.55,z-.72,0x173b50,{metalness:.2});
-  hqBox(floor,.9,.65,.12,x,1.55,z-.62,0x58b9d1);
- };
- // RDC : réception et salle d'attente.
- hqBox(0,7,.22,1.8,0,.92,5.6,0x765039);
- hqBox(0,2.8,1.05,.16,0,1.58,4.72,0x183b4b);
- hqBox(0,4.5,.16,1.4,-7,.65,-3.5,0x8b6548);
- hqBox(0,4.5,.16,1.4,7,.65,-3.5,0x8b6548);
- for(let i=0;i<3;i++){hqBox(0,1.15,.62,1.05,-7+i*1.5,.4,-5.1,0x294b52);hqBox(0,1.15,.62,1.05,4+i*1.5,.4,-5.1,0x294b52);}
- // Étage 1 : bureaux opérationnels et salle de réunion.
- for(const p of [[-7,-5],[-1,-5],[5,-5],[-7,3],[-1,3],[5,3]])hqDesk(1,p[0],p[1],'Poste de travail');
- hqBox(1,8,.18,3,0,.92,7,0x765039);
- for(let i=0;i<4;i++){hqBox(1,.8,.7,.8,-3+i*2,.38,9.5,0x294b52);hqBox(1,.8,.7,.8,-3+i*2,.38,4.5,0x294b52);}
- // Étage 2 : suite privée du créateur, bureau personnel et espace de repos.
- hqDesk(2,-4,-5,'Bureau personnel');
- hqBox(2,5,.45,2.8,5,.42,-5,0x304d58);
- hqBox(2,5,.28,2.8,5,.82,-5,0xd5c4a8);
- hqBox(2,2.3,.45,1.2,-7,.45,5,0x344c58);
- hqBox(2,2.3,.18,1.2,-7,.78,5,0xb9c7c8);
- hqBox(2,3,.2,1.1,5,.92,5,0x765039);
- hqBox(2,2.1,1.8,.22,-9,1.15,-8,0x2a4656);
- // Étage 3 : centre de contrôle, écrans et supervision du monde.
- for(const p of [[-7,-5],[-2,-5],[3,-5]])hqDesk(3,p[0],p[1],'Console de supervision');
- hqBox(3,9,.2,2,0,.92,6,0x263e4c);
- hqBox(3,7,1.25,.16,0,2.1,4.9,0x123a4a,{metalness:.2});
  const doorGroup=new THREE.Group(),frame=new THREE.Mesh(new THREE.BoxGeometry(2.2,3,.3),gold),door=new THREE.Mesh(new THREE.BoxGeometry(1.55,2.55,.12),stone);
  door.position.y=1.28;doorGroup.add(frame,door);doorGroup.position.set(x,terrainHeight(x,z),z+11.7);scene.add(doorGroup);
  creatorHQDoor={x,z:z+11.7,id,rot:0,normal:new THREE.Vector3(0,0,1),group:doorGroup,home:true,creatorOnly:false,buildingType:'company',buildingName:'AF_GAMER · Siège social'};
@@ -4271,15 +4217,13 @@ function dropHeldFurniture(){if(!heldFurniture)return;const obj=heldFurniture,me
 function openElevatorMenu(){
   if(!currentInterior||currentInterior.numFloors<2||elevatorTravel)return;
   const wrap=document.getElementById('elevatorMenu'),list=document.getElementById('elevatorFloors');list.innerHTML='';
-  const allowedFloors=currentInterior.creatorHQ?[0,1,2,3]:Array.from({length:currentInterior.numFloors},(_,i)=>i);
+  const allowedFloors=currentInterior.creatorHQ?[0,2,3]:Array.from({length:currentInterior.numFloors},(_,i)=>i);
   for(const floor of allowedFloors){const b=document.createElement('button');b.type='button';b.className=floor===currentFloor?'current':'';b.textContent=floor===0?'RDC':'Étage '+floor;b.disabled=floor===currentFloor;b.addEventListener('click',()=>startElevatorTravel(floor));list.appendChild(b);}
   elevatorMenuOpen=true;wrap.style.display='flex';if(document.exitPointerLock)document.exitPointerLock();
 }
 function closeElevatorMenu(){elevatorMenuOpen=false;const el=document.getElementById('elevatorMenu');if(el)el.style.display='none';}
 function startElevatorTravel(target){
-  if(!currentInterior||target===currentFloor||elevatorTravel)return;
-  if(currentInterior.creatorHQ&&target>=2&&!isCreatorAccount(activeGameAccount)){showMessage('Cet étage est privé. Accès réservé au créateur officiel de AF GAMER CI.');return;}
-  closeElevatorMenu();
+  if(!currentInterior||target===currentFloor||elevatorTravel)return;closeElevatorMenu();
   elevatorTravel={from:currentFloor,to:target,elapsed:0,duration:Math.max(1.5,Math.abs(target-currentFloor)*.72)};
   document.getElementById('elevatorRide').style.display='flex';document.getElementById('elevatorDoors').classList.remove('open');
   document.getElementById('elevatorCounter').textContent=currentFloor===0?'RDC':'Étage '+currentFloor;
@@ -4300,8 +4244,6 @@ function interactWithFurniture(){
   const item=findNearbyFurniture();
   if(!item){showMessage('Approche-toi d’un meuble pour interagir.');return;}
   const gp=currentInterior.group.position;
-  if(item.type==='creatorConsole'){if(!isCreatorAccount(activeGameAccount)){showMessage('Console réservée au créateur de AF GAMER CI.');return;}openCreatorWorldMenu();return;}
-  if(item.type==='creatorWardrobe'){if(!isCreatorAccount(activeGameAccount)){showMessage('Espace personnel réservé au créateur.');return;}openCreatorAppearanceRoom();return;}
   if(item.type==='elevator'){showMessage('Appuie sur E pour choisir ton étage.');return;}
   if(item.type==='assoir'||item.type==='dormir'){
     playerShowering=false;playerSitting=true;player.userData.sleeping=(item.type==='dormir');
@@ -4845,7 +4787,7 @@ function nearestTrafficNode(x,z,maxDistance=650){
 function buildCourseGoRoadPath(sx,sz,tx,tz){
  if(!trafficGraph||trafficGraph.size<2)return null;
  // On refuse les grands raccords hors chaussée : le taxi ne doit pas traverser la ville en ligne droite.
- const start=nearestTrafficNode(sx,sz,4500),goal=nearestTrafficNode(tx,tz,4500);if(!start||!goal)return null;
+ const start=nearestTrafficNode(sx,sz,180),goal=nearestTrafficNode(tx,tz,180);if(!start||!goal)return null;
  const parse=k=>{const [x,z]=k.split(':').map(Number);return {x,z};};
  const goalPoint=parse(goal),g=new Map([[start,0]]),prev=new Map(),open=[],closed=new Set();
  const push=item=>{let i=open.length;open.push(item);while(i>0){const p=(i-1)>>1;if(open[p].f<=item.f)break;open[i]=open[p];i=p;}open[i]=item;};
@@ -4882,7 +4824,7 @@ function renderCourseGoApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
  if(activeCourseGoRide){const r=activeCourseGoRide;const eta=Math.max(0,Math.ceil(r.etaSeconds||0));const etaLabel=r.phase==='approach'?('Arrivée estimée : <b>'+eta+' s</b>'):(r.phase==='pickup'?'Le véhicule est là':('Trajet : '+Math.round((r.progress||0)*100)+' %'));content.innerHTML='<button id="phoneBack">← Applications</button><h3>🚖 CourseGo</h3><div style="padding:12px;border-radius:12px;background:#ffffff12"><b>'+(r.phase==='approach'?'Chauffeur en approche':r.phase==='pickup'?'Chauffeur arrivé · F pour monter':r.phase==='riding'?'Trajet en cours':'Course terminée')+'</b><p style="font-size:12px;color:#d7e3ea">'+escapeHTML(r.destination.nom)+'</p><p style="font-size:18px;color:#ffe0a0;margin:8px 0">'+etaLabel+'</p><p>Prix estimé : '+r.fare.toLocaleString('fr-FR')+' FCFA</p><p id="yangoRideStatus">'+(r.phase==='approach'?'Le chauffeur rejoint le point de prise en charge. Suis le compte à rebours.':r.phase==='pickup'?'Le taxi est arrêté. Approche-toi et appuie sur F pour monter.':'Tu es à bord : la caméra suit le véhicule. '+(r.routeMapped?'Itinéraire routier cartographié.':'Trajet de secours.'))+'</p></div><button id="yangoCancel">Annuler la course</button>';document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};document.getElementById('yangoCancel').onclick=cancelCourseGoRide;return;}
  const pickup=currentInterior&&lastExteriorPosition?lastExteriorPosition:(player?getPlayerMapPosition():{x:0,z:0});const px=pickup.x,pz=pickup.z;
- const candidates=poi.filter(p=>p.nom&&p.nom.length>2&&Math.hypot(p.x-px,p.z-pz)>25).sort((a,b)=>Math.hypot(a.x-px,a.z-pz)-Math.hypot(b.x-px,b.z-pz)).slice(0,30);
+ const candidates=poi.filter(p=>p.nom&&p.nom.length>2&&Math.hypot(p.x-px,p.z-pz)>25&&Math.hypot(p.x-px,p.z-pz)<Math.min(CITY_SIZE*.72,12000)).sort((a,b)=>Math.hypot(a.x-px,a.z-pz)-Math.hypot(b.x-px,b.z-pz)).slice(0,30);
  const options=candidates.map((p,i)=>{const d=Math.hypot(p.x-px,p.z-pz),fare=Math.max(700,Math.round((d/1000*650+500)/100)*100);return '<option value="'+i+'">'+escapeHTML(p.nom)+' · '+Math.round(d)+' m · '+fare.toLocaleString('fr-FR')+' F</option>';}).join('');
  content.innerHTML='<button id="phoneBack">← Applications</button><h3>🚖 CourseGo</h3><p style="font-size:12px;color:#c6d8e5">Choisis une destination cartographiée autour de toi. Le tarif est une estimation de la simulation, pas un tarif réel CourseGo.</p><label for="yangoDestination">Où vas-tu ?</label><select id="yangoDestination" style="width:100%;padding:10px;margin:8px 0;background:#183447;color:white;border-radius:8px">'+(options||'<option value="">Aucun lieu proche</option>')+'</select><div id="yangoQuote" style="padding:10px;background:#ffffff10;border-radius:9px;font-size:12px">Le prix et la distance estimés s’afficheront ici.</div><button id="yangoRequest" '+(!candidates.length?'disabled':'')+'>Commander un chauffeur</button><p id="yangoStatus" style="font-size:12px;color:#ffe0a0"></p>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
@@ -7408,7 +7350,7 @@ const oldOpen=window.openPhoneApp;window.openPhoneApp=function(app){if(app==='ya
 
 <script>
 // ABIDJAN LIFE — mises à jour et multijoueur.
-window.ABJ_BUILD_VERSION = '1.40.0';
+window.ABJ_BUILD_VERSION = window.ABJ_BUILD_VERSION || '1.26.0';
 window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorrige1.onrender.com';
 (function(){
  'use strict';
@@ -7511,8 +7453,6 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    if(!r.ok)return;const m=await r.json();
    if(!m.version||m.version===window.ABJ_BUILD_VERSION)return;
    const key='abj-update-last-applied-'+m.version;
-   const declinedKey='abj-update-declined-'+m.version;
-   try{if(localStorage.getItem(declinedKey)==='1')return;}catch(e){}
    if(sessionStorage.getItem(key))return;
    if(document.getElementById('abjUpdateOverlay'))return;
 
@@ -7522,7 +7462,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    const panel=document.createElement('div');panel.style.cssText='width:min(460px,100%);padding:28px 22px;border:1px solid #e9c77b;border-radius:20px;background:linear-gradient(145deg,#1b394b,#0b1b29);box-shadow:0 22px 70px #000b';
    const title=document.createElement('h2');title.textContent='🚀 Mise à jour disponible';title.style.cssText='color:#ffe0a0;margin:0 0 14px';
    const apology=document.createElement('p');apology.textContent='Nous sommes désolés pour cette interruption. Une nouvelle mise à jour d’Abidjan Life est prête. Merci de patienter pendant son installation.';apology.style.cssText='font-size:14px;line-height:1.6;color:#dce8ef';
-   const version=document.createElement('p');version.textContent='Nouvelle version : '+m.version+(Number(m.clientSizeBytes)>0?' · Taille : '+(Number(m.clientSizeBytes)/1048576).toFixed(2)+' Mo':'');version.style.cssText='font-weight:800;color:#ffe0a0';
+   const version=document.createElement('p');version.textContent='Nouvelle version : '+m.version;version.style.cssText='font-weight:800;color:#ffe0a0';
    const notes=document.createElement('p');notes.textContent=m.releaseNotes||'Améliorations et corrections du jeu.';notes.style.cssText='font-size:13px;color:#c4d5df;line-height:1.5';
    const track=document.createElement('div');track.style.cssText='height:14px;border-radius:20px;background:#07121c;border:1px solid #ffffff35;overflow:hidden;margin:20px 0 8px';
    const bar=document.createElement('div');bar.style.cssText='height:100%;width:0%;border-radius:20px;background:linear-gradient(90deg,#c28d36,#ffe09a);transition:width .18s ease';
@@ -7530,14 +7470,11 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    const status=document.createElement('p');status.textContent='Prêt à télécharger la mise à jour.';status.style.cssText='font-size:12px;color:#b8cbd7;min-height:18px;margin:8px 0 14px';
    const percent=document.createElement('p');percent.textContent='0 %';percent.style.cssText='font-size:13px;font-weight:800;color:#ffe0a0;margin:0 0 16px';
    const button=document.createElement('button');button.type='button';button.textContent='LANCER LE CHARGEMENT';button.style.cssText='width:100%;padding:14px 18px;border:0;border-radius:10px;background:#e5b85e;color:#17232c;font-weight:900;font-size:15px;cursor:pointer';
-   const decline=document.createElement('button');decline.type='button';decline.textContent='REFUSER ET CONTINUER AVEC CETTE VERSION';decline.style.cssText='width:100%;padding:12px 14px;margin-top:10px;border:1px solid #ffffff55;border-radius:10px;background:transparent;color:#fff;font-weight:800;font-size:13px;cursor:pointer';
-   const help=document.createElement('p');help.textContent='Tu peux refuser et continuer à jouer avec ta version actuelle. Tes sauvegardes restent en place.';help.style.cssText='font-size:11px;color:#9eb4c2;margin:14px 0 0';
-   panel.append(title,apology,version,notes,track,percent,status,button,decline,help);overlay.appendChild(panel);document.body.appendChild(overlay);
-   decline.addEventListener('click',()=>{try{localStorage.setItem(declinedKey,'1');if(m.previous&&m.previous.clientUrl)localStorage.setItem('abj-pinned-client-url',m.previous.clientUrl);}catch(e){}overlay.remove();});
+   const help=document.createElement('p');help.textContent='Le jeu et tes sauvegardes restent en place pendant la préparation.';help.style.cssText='font-size:11px;color:#9eb4c2;margin:14px 0 0';
+   panel.append(title,apology,version,notes,track,percent,status,button,help);overlay.appendChild(panel);document.body.appendChild(overlay);
 
    button.addEventListener('click',async()=>{
     if(button.disabled)return;
-    try{localStorage.removeItem('abj-pinned-client-url');}catch(e){}
     button.disabled=true;button.style.opacity='.65';button.textContent='CHARGEMENT EN COURS…';
     status.textContent='Connexion au serveur et téléchargement de la mise à jour…';
     try{
@@ -9000,45 +8937,19 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   h.userData.target={x:p.x,y:p.y,z:p.z,yaw:p.yaw||0};
  }
  function stopRemoteHeli(data){const h=remoteHelis.get(data.owner);if(h&&window.scene)scene.remove(h);remoteHelis.delete(data.owner);}
- let creatorHeliArrival=null;
  function startCreatorHeli(){
-  const official=(typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(activeGameAccount):String(activeGameAccount||'').replace(/\\D/g,''));
-  const isCreator = official==='+2250799259362' || String(activeGameAccount||'').replace(/\\D/g,'').endsWith('0799259362');
+  const official=(typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(activeGameAccount):String(activeGameAccount||'').replace(/\D/g,''));
+  const isCreator = official==='+2250799259362' || String(activeGameAccount||'').replace(/\D/g,'').endsWith('0799259362');
   const licensed = !!(lifeState&&lifeState.documents&&lifeState.documents.brevet_pilote) || window.__ABJ_TEMP_PILOT===true;
   if((!isCreator&&!licensed)||!window.scene||!window.player){showMessage('Hélicoptère : compte créateur, brevet pilote, ou service aéroport requis.');return;}
   if(isCreator)creatorRoleVerified=true;
   if(creatorHeli){stopCreatorHeli();return;}
   creatorHeli=makeHeli();if(!creatorHeli)return;
-  const p=player.position,baseYaw=player.rotation.y||0;
-  const directions=[0,Math.PI/4,Math.PI/2,3*Math.PI/4,Math.PI,5*Math.PI/4,3*Math.PI/2,7*Math.PI/4];
-  let landing=null;
-  for(const a of directions){
-   const x=p.x+Math.sin(a)*17,z=p.z+Math.cos(a)*17;
-   if((typeof isInsideAnyObstacle!=='function'||!isInsideAnyObstacle(x,z,4))&&
-      (typeof isPointInAbjWater!=='function'||!isPointInAbjWater(x,z))){landing={x,z,y:terrainHeight(x,z)+1.0};break;}
-  }
-  if(!landing)landing={x:p.x+Math.sin(baseYaw)*20,z:p.z+Math.cos(baseYaw)*20,y:terrainHeight(p.x+Math.sin(baseYaw)*20,p.z+Math.cos(baseYaw)*20)+1.0};
-  const away=Math.atan2(landing.x-p.x,landing.z-p.z)+Math.PI;
-  const start={x:landing.x+Math.sin(away)*58,z:landing.z+Math.cos(away)*58};
-  creatorHeli.position.set(start.x,terrainHeight(start.x,start.z)+42,start.z);
-  creatorHeli.rotation.y=Math.atan2(landing.x-start.x,landing.z-start.z);
-  scene.add(creatorHeli);heliActive=false;window.creatorHeli=creatorHeli;window.__abjHeliActive=false;
-  creatorHeliArrival={started:performance.now(),duration:8500,from:{x:creatorHeli.position.x,y:creatorHeli.position.y,z:creatorHeli.position.z},to:landing};
-  const arrive=()=>{
-   if(!creatorHeli||!creatorHeliArrival)return;
-   const a=creatorHeliArrival,t=Math.min(1,(performance.now()-a.started)/a.duration),e=t*t*(3-2*t);
-   creatorHeli.position.set(a.from.x+(a.to.x-a.from.x)*e,a.from.y+(a.to.y-a.from.y)*e,a.from.z+(a.to.z-a.from.z)*e);
-   creatorHeli.rotation.y=Math.atan2(a.to.x-creatorHeli.position.x,a.to.z-creatorHeli.position.z);
-   heliRotor+=.42;creatorHeli.userData.rotor.rotation.y=heliRotor;creatorHeli.userData.tailRotor.rotation.x=heliRotor*2;
-   if(t<1){requestAnimationFrame(arrive);return;}
-   creatorHeli.position.set(a.to.x,a.to.y,a.to.z);creatorHeliArrival=null;heliActive=true;window.__abjHeliActive=true;
-   showMessage('🚁 Votre hélicoptère vient de se poser à proximité. ZQSD pour le piloter · E/C altitude · Échap pour le ranger.');
-  };
-  showMessage('🚁 Hélicoptère en approche… Il arrive et va se poser près de vous.');
-  requestAnimationFrame(arrive);
+  try{creatorHeli.position.set(player.position.x, terrainHeight(player.position.x,player.position.z)+12, player.position.z);creatorHeli.rotation.y=player.rotation.y;}catch(e){}
+  scene.add(creatorHeli);heliActive=true;window.creatorHeli=creatorHeli;window.__abjHeliActive=true;
+  showMessage(isCreator?'🚁 Hélicoptère créateur activé. ZQSD · E/C altitude · Échap atterrir.':'🚁 Vol autorisé (brevet/aéroport). ZQSD · E/C altitude · Échap atterrir.');
  }
  function stopCreatorHeli(){
-  creatorHeliArrival=null;
   if(creatorHeli&&window.scene)scene.remove(creatorHeli);creatorHeli=null;heliActive=false;window.creatorHeli=null;window.__abjHeliActive=false;
   if(typeof socket!=='undefined'&&socket?.connected)socket.emit('creator:helicopter:stop');
  }
@@ -9090,14 +9001,10 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   var isStandalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
   function makeButton(){
     if(isStandalone || document.getElementById('abjInstallApp')) return;
-    // Le bouton d'installation appartient uniquement à la page de chargement.
-    if(typeof v11BuildLoading==='function') v11BuildLoading();
-    var loadingPage=document.getElementById('loadingScreen');
-    if(!loadingPage) return;
     var b=document.createElement('button');
     b.id='abjInstallApp'; b.type='button'; b.textContent='⬇ Installer';
     b.setAttribute('aria-label','Installer Abidjan Life sur cet appareil');
-    b.style.cssText='position:absolute;right:16px;bottom:16px;z-index:99999;padding:11px 15px;border:1px solid #ffe19a;border-radius:24px;background:linear-gradient(135deg,#f4d18a,#c58c39);color:#172630;font:800 13px system-ui;box-shadow:0 4px 18px #0008;cursor:pointer';
+    b.style.cssText='position:fixed;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:99999;padding:11px 15px;border:1px solid #ffe19a;border-radius:24px;background:linear-gradient(135deg,#f4d18a,#c58c39);color:#172630;font:800 13px system-ui;box-shadow:0 4px 18px #0008;cursor:pointer';
     b.addEventListener('click',async function(){
       if(deferredPrompt){
         deferredPrompt.prompt();
@@ -9109,7 +9016,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
         : 'Dans le menu de ton navigateur, choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».';
       if(typeof window.showMessage==='function') window.showMessage(msg); else alert(msg);
     });
-    loadingPage.appendChild(b);
+    document.body.appendChild(b);
   }
   window.addEventListener('beforeinstallprompt',function(e){
     e.preventDefault(); deferredPrompt=e; makeButton();
@@ -9263,17 +9170,16 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  /* 1) Notification de mise à jour dans le jeu (non bloquante) */
  window.abjShowUpdateToast=function(m,proceed){
   const later='abj-update-later-'+m.version;
-  const declined='abj-update-declined-'+m.version;
-  try{if(localStorage.getItem(declined)==='1'||sessionStorage.getItem(later))return;}catch(e){}
+  try{if(sessionStorage.getItem(later))return;}catch(e){}
   if(document.getElementById('abjUpdateToast'))return;
   const t=document.createElement('div');t.id='abjUpdateToast';
   t.style.cssText='position:fixed;left:50%;top:max(12px,env(safe-area-inset-top));transform:translateX(-50%);z-index:9000;width:min(420px,92vw);padding:12px 14px;border:1px solid #e9c77b;border-radius:16px;background:rgba(10,26,40,.96);color:#fff;font:13px system-ui;box-shadow:0 10px 34px #000a;display:flex;gap:10px;align-items:center';
   const txt=document.createElement('div');txt.style.flex='1';
-  txt.innerHTML='<b style="color:#ffe0a0">🚀 Mise à jour disponible</b><br><span style="color:#c9d9e3">Version '+String(m.version).replace(/[<>&]/g,'')+(Number(m.clientSizeBytes)>0?' · '+(Number(m.clientSizeBytes)/1048576).toFixed(2)+' Mo':'')+' — installe-la quand tu veux, ta partie est sauvegardée.</span>';
+  txt.innerHTML='<b style="color:#ffe0a0">🚀 Mise à jour disponible</b><br><span style="color:#c9d9e3">Version '+String(m.version).replace(/[<>&]/g,'')+' — installe-la quand tu veux, ta partie est sauvegardée.</span>';
   const go=document.createElement('button');go.textContent='Installer';go.style.cssText='border:0;border-radius:9px;padding:9px 12px;background:#e5b85e;color:#17232c;font-weight:900;cursor:pointer';
   const no=document.createElement('button');no.textContent='Plus tard';no.style.cssText='border:1px solid #ffffff40;border-radius:9px;padding:9px 10px;background:transparent;color:#fff;cursor:pointer';
   go.onclick=()=>{t.remove();window.__abjUpdateAccepted=m.version;try{if(typeof saveLifeProgress==='function')saveLifeProgress(false);}catch(e){}proceed();};
-  no.onclick=()=>{t.remove();try{sessionStorage.setItem(later,'1');localStorage.setItem(declined,'1');if(m.previous&&m.previous.clientUrl)localStorage.setItem('abj-pinned-client-url',m.previous.clientUrl);}catch(e){}};
+  no.onclick=()=>{t.remove();try{sessionStorage.setItem(later,'1');}catch(e){}};
   t.append(txt,go,no);document.body.appendChild(t);
   setTimeout(()=>{if(t.parentNode&&!window.__abjUpdateAccepted)t.style.opacity='.92';},100);
  };
@@ -10023,7 +9929,7 @@ function canonPhone(value){
 }
 
 function isOfficialCreatorPhone(phone){
-  return canonPhone(phone)===OFFICIAL_CREATOR_PHONE && creatorRoleVerified===true && creatorVerifiedPhone===OFFICIAL_CREATOR_PHONE;
+  return canonPhone(phone)===OFFICIAL_CREATOR_PHONE;
 }
 
 // Remplace la vérification créateur : uniquement le numéro officiel
@@ -10649,7 +10555,7 @@ function furnitureActions(item){
   const nap=()=>{playerSitting=true;lifeState.energy=Math.min(100,(lifeState.energy||0)+18);lifeState.hunger=Math.max(0,(lifeState.hunger||100)-3);showMessage('Petite sieste sur '+label+'…');setTimeout(()=>{playerSitting=false;showMessage('Tu te relèves.');},2500);};
   const sleep=()=>{if(typeof startSleep==='function'){startSleep();}else{playerSitting=true;lifeState.energy=100;showMessage('Tu dors un moment…');setTimeout(()=>{playerSitting=false;},3200);}};
   const move=()=>{
-    if(item.object){heldFurniture=item.object;heldFurniture.userData=heldFurniture.userData||{};heldFurniture.userData.label=label;showMessage('Tu portes '+label+'. F pour reposer · R pour tourner.');}
+    if(item.object)heldFurniture=item.object;heldFurniture.userData=heldFurniture.userData||{};heldFurniture.userData.label=label;showMessage('Tu portes '+label+'. F pour reposer · R pour tourner.');}
     else showMessage('Cet objet ne peut pas être déplacé.');
   };
   const look=()=>showMessage('Tu observes '+label+'.');
@@ -11380,7 +11286,6 @@ console.info('ABJ V1.38 — assistant général + IA PNJ active');
 })();
 </script>
 
-
 <script>
 /* ABJ V1.39 — commandes créateur, arrivée hélicoptère, mobilité et densité urbaine. */
 (function(){
@@ -11515,7 +11420,6 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
 })();
 </script>
 
-
 <script id="abj-v140-interface">
 (function(){
   // La page de chargement reste disponible mais n'est jamais affichée à l'accueil ou pendant l'exploration.
@@ -11593,38 +11497,47 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
 })();
 </script>
 
-<script>
-/* ABIDJAN LIFE V1.41.0 — autorité créateur vérifiée par le serveur. */
+<script id="abj-creator-launch-verification">
 (function(){
  'use strict';
- if(window.__ABJ_V141_AUTH)return;window.__ABJ_V141_AUTH=true;
- window.ABJ_BUILD_VERSION='1.41.0';
+ if(window.__ABJ_CREATOR_LAUNCH_GATE)return;window.__ABJ_CREATOR_LAUNCH_GATE=true;
  const OFFICIAL='+2250799259362';
  const canonical=v=>{try{return typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(v):null;}catch(e){return null;}};
- const api=()=>String(window.ABJ_ONLINE_SERVER||'').replace(/[/]$/,'');
- async function verifyCreatorRole(){
-  const phone=canonical(activeGameAccount),token=phone&&safeGet('abj-online-token:'+phone);
-  let verified=false;
-  if(phone===OFFICIAL&&token){
-   try{const response=await fetch(api()+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const data=await response.json().catch(()=>({}));verified=!!(response.ok&&data.ok&&data.creator===true&&Array.isArray(data.privileges)&&data.privileges.includes('creator_dashboard'));}catch(e){console.warn('Vérification du rôle créateur indisponible',e);}
-  }
-  creatorRoleVerified=verified;creatorVerifiedPhone=verified?OFFICIAL:null;
-  document.body.classList.toggle('abj-creator-account',verified);
-  const badge=document.getElementById('creatorTitleBadge');if(badge)badge.style.display=verified?'inline-flex':'none';
-  if(verified){if(typeof applyCreatorPrivileges==='function')applyCreatorPrivileges();}
-  else{if(creatorOrb)creatorOrb.visible=false;const orbBtn=document.getElementById('creatorOrbAssistant');if(orbBtn)orbBtn.style.display='none';}
-  return verified;
+ function askCode(){
+  return new Promise(resolve=>{
+   const old=document.getElementById('abjCreatorLaunchGate');if(old)old.remove();
+   const overlay=document.createElement('div');overlay.id='abjCreatorLaunchGate';
+   overlay.style.cssText='position:fixed;inset:0;z-index:100500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(4,13,20,.94);backdrop-filter:blur(12px);color:#172a31;font-family:Segoe UI,system-ui,sans-serif';
+   overlay.innerHTML='<section style="width:min(420px,100%);padding:26px;border-radius:24px;background:#fafaf6;box-shadow:0 24px 80px #0009;text-align:left"><div style="font-size:12px;font-weight:900;letter-spacing:2px;color:#a66a20">AF GAMER CI · SÉCURITÉ</div><h2 style="margin:10px 0 8px;color:#172a31">Vérification du créateur</h2><p style="color:#60747a;line-height:1.5;font-size:14px">Entre ton code secret pour autoriser l’ouverture du monde. Cette vérification protège ton compte créateur à chaque lancement.</p><label for="abjCreatorLaunchCode" style="display:block;margin:14px 0 6px;font-size:12px;font-weight:800">Code secret</label><input id="abjCreatorLaunchCode" type="password" autocomplete="off" inputmode="numeric" style="width:100%;padding:14px;border:1px solid #cbd9d5;border-radius:12px;background:#fff;color:#172a31;font-size:18px;letter-spacing:5px"><p id="abjCreatorLaunchStatus" role="status" style="min-height:20px;font-size:12px;color:#b33;margin:8px 0"></p><div style="display:flex;gap:8px;justify-content:flex-end"><button id="abjCreatorLaunchCancel" type="button" style="padding:12px 16px;border:1px solid #cbd9d5;border-radius:12px;background:#fff;color:#172a31;font-weight:800">Annuler</button><button id="abjCreatorLaunchConfirm" type="button" style="padding:12px 16px;border:0;border-radius:12px;background:#ed760d;color:#fff;font-weight:900">Vérifier et entrer</button></div></section>';
+   document.body.appendChild(overlay);
+   const input=overlay.querySelector('#abjCreatorLaunchCode'),status=overlay.querySelector('#abjCreatorLaunchStatus'),ok=overlay.querySelector('#abjCreatorLaunchConfirm');
+   const finish=v=>{overlay.remove();resolve(v);};
+   overlay.querySelector('#abjCreatorLaunchCancel').onclick=()=>finish(null);
+   ok.onclick=()=>{const value=String(input.value||'').trim();if(!value){status.textContent='Saisis ton code secret.';input.focus();return;}ok.disabled=true;ok.textContent='Vérification…';finish(value);};
+   input.addEventListener('keydown',e=>{if(e.key==='Enter')ok.click();});
+   setTimeout(()=>input.focus(),60);
+  });
  }
- window.isCreatorAccount=function(phone){return creatorRoleVerified===true&&canonical(phone==null?activeGameAccount:phone)===OFFICIAL&&canonical(activeGameAccount)===OFFICIAL;};
- isCreatorAccount=window.isCreatorAccount;
- const previousActivate=window.activateGameAccount;
- if(typeof previousActivate==='function'){
-  window.activateGameAccount=async function(phone){const result=await previousActivate.apply(this,arguments);await verifyCreatorRole();return result;};
+ const previous=window.activateGameAccount;
+ if(typeof previous==='function'&&!window.__ABJ_CREATOR_LAUNCH_WRAPPED){
+  window.__ABJ_CREATOR_LAUNCH_WRAPPED=true;
+  window.activateGameAccount=async function(phone){
+   const normalized=canonical(phone);
+   if(normalized===OFFICIAL){
+    const token=typeof safeGet==='function'?safeGet('abj-online-token:'+OFFICIAL):null;
+    if(!token){if(typeof showAccountStatus==='function')showAccountStatus('Reconnecte-toi pour vérifier ton compte créateur.',true);return;}
+    const code=await askCode();
+    if(!code){if(typeof showAccountStatus==='function')showAccountStatus('Vérification annulée. Le monde ne sera pas chargé.',true);return;}
+    const endpoint=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'')+'/api/creator/verify-launch';
+    try{
+     const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({creatorCode:code}),cache:'no-store'});
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok||data.verified!==true){if(typeof showAccountStatus==='function')showAccountStatus(data.error||'Vérification du créateur refusée.',true);return;}
+    }catch(error){if(typeof showAccountStatus==='function')showAccountStatus('Serveur de sécurité indisponible. Le monde reste verrouillé.',true);return;}
+   }
+   return previous.apply(this,arguments);
+  };
  }
- window.ABJ_VERIFY_CREATOR_ROLE=verifyCreatorRole;
- setTimeout(()=>{if(activeGameAccount)verifyCreatorRole();},1200);
- setInterval(()=>{if(activeGameAccount)verifyCreatorRole();},15000);
- console.info('Abidjan Life V1.41.0 — autorité créateur liée au rôle serveur.');
 })();
 </script>
 </body>
