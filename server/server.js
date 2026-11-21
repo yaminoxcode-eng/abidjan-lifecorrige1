@@ -847,6 +847,10 @@ const DAILY_MISSIONS=[
   {id:'daily_walk',title:'Découvrir la ville',description:'Parcours 500 mètres à pied dans Abidjan.',target:500,reward:15,unit:'m'},
   {id:'daily_play',title:'Prendre le temps de vivre',description:'Reste actif dans le monde pendant 10 minutes.',target:10,reward:10,unit:'min'}
 ];
+const GEM_SUBSCRIPTIONS=[
+  {id:'pass_citadin',name:'Pass Citadin',price:120,durationDays:7,multiplier:1.25,benefit:'25 % de gemmes supplémentaires sur les missions quotidiennes.'},
+  {id:'pass_premium',name:'Pass Premium',price:600,durationDays:30,multiplier:1.5,benefit:'50 % de gemmes supplémentaires sur les missions quotidiennes.'}
+];
 app.get('/api/missions/daily',auth,async(req,res)=>{
   const account=accounts.get(req.phone),state=ensureDailyMissionState(account);
   try{await persistAccount(account);}catch(e){return res.status(503).json({error:'Progression quotidienne non sauvegardée.'});}
@@ -856,6 +860,33 @@ app.get('/api/missions/daily',auth,async(req,res)=>{
     missions:DAILY_MISSIONS.map(m=>({...m,progress:Math.min(m.target,progress[m.id]||0),claimed:!!state.claimed[m.id],completed:(progress[m.id]||0)>=m.target}))
   });
 });
+
+app.get('/api/subscriptions/me',auth,(req,res)=>{
+  const account=accounts.get(req.phone),subscription=account.profile?.subscription||null;
+  const active=subscription&&Number(subscription.expiresAt)>Date.now()?subscription:null;
+  res.set('Cache-Control','no-store').json({gems:refreshCreatorGemBalance(account),subscription:active,plans:GEM_SUBSCRIPTIONS});
+});
+app.post('/api/subscriptions/purchase',auth,async(req,res)=>{
+  const account=accounts.get(req.phone),plan=GEM_SUBSCRIPTIONS.find(p=>p.id===clean(req.body?.planId,40));
+  if(!plan)return res.status(404).json({error:'Offre inconnue.'});
+  account.profile=account.profile||{};
+  const current=account.profile.subscription;
+  if(current&&Number(current.expiresAt)>Date.now()&&current.planId!==plan.id)
+    return res.status(409).json({error:'Ton abonnement actuel est encore actif. Attends son expiration avant de changer d’offre.'});
+  const balance=refreshCreatorGemBalance(account);
+  if(balance<plan.price)return res.status(400).json({error:'Gemmes insuffisantes pour cet abonnement.'});
+  const previous=JSON.parse(JSON.stringify(account.profile));
+  let remaining=plan.price;
+  const purchased=Math.min(remaining,Number(account.profile.purchasedGems)||0);
+  account.profile.purchasedGems=Math.max(0,(Number(account.profile.purchasedGems)||0)-purchased);remaining-=purchased;
+  if(remaining){for(const reward of account.profile.creatorRewards||[]){const take=Math.min(remaining,Math.max(0,Number(reward.gems)||0));reward.gems-=take;remaining-=take;if(!remaining)break;}}
+  if(remaining){const earned=Math.min(remaining,Number(account.profile.earnedGems)||0);account.profile.earnedGems=Math.max(0,(Number(account.profile.earnedGems)||0)-earned);remaining-=earned;}
+  if(remaining){account.profile=previous;return res.status(409).json({error:'Solde de gemmes indisponible.'});}
+  const now=Date.now(),start=current&&current.planId===plan.id&&Number(current.expiresAt)>now?Number(current.expiresAt):now;
+  account.profile.subscription={planId:plan.id,name:plan.name,startedAt:current&&current.planId===plan.id?Number(current.startedAt)||now:now,expiresAt:start+plan.durationDays*86400000,multiplier:plan.multiplier};
+  try{await persistAccount(account);}catch(error){account.profile=previous;return res.status(503).json({error:'Abonnement non enregistré. Aucun gemme n’a été conservée.'});}
+  res.json({ok:true,subscription:account.profile.subscription,gems:refreshCreatorGemBalance(account)});
+});
 app.post('/api/missions/claim',auth,async(req,res)=>{
   const account=accounts.get(req.phone),state=ensureDailyMissionState(account);
   const id=clean(req.body?.id,40),mission=DAILY_MISSIONS.find(m=>m.id===id);
@@ -864,10 +895,14 @@ app.post('/api/missions/claim',auth,async(req,res)=>{
   const progress={daily_login:state.login,daily_walk:state.walkMeters,daily_play:state.minutesPlayed};
   if((Number(progress[id])||0)<mission.target)return res.status(409).json({error:'Mission pas encore terminée.'});
   const old=JSON.parse(JSON.stringify(account.profile));
-  account.profile.earnedGems=(Number(account.profile.earnedGems)||0)+mission.reward;
+  const subscription=account.profile.subscription;
+  const active=subscription&&Number(subscription.expiresAt)>Date.now()?subscription:null;
+  const multiplier=active?Math.max(1,Math.min(2,Number(active.multiplier)||1)):1;
+  const reward=Math.floor(mission.reward*multiplier);
+  account.profile.earnedGems=(Number(account.profile.earnedGems)||0)+reward;
   state.claimed[id]=Date.now();
   try{await persistAccount(account);}catch(error){account.profile=old;return res.status(503).json({error:'Récompense non sauvegardée. Réessaie.'});}
-  res.json({ok:true,reward:mission.reward,gems:refreshCreatorGemBalance(account)});
+  res.json({ok:true,reward,baseReward:mission.reward,multiplier,gems:refreshCreatorGemBalance(account)});
 });
 
 
