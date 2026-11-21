@@ -4229,6 +4229,7 @@ function enterBuilding(door) {
   camera.position.set(player.position.x+1.2,player.position.y+18.5,player.position.z+1.2);
   camera.lookAt(player.position.x,player.position.y+0.25,player.position.z);camera.updateMatrixWorld();
   npcs.forEach(n=>n.visible=false); vehicles.forEach(v=>v.visible=false);
+  if(interior.npcs)interior.npcs.forEach(n=>n.visible=true);
   if(outdoorGround)outdoorGround.visible=false;if(laguneMesh)laguneMesh.visible=false;
   // Le monde extérieur est à plusieurs dizaines de kilomètres de la scène intérieure.
   scene.background=new THREE.Color(0x25313a);scene.fog=null;
@@ -4243,6 +4244,7 @@ function exitBuilding() {
   if(!currentInterior)return;
   currentApartment=null;
   playerSitting=false;playerShowering=false; if(player&&player.userData&&player.userData.bodyGroup)player.userData.bodyGroup.rotation.x=0;
+  if(currentInterior.npcs)currentInterior.npcs.forEach(n=>n.visible=false);
   currentInterior.group.visible=false;
   const door=lastExteriorPosition&&lastExteriorPosition.door;
   if(lastExteriorPosition){
@@ -8799,6 +8801,21 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
    const lampMat=new THREE.MeshStandardMaterial({color:0x9e4fc0,emissive:0x7b22a5,emissiveIntensity:1.4});
    for(const px of [-6,0,6]){const lamp=new THREE.Mesh(new THREE.SphereGeometry(.28,8,6),lampMat);lamp.position.set(px,3,-2);floor.add(lamp);}
   }
+  interior.barWorldPosition={x:interior.group.position.x-7,z:interior.group.position.z-7};
+  interior.npcs=[];
+  const visitors=[
+   {name:'Awa',gender:'femme',age:24,skin:0x80502f,hair:0x15100e,shirt:0xb94d78,pants:0x262a42,hairstyle:'tresses',outfit:'chic',x:-3,z:-1},
+   {name:'Mariam',gender:'femme',age:27,skin:0x633c29,hair:0x1a1410,shirt:0x357c76,pants:0x2c3041,hairstyle:'long',outfit:'chic',x:3,z:-2},
+   {name:'Koffi',gender:'homme',age:29,skin:0x75452c,hair:0x17120f,shirt:0x3b638e,pants:0x252c38,hairstyle:'degrade',outfit:'chic',x:-8,z:-5},
+   {name:'Yao',gender:'homme',age:31,skin:0x8b5a37,hair:0x17120f,shirt:0x9a633c,pants:0x263a38,hairstyle:'court',outfit:'urbain',x:7,z:-5}
+  ];
+  visitors.forEach(v=>{
+   const npc=createCharacter({gender:v.gender,skin:v.skin,hair:v.hair,shirt:v.shirt,pants:v.pants,hairstyle:v.hairstyle,outfit:v.outfit});
+   npc.position.set(interior.group.position.x+v.x,0,interior.group.position.z+v.z);
+   npc.userData.name=v.name;npc.userData.gender=v.gender;npc.userData.age=v.age;npc.userData.adult=true;
+   npc.userData.v121Relation=45;npc.userData.interiorId=id;npc.userData.isInteriorNpc=true;
+   npc.visible=false;scene.add(npc);interior.npcs.push(npc);
+  });
   doors.push({x:doorX,z:doorZ,id,rot:0,normal:new THREE.Vector3(best.nx,0,best.nz),home:true,buildingType:'nightclub',buildingName:'Le Talon',adultOnly:true});
   built=true;window.ABJ_LE_TALON={id,x,z,name:'Le Talon',ageLimit:18};console.info('Le Talon construit dans Abidjan Life.',window.ABJ_LE_TALON);return true;
  }
@@ -10686,7 +10703,7 @@ function furnitureActions(item){
 }
 function npcActions(npc){
   const name=(npc.userData&&npc.userData.name)||'Habitant';
-  return [
+  const actions=[
     {label:'💬 Parler',action:()=>{
       lifeState.social=Math.min(100,(lifeState.social||0)+12);
       if(typeof talkToNPC==='function')talkToNPC(npc);
@@ -10707,8 +10724,51 @@ function npcActions(npc){
       showMessage('Tu offres un petit cadeau à '+name+'.');
     }}
   ];
+  const atTalon=!!(currentInterior&&lastExteriorPosition&&lastExteriorPosition.door&&lastExteriorPosition.door.adultOnly&&window.__ABJ_ADULT_CONFIRMED);
+  if(atTalon&&npc.userData&&npc.userData.adult===true){
+    actions.push({label:'💗 Flirter',action:()=>{
+      npc.userData.v121Relation=Math.min(100,Number(npc.userData.v121Relation||35)+12);
+      showMessage(name+' sourit. Votre complicité augmente.');
+    }});
+    actions.push({label:'🌙 Proposer un moment privé',action:()=>{
+      const relation=Number(npc.userData.v121Relation||35);
+      if(relation<60){showMessage(name+' préfère apprendre à mieux te connaître avant de décider.');return;}
+      if(Math.random()>.45+Math.min(45,relation-60)/100){showMessage(name+' décline poliment. Respecte son choix.');return;}
+      const overlay=document.createElement('div');
+      overlay.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(4,8,16,.96);color:#fff;text-align:center;font:600 18px/1.5 system-ui';
+      overlay.innerHTML='<div style="max-width:420px"><div style="font-size:42px">🌙</div><h2>Un moment à deux</h2><p>Vous choisissez ensemble de passer un moment privé. La scène reste hors champ.</p><p style="font-size:12px;color:#bdc9d8">Rencontre fictive entre personnages adultes et consentants.</p></div>';
+      document.body.appendChild(overlay);
+      lifeState.social=Math.min(100,(lifeState.social||0)+12);
+      lifeState.energy=Math.max(0,(lifeState.energy||100)-10);
+      npc.userData.v121Relation=Math.min(100,relation+8);
+      if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+      setTimeout(()=>{overlay.remove();showMessage('Tu retrouves le calme du club.');},2600);
+    }});
+  }
+  return actions;
 }
 function worldObjectActions(target){
+  if(target.kind==='bar'){
+    const drinks=[
+      {name:'Bière locale',price:500,level:8},
+      {name:'Rhum arrangé',price:900,level:13},
+      {name:'Cocktail maison',price:1200,level:10},
+      {name:'Verre de vin',price:1500,level:9},
+      {name:'Whisky',price:2200,level:16},
+      {name:'Champagne',price:4500,level:12}
+    ];
+    return drinks.map(d=>({label:'🥃 '+d.name+' · '+d.price.toLocaleString('fr-FR')+' F CFA',action:()=>{
+      if(!window.__ABJ_ADULT_CONFIRMED){showMessage('Vérification d’âge nécessaire.');return;}
+      if((lifeState.money||0)<d.price){showMessage('Tu n’as pas assez d’argent pour cette commande.');return;}
+      lifeState.money-=d.price;
+      lifeState.intoxication=Math.min(100,(lifeState.intoxication||0)+d.level);
+      lifeState.social=Math.min(100,(lifeState.social||0)+3);
+      showMessage('Tu commandes '+d.name.toLowerCase()+'. Dépense : '+d.price.toLocaleString('fr-FR')+' F CFA. Alcoolémie fictive : '+Math.round(lifeState.intoxication)+'/100.');
+      if(lifeState.intoxication>=60)showMessage('Tu commences à ressentir les effets de l’alcool. Reste prudent dans le jeu.');
+      if(typeof saveLifeProgress==='function')saveLifeProgress(false);
+    }}));
+  }
+
   // target: {kind,label,ref}
   if(target.kind==='door'){
     return [
@@ -10747,6 +10807,14 @@ function findContextTarget(){
   if(!player)return null;
   // 1) intérieur : meuble
   if(currentInterior){
+    if(currentInterior.npcs){
+      let best=null,dist=3.8;
+      for(const npc of currentInterior.npcs){if(!npc||!npc.visible)continue;const d=Math.hypot(npc.position.x-player.position.x,npc.position.z-player.position.z);if(d<dist){dist=d;best=npc;}}
+      if(best)return {kind:'npc',label:best.userData.name||'Habitant',ref:best};
+    }
+    const door=lastExteriorPosition&&lastExteriorPosition.door;
+    if(door&&door.adultOnly&&currentInterior.barWorldPosition&&Math.hypot(currentInterior.barWorldPosition.x-player.position.x,currentInterior.barWorldPosition.z-player.position.z)<4.5)
+      return {kind:'bar',label:'Bar du Talon',ref:currentInterior};
     const furn=typeof findNearbyFurniture==='function'?findNearbyFurniture():null;
     if(furn)return {kind:'furniture',label:furn.label||furn.type,ref:furn};
     return null;
