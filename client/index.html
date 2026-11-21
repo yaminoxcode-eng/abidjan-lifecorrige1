@@ -1703,11 +1703,15 @@ function generateCity() {
     optional('dépôts de transport', createTransitDepots);
     optional('aéroport', createAbidjanAirport);
     optional('terrains et locations', createLandAndRentalParcels);
+    // Restaurer aussi les lieux emblématiques et les activités dans le mode hors ligne.
+    optional('monuments du Plateau et repères d’Abidjan', buildPlateauLandmarks);
+    optional('marchés de quartier', buildMarketStands);
+    optional('équipements sportifs communaux', buildSportsByCommune);
     if (!npcPopulationCreated) {
       optional('population de secours', () => createNPCs(mobilePerformanceMode ? 80 : 150));
       npcPopulationCreated = true;
     }
-    openWorld('Mode cartographique de secours : routes, trottoirs et bâtiments de quartier actifs. Les données détaillées seront réessayées plus tard.');
+    openWorld('Mode cartographique de secours : routes, trottoirs, bâtiments, monuments et marchés actifs. Les routes détaillées seront rechargées dès que la carte sera disponible.');
   });
 }
 // ============================================================
@@ -2224,7 +2228,7 @@ function isSignatureLandmarkTag(tag){
 }
 
 function buildOSMBuildings(ways,nodes) {
-  const palette=[0xd5c8ad,0xc5b79c,0xe0d6c2,0xb8b0a1,0xd2b18c,0xaaa99f,0xe5d8c3];
+  const palette=[0xe2bd8c,0xd9a77e,0xe8d6b4,0xc98f72,0xb8c6a0,0xd6b7a0,0xe7c77e,0xa9c1c2,0xc4a7c8,0xd9c2a4];
   const SECTOR_SIZE=650;
   const sectors=new Map();
   let count=0,facadeWindowCount=0;
@@ -9727,7 +9731,7 @@ const MARKET_ITEMS=[
   ['Poulet','Œufs'],['Maïs','Arachides'],['Sac','Casquette']
 ];
 function buildMarketStands(){
-  if(!scene||!osmLoaded||window.__ABJ_V134_MARKETS)return;
+  if(!scene||window.__ABJ_V134_MARKETS)return;
   window.__ABJ_V134_MARKETS=true;
   const centers=[];
   if(typeof COMMUNE_ZONES!=='undefined'){
