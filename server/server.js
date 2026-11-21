@@ -462,13 +462,13 @@ app.post('/api/auth/register-email-code', async (req,res) => {
   if (!rateLimit(req.ip+':register-email-code',5,60000)) return res.status(429).json({error:'Trop de demandes de code. Réessaie dans une minute.'});
   if (!mailTransport) return res.status(503).json({error:'La vérification e-mail attend la configuration SMTP sécurisée sur Render.'});
   const phone=phoneOf(req.body.phone),email=clean(req.body.email,120).toLowerCase();
-  if(!phone || !/^\\S+@\\S+\\.\\S{2,}$/.test(email)) return res.status(400).json({error:'Saisis un numéro ivoirien et une adresse e-mail valides.'});
+  if(!phone || !/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Saisis un numéro ivoirien et une adresse e-mail valides.'});
   if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
   const code=String(crypto.randomInt(0,1000000)).padStart(6,'0');
   const codeHash=crypto.createHash('sha256').update(phone+':'+email+':'+code+':'+JWT_SECRET).digest('hex');
   emailVerificationTickets.set(phone,{email,codeHash,expires:Date.now()+10*60*1000,attempts:0});
   try {
-    await mailTransport.sendMail({from:SMTP_FROM,to:email,subject:'Vérification de ton e-mail — Abidjan Life',text:'Ton code de vérification Abidjan Life est : '+code+'\\nIl expire dans 10 minutes. Si tu n’as pas demandé ce code, ignore ce message.'});
+    await mailTransport.sendMail({from:SMTP_FROM,to:email,subject:'Vérification de ton e-mail — Abidjan Life',text:'Ton code de vérification Abidjan Life est : '+code+'\nIl expire dans 10 minutes. Si tu n’as pas demandé ce code, ignore ce message.'});
   } catch(error) {
     emailVerificationTickets.delete(phone);
     console.error('Envoi code inscription impossible:',error.message);
@@ -481,11 +481,11 @@ app.post('/api/auth/register', async (req,res) => {
   if (!rateLimit(req.ip + ':register', 5, 60000)) return res.status(429).json({error:'Trop de créations de compte. Réessaie dans une minute.'});
   const phone=phoneOf(req.body.phone), password=String(req.body.password||'');
   const email=clean(req.body.email,120).toLowerCase();
-  const code=String(req.body.emailCode||'').replace(/\\D/g,'').slice(0,6);
+  const code=String(req.body.emailCode||'').replace(/\D/g,'').slice(0,6);
   const identity=normalizeIdentity({birthDate:req.body.birthDate,birthPlace:req.body.birthPlace});
   if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
   if(password.length<8||password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
-  if(!/^\\S+@\\S+\\.\\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
+  if(!/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
   if(!identity) return res.status(400).json({error:'Date de naissance ou commune de naissance invalide.'});
   if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
   const ticket=emailVerificationTickets.get(phone);
