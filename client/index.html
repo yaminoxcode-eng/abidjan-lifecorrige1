@@ -1018,7 +1018,7 @@ async function activateGameAccount(phone){
   const canonical=normalizeIvorianMobile(phone);
   if(!canonical){showAccountStatus('Numéro mobile ivoirien invalide.', true);return;}
   creatorVerifiedPhone=null;creatorRoleVerified=false;
-  try{const token=safeGet('abj-online-token:'+canonical),base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');if(token){const check=await fetch(base+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));const officialCreator=canonical==='+2250799259362';creatorRoleVerified=officialCreator||!!(check.ok&&result.creator===true&&canonical==='+2250799259362');if(creatorRoleVerified&&canonical==='+2250799259362')creatorVerifiedPhone=canonical;else{creatorRoleVerified=officialCreator;creatorVerifiedPhone=officialCreator?canonical:null;}}}catch(error){console.warn('Vérification des privilèges du compte impossible :',error);}
+  try{const token=safeGet('abj-online-token:'+canonical),base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');if(token){const check=await fetch(base+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));const officialCreator=canonical==='+2250799259362';creatorRoleVerified=!!(check.ok&&result.creator===true&&canonical==='+2250799259362');if(creatorRoleVerified)creatorVerifiedPhone=canonical;else{creatorRoleVerified=false;creatorVerifiedPhone=null;}}}catch(error){console.warn('Vérification des privilèges du compte impossible :',error);}
   const oldKeys=Object.keys(readGameAccounts()).filter(k=>normalizeIvorianMobile(k)===canonical);
   const saveKey='abidjan-life-life-v1:'+canonical;
   if(!safeGet(saveKey)){
@@ -2440,6 +2440,41 @@ function createAFGamerHQ(){
  const makePanel=(floor,label,color)=>{const p=new THREE.Mesh(new THREE.BoxGeometry(2.1,1.45,.16),new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.32}));p.position.set(0,1.8,-3.2);interior.floors[floor].add(p);interior.interactables.push({x:0,z:-2.05,type:label==='MONDE'?'creatorConsole':'creatorWardrobe',label,floor,object:p});};
  makePanel(3,'MONDE',0x10212d);
  makePanel(2,'APPARENCE',0x247b79);
+ // Aménagement du siège AF GAMER CI : accueil public, bureaux, direction et suite privée du créateur.
+ const hqBox=(floor,w,h,d,x,y,z,color,opts={})=>{
+  const mat=new THREE.MeshStandardMaterial({color,roughness:.68,metalness:opts.metalness||0});
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.position.set(x,y,z);
+  interior.floors[floor].add(mesh);if(opts.interactable)interior.interactables.push({x,z,type:opts.interactable,label:opts.label||'Mobilier',floor,object:mesh});
+  return mesh;
+ };
+ const hqDesk=(floor,x,z,label='Bureau')=>{
+  hqBox(floor,3.8,.18,1.7,x,.92,z,0x68452f);
+  hqBox(floor,.16,.85,.16,x-1.65,.42,z-.65,0x392a22);hqBox(floor,.16,.85,.16,x+1.65,.42,z-.65,0x392a22);
+  hqBox(floor,1.35,.95,.12,x,1.55,z-.72,0x173b50,{metalness:.2});
+  hqBox(floor,.9,.65,.12,x,1.55,z-.62,0x58b9d1);
+ };
+ // RDC : réception et salle d'attente.
+ hqBox(0,7,.22,1.8,0,.92,5.6,0x765039);
+ hqBox(0,2.8,1.05,.16,0,1.58,4.72,0x183b4b);
+ hqBox(0,4.5,.16,1.4,-7,.65,-3.5,0x8b6548);
+ hqBox(0,4.5,.16,1.4,7,.65,-3.5,0x8b6548);
+ for(let i=0;i<3;i++){hqBox(0,1.15,.62,1.05,-7+i*1.5,.4,-5.1,0x294b52);hqBox(0,1.15,.62,1.05,4+i*1.5,.4,-5.1,0x294b52);}
+ // Étage 1 : bureaux opérationnels et salle de réunion.
+ for(const p of [[-7,-5],[-1,-5],[5,-5],[-7,3],[-1,3],[5,3]])hqDesk(1,p[0],p[1],'Poste de travail');
+ hqBox(1,8,.18,3,0,.92,7,0x765039);
+ for(let i=0;i<4;i++){hqBox(1,.8,.7,.8,-3+i*2,.38,9.5,0x294b52);hqBox(1,.8,.7,.8,-3+i*2,.38,4.5,0x294b52);}
+ // Étage 2 : suite privée du créateur, bureau personnel et espace de repos.
+ hqDesk(2,-4,-5,'Bureau personnel');
+ hqBox(2,5,.45,2.8,5,.42,-5,0x304d58);
+ hqBox(2,5,.28,2.8,5,.82,-5,0xd5c4a8);
+ hqBox(2,2.3,.45,1.2,-7,.45,5,0x344c58);
+ hqBox(2,2.3,.18,1.2,-7,.78,5,0xb9c7c8);
+ hqBox(2,3,.2,1.1,5,.92,5,0x765039);
+ hqBox(2,2.1,1.8,.22,-9,1.15,-8,0x2a4656);
+ // Étage 3 : centre de contrôle, écrans et supervision du monde.
+ for(const p of [[-7,-5],[-2,-5],[3,-5]])hqDesk(3,p[0],p[1],'Console de supervision');
+ hqBox(3,9,.2,2,0,.92,6,0x263e4c);
+ hqBox(3,7,1.25,.16,0,2.1,4.9,0x123a4a,{metalness:.2});
  const doorGroup=new THREE.Group(),frame=new THREE.Mesh(new THREE.BoxGeometry(2.2,3,.3),gold),door=new THREE.Mesh(new THREE.BoxGeometry(1.55,2.55,.12),stone);
  door.position.y=1.28;doorGroup.add(frame,door);doorGroup.position.set(x,terrainHeight(x,z),z+11.7);scene.add(doorGroup);
  creatorHQDoor={x,z:z+11.7,id,rot:0,normal:new THREE.Vector3(0,0,1),group:doorGroup,home:true,creatorOnly:false,buildingType:'company',buildingName:'AF_GAMER · Siège social'};
@@ -4208,13 +4243,15 @@ function dropHeldFurniture(){if(!heldFurniture)return;const obj=heldFurniture,me
 function openElevatorMenu(){
   if(!currentInterior||currentInterior.numFloors<2||elevatorTravel)return;
   const wrap=document.getElementById('elevatorMenu'),list=document.getElementById('elevatorFloors');list.innerHTML='';
-  const allowedFloors=currentInterior.creatorHQ?[0,2,3]:Array.from({length:currentInterior.numFloors},(_,i)=>i);
+  const allowedFloors=currentInterior.creatorHQ?[0,1,2,3]:Array.from({length:currentInterior.numFloors},(_,i)=>i);
   for(const floor of allowedFloors){const b=document.createElement('button');b.type='button';b.className=floor===currentFloor?'current':'';b.textContent=floor===0?'RDC':'Étage '+floor;b.disabled=floor===currentFloor;b.addEventListener('click',()=>startElevatorTravel(floor));list.appendChild(b);}
   elevatorMenuOpen=true;wrap.style.display='flex';if(document.exitPointerLock)document.exitPointerLock();
 }
 function closeElevatorMenu(){elevatorMenuOpen=false;const el=document.getElementById('elevatorMenu');if(el)el.style.display='none';}
 function startElevatorTravel(target){
-  if(!currentInterior||target===currentFloor||elevatorTravel)return;closeElevatorMenu();
+  if(!currentInterior||target===currentFloor||elevatorTravel)return;
+  if(currentInterior.creatorHQ&&target>=2&&!isCreatorAccount(activeGameAccount)){showMessage('Cet étage est privé. Accès réservé au créateur officiel de AF GAMER CI.');return;}
+  closeElevatorMenu();
   elevatorTravel={from:currentFloor,to:target,elapsed:0,duration:Math.max(1.5,Math.abs(target-currentFloor)*.72)};
   document.getElementById('elevatorRide').style.display='flex';document.getElementById('elevatorDoors').classList.remove('open');
   document.getElementById('elevatorCounter').textContent=currentFloor===0?'RDC':'Étage '+currentFloor;
@@ -4235,6 +4272,8 @@ function interactWithFurniture(){
   const item=findNearbyFurniture();
   if(!item){showMessage('Approche-toi d’un meuble pour interagir.');return;}
   const gp=currentInterior.group.position;
+  if(item.type==='creatorConsole'){if(!isCreatorAccount(activeGameAccount)){showMessage('Console réservée au créateur de AF GAMER CI.');return;}openCreatorWorldMenu();return;}
+  if(item.type==='creatorWardrobe'){if(!isCreatorAccount(activeGameAccount)){showMessage('Espace personnel réservé au créateur.');return;}openCreatorAppearanceRoom();return;}
   if(item.type==='elevator'){showMessage('Appuie sur E pour choisir ton étage.');return;}
   if(item.type==='assoir'||item.type==='dormir'){
     playerShowering=false;playerSitting=true;player.userData.sleeping=(item.type==='dormir');
@@ -9950,7 +9989,7 @@ function canonPhone(value){
 }
 
 function isOfficialCreatorPhone(phone){
-  return canonPhone(phone)===OFFICIAL_CREATOR_PHONE;
+  return canonPhone(phone)===OFFICIAL_CREATOR_PHONE && creatorRoleVerified===true && creatorVerifiedPhone===OFFICIAL_CREATOR_PHONE;
 }
 
 // Remplace la vérification créateur : uniquement le numéro officiel
@@ -11520,5 +11559,39 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
 })();
 </script>
 
+<script>
+/* ABIDJAN LIFE V1.41.0 — autorité créateur vérifiée par le serveur. */
+(function(){
+ 'use strict';
+ if(window.__ABJ_V141_AUTH)return;window.__ABJ_V141_AUTH=true;
+ window.ABJ_BUILD_VERSION='1.41.0';
+ const OFFICIAL='+2250799259362';
+ const canonical=v=>{try{return typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(v):null;}catch(e){return null;}};
+ const api=()=>String(window.ABJ_ONLINE_SERVER||'').replace(/[/]$/,'');
+ async function verifyCreatorRole(){
+  const phone=canonical(activeGameAccount),token=phone&&safeGet('abj-online-token:'+phone);
+  let verified=false;
+  if(phone===OFFICIAL&&token){
+   try{const response=await fetch(api()+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const data=await response.json().catch(()=>({}));verified=!!(response.ok&&data.ok&&data.creator===true&&Array.isArray(data.privileges)&&data.privileges.includes('creator_dashboard'));}catch(e){console.warn('Vérification du rôle créateur indisponible',e);}
+  }
+  creatorRoleVerified=verified;creatorVerifiedPhone=verified?OFFICIAL:null;
+  document.body.classList.toggle('abj-creator-account',verified);
+  const badge=document.getElementById('creatorTitleBadge');if(badge)badge.style.display=verified?'inline-flex':'none';
+  if(verified){if(typeof applyCreatorPrivileges==='function')applyCreatorPrivileges();}
+  else{if(creatorOrb)creatorOrb.visible=false;const orbBtn=document.getElementById('creatorOrbAssistant');if(orbBtn)orbBtn.style.display='none';}
+  return verified;
+ }
+ window.isCreatorAccount=function(phone){return creatorRoleVerified===true&&canonical(phone==null?activeGameAccount:phone)===OFFICIAL&&canonical(activeGameAccount)===OFFICIAL;};
+ isCreatorAccount=window.isCreatorAccount;
+ const previousActivate=window.activateGameAccount;
+ if(typeof previousActivate==='function'){
+  window.activateGameAccount=async function(phone){const result=await previousActivate.apply(this,arguments);await verifyCreatorRole();return result;};
+ }
+ window.ABJ_VERIFY_CREATOR_ROLE=verifyCreatorRole;
+ setTimeout(()=>{if(activeGameAccount)verifyCreatorRole();},1200);
+ setInterval(()=>{if(activeGameAccount)verifyCreatorRole();},15000);
+ console.info('Abidjan Life V1.41.0 — autorité créateur liée au rôle serveur.');
+})();
+</script>
 </body>
 </html>
