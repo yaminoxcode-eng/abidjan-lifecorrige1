@@ -1706,7 +1706,6 @@ function generateCity() {
     // Restaurer aussi les lieux emblématiques et les activités dans le mode hors ligne.
     optional('monuments du Plateau et repères d’Abidjan', buildPlateauLandmarks);
     optional('marchés de quartier', buildMarketStands);
-    optional('équipements sportifs communaux', buildSportsByCommune);
     if (!npcPopulationCreated) {
       optional('population de secours', () => createNPCs(mobilePerformanceMode ? 80 : 150));
       npcPopulationCreated = true;
