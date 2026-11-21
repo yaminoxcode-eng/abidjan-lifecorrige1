@@ -11567,7 +11567,7 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
  window.ABJ_BUILD_VERSION='1.41.0';
  const OFFICIAL='+2250799259362';
  const canonical=v=>{try{return typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(v):null;}catch(e){return null;}};
- const api=()=>String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+ const api=()=>String(window.ABJ_ONLINE_SERVER||'').replace(/[/]$/,'');
  async function verifyCreatorRole(){
   const phone=canonical(activeGameAccount),token=phone&&safeGet('abj-online-token:'+phone);
   let verified=false;
