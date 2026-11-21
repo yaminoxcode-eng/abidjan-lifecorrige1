@@ -1932,7 +1932,7 @@ async function abjWriteOSMCache(data){
 
 async function loadAbidjanOSM() {
   const b = ABIDJAN_BBOX;
-  const query = `[out:json][timeout:90];(way[highway](${b.south},${b.west},${b.north},${b.east});way[building](${b.south},${b.west},${b.north},${b.east});way[natural=water](${b.south},${b.west},${b.north},${b.east});way[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});way[natural=beach](${b.south},${b.west},${b.north},${b.east});way[leisure=park](${b.south},${b.west},${b.north},${b.east});relation[natural=water](${b.south},${b.west},${b.north},${b.east});relation[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});node[shop](${b.south},${b.west},${b.north},${b.east});node[amenity](${b.south},${b.west},${b.north},${b.east});node[office](${b.south},${b.west},${b.north},${b.east});node[tourism](${b.south},${b.west},${b.north},${b.east});node[public_transport](${b.south},${b.west},${b.north},${b.east});node[highway=bus_stop](${b.south},${b.west},${b.north},${b.east});relation[route=bus](${b.south},${b.west},${b.north},${b.east}););out body;>;out skel qt;`;
+  const query = `[out:json][timeout:90];(way[highway](${b.south},${b.west},${b.north},${b.east});way[building](${b.south},${b.west},${b.north},${b.east});way[amenity~"^(hospital|clinic|marketplace|bus_station|school|university|police|fire_station|train_station)$"](${b.south},${b.west},${b.north},${b.east});way[shop~"^(supermarket|convenience|marketplace)$"](${b.south},${b.west},${b.north},${b.east});way[natural=water](${b.south},${b.west},${b.north},${b.east});way[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});way[natural=beach](${b.south},${b.west},${b.north},${b.east});way[leisure=park](${b.south},${b.west},${b.north},${b.east});relation[natural=water](${b.south},${b.west},${b.north},${b.east});relation[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});node[shop](${b.south},${b.west},${b.north},${b.east});node[amenity](${b.south},${b.west},${b.north},${b.east});node[office](${b.south},${b.west},${b.north},${b.east});node[tourism](${b.south},${b.west},${b.north},${b.east});node[public_transport](${b.south},${b.west},${b.north},${b.east});node[highway=bus_stop](${b.south},${b.west},${b.north},${b.east});relation[route=bus](${b.south},${b.west},${b.north},${b.east}););out body;>;out skel qt;`;
   let data = null;
   let loadedFromCache = false;
   // Une copie locale récente évite de retélécharger toute la carte des 13 communes à chaque connexion.
@@ -1963,7 +1963,7 @@ async function loadAbidjanOSM() {
   const nodes = new Map(); data.elements.filter(e => e.type === 'node').forEach(n => nodes.set(n.id, geoToWorld(n.lat,n.lon)));
   const ways = data.elements.filter(e => e.type === 'way');
   const roadWays = ways.filter(w => w.tags && w.tags.highway);
-  const buildingWays = ways.filter(w => w.tags && w.tags.building);
+  const buildingWays = ways.filter(w => w.tags && (w.tags.building || w.tags.amenity || w.tags.shop));
   const waterWays = ways.filter(w => w.tags && (w.tags.natural === 'water' || w.tags.waterway === 'riverbank' || w.tags.natural === 'beach' || w.tags.leisure === 'park'));
   const waysById=new Map(ways.map(w=>[w.id,w]));
   for(const rel of data.elements.filter(e=>e.type==='relation'&&e.tags&&(e.tags.natural==='water'||e.tags.waterway==='riverbank'))){
@@ -2308,7 +2308,13 @@ function buildOSMBuildings(ways,nodes) {
     addObstacle(cx,cz,ww,dd,h);
     allBuildings.push({x:cx,z:cz,w:ww,d:dd,h,type:'osm-building',name:tag.name||tag['name:fr']||''});
     if(tag.shop||['retail','commercial','supermarket','kiosk','office','public'].includes(tag.building)||['restaurant','cafe','bank','fast_food','school','university','college','hospital','clinic','doctors','pharmacy','police','fire_station','townhall','community_centre','library','post_office'].includes(tag.amenity)){
-      addPOI(cx,cz,'commerce',tag.name||tag.shop||tag.amenity||'Commerce',tag);
+      const amenity=String(tag.amenity||'').toLowerCase(),shop=String(tag.shop||'').toLowerCase();
+      const poiType=/hospital|clinic|doctors|pharmacy/.test(amenity)?'sante':
+        /marketplace/.test(amenity+' '+shop)?'marche':
+        /bus_station|train_station|ferry_terminal/.test(amenity)?'transport':
+        /school|university|college/.test(amenity)?'ecole':
+        /police|fire_station/.test(amenity)?'service':'commerce';
+      addPOI(cx,cz,poiType,tag.name||tag.shop||tag.amenity||'Commerce',tag);
       addOSMStorefront(pts,tag);
       createOSMStoreEntrance(pts,tag,h,col);
     }
