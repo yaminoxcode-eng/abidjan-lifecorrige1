@@ -3767,6 +3767,7 @@ function createVehicles(count) {
 }
 
 function createVehicleMesh(type) {
+  if(window.ABJ3DModels&&type==='bus')return window.ABJ3DModels.createSotraBus(THREE);
   if(window.ABJ3DModels&&type==='gbaka')return window.ABJ3DModels.createGbaka(THREE);
   if(window.ABJ3DModels&&type==='taxi')return window.ABJ3DModels.createTaxi(THREE);
   const g = new THREE.Group();
