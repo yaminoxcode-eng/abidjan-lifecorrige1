@@ -270,7 +270,8 @@ app.get('/api/updates/latest', (_req, res) =>
     releaseNotes: updateManifest.releaseNotes,
     clientSizeBytes: CLIENT_SIZE_BYTES,
     publishedAt: updateManifest.publishedAt,
-    rollbackAvailable: !!updateManifest.previous
+    rollbackAvailable: !!updateManifest.previous,
+    previous: updateManifest.previous ? { version: updateManifest.previous.version, clientUrl: updateManifest.previous.clientUrl } : null
   })
 );
 
