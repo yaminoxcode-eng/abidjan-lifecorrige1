@@ -11338,5 +11338,8 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
   button.addEventListener('click',()=>openPhoneApp('identite'));page.appendChild(button);
 })();
 </script>
+<script id="abj-birth-date-max">
+(function(){const max=new Date().toISOString().slice(0,10);['accountBirthDate','accountRecoverBirthDate'].forEach(id=>{const input=document.getElementById(id);if(input)input.max=max;});})();
+</script>
 </body>
 </html>
