@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const crypto = require('crypto');
+const { multiplayerZone, multiplayerZoneRooms } = require('./spatial-zones');
 
 const PORT = Number(process.env.PORT || 10000);
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('hex');
@@ -63,18 +64,6 @@ const accounts = new Map();
 const activePlayers = new Map();
 let sharedWorldState = null;
 let worldStateOwner = null;
-const MULTIPLAYER_ZONE_SIZE = Math.max(100, Math.min(5000, Number(process.env.MULTIPLAYER_ZONE_SIZE) || 750));
-function multiplayerZone(position = {}) {
-  const x = Number.isFinite(Number(position.x)) ? Number(position.x) : 0;
-  const z = Number.isFinite(Number(position.z)) ? Number(position.z) : 0;
-  return `${Math.floor(x / MULTIPLAYER_ZONE_SIZE)}:${Math.floor(z / MULTIPLAYER_ZONE_SIZE)}`;
-}
-function multiplayerZoneRooms(zone) {
-  const [x, z] = String(zone || '0:0').split(':').map(Number);
-  const rooms = [];
-  for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) rooms.push(`${x + dx}:${z + dz}`);
-  return rooms;
-}
 function publicPlayer(p){return {id:p.id,profile:p.profile,position:p.position,needs:p.needs,vehicle:p.vehicle||null};}
 function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.size});}
 
