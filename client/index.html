@@ -2472,6 +2472,22 @@ function addOSMStorefront(pts,tags){
   awning.position.set(cx+nx*.62,2.75,cz+nz*.62);awning.rotation.y=Math.atan2(nx,nz);scene.add(awning);
   const glass=new THREE.Mesh(new THREE.BoxGeometry(Math.min(4.8,len*.68),1.65,.08),new THREE.MeshLambertMaterial({color:0x83b7c2,transparent:true,opacity:.78}));
   glass.position.set(cx+nx*.16,1.45,cz+nz*.16);glass.rotation.y=Math.atan2(nx,nz);scene.add(glass);
+  // A readable shop sign is attached to the mapped OSM storefront, not to a new guessed building.
+  const signCanvas=document.createElement('canvas');signCanvas.width=640;signCanvas.height=128;
+  const signCtx=signCanvas.getContext('2d');signCtx.fillStyle='#173c35';signCtx.fillRect(0,0,640,128);
+  signCtx.strokeStyle='#d7ad62';signCtx.lineWidth=7;signCtx.strokeRect(5,5,630,118);
+  signCtx.fillStyle='#fff1d0';signCtx.font='bold 38px Arial';signCtx.textAlign='center';
+  signCtx.fillText(String(tags.name||tags.shop||tags.amenity||'COMMERCE').slice(0,26).toUpperCase(),320,80);
+  const shopSign=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(5.2,len*.78),.82),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(signCanvas),side:THREE.DoubleSide}));
+  shopSign.position.set(cx+nx*.22,2.72,cz+nz*.22);shopSign.rotation.y=Math.atan2(nx,nz);scene.add(shopSign);
+  // Only mapped marketplace polygons receive a stall; existing roads and POI coordinates remain untouched.
+  if(String(tags.amenity||'').toLowerCase()==='marketplace'||String(tags.shop||'').toLowerCase()==='marketplace'){
+    if(window.ABJ3DModels&&window.ABJ3DModels.createMarketStall){
+      const stall=window.ABJ3DModels.createMarketStall(THREE);
+      stall.position.set(cx+nx*4.1,terrainHeight(cx+nx*4.1,cz+nz*4.1),cz+nz*4.1);
+      stall.rotation.y=Math.atan2(nx,nz);scene.add(stall);
+    }
+  }
 }
 
 
