@@ -1065,6 +1065,7 @@ async function accountContinue(){
 async function activateGameAccount(phone){
   const canonical=normalizeIvorianMobile(phone);
   if(!canonical){showAccountStatus('Numéro mobile ivoirien invalide.', true);return;}
+  window.__ABJ_ADULT_CONFIRMED=false;
   creatorVerifiedPhone=null;creatorRoleVerified=false;
   try{const token=safeGet('abj-online-token:'+canonical),base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');if(token){const check=await fetch(base+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));const officialCreator=canonical==='+2250799259362';creatorRoleVerified=officialCreator||!!(check.ok&&result.creator===true&&canonical==='+2250799259362');if(creatorRoleVerified&&canonical==='+2250799259362')creatorVerifiedPhone=canonical;else{creatorRoleVerified=officialCreator;creatorVerifiedPhone=officialCreator?canonical:null;}}}catch(error){console.warn('Vérification des privilèges du compte impossible :',error);}
   const oldKeys=Object.keys(readGameAccounts()).filter(k=>normalizeIvorianMobile(k)===canonical);
@@ -1301,9 +1302,24 @@ function renderIdentityPreview(){
 }
 function updateCreatorPreview(){renderIdentityPreview();syncCreatorOptionLabels();}
 
+async function syncCharacterIdentity(name){
+  try{
+    const phone=normalizeIvorianMobile(activeGameAccount),token=phone&&safeGet('abj-online-token:'+phone);
+    if(!token)return;
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+    const headers={Authorization:'Bearer '+token,'Content-Type':'application/json'};
+    const current=await fetch(api+'/api/account/identity',{headers,cache:'no-store'});
+    const data=await current.json().catch(()=>({}));
+    if(!current.ok||!data.identity)return;
+    const saved=await fetch(api+'/api/account/identity',{method:'POST',headers,body:JSON.stringify({name,birthDate:data.identity.birthDate,birthPlace:data.identity.birthPlace})});
+    if(!saved.ok){const error=await saved.json().catch(()=>({}));console.warn('Identité du personnage non synchronisée :',error.error||saved.status);}
+  }catch(error){console.warn('Synchronisation identité indisponible :',error);}
+}
+
 function launchGameFromCreator(){
   const value=id=>document.getElementById(id).value;
   lifeState.playerProfile={name:isCreatorAccount(activeGameAccount)?'Aski':value('creatorName').trim().slice(0,24)||'Mon personnage',gender:value('creatorGender'),skin:parseInt(value('creatorSkin')),hair:parseInt(value('creatorHair')),shirt:parseInt(value('creatorShirt')),pants:parseInt(value('creatorPants')),bodyType:value('creatorBodyType'),hairstyle:value('creatorHairstyle'),outfit:value('creatorOutfit')};
+  syncCharacterIdentity(lifeState.playerProfile.name);
   if(creatorEditMode&&player&&scene){
     const pos=player.position.clone(),rot=player.rotation.y,old=player;
     player=createCharacter(lifeState.playerProfile);player.position.copy(pos);player.rotation.y=rot;player.userData.displayName='Créateur';scene.add(player);scene.remove(old);
@@ -4185,9 +4201,22 @@ function startPlayerAtHome(){
   saveLifeProgress(false);
 }
 
+async function requestAdultVenueAccess(door){
+  const phone=normalizeIvorianMobile(activeGameAccount),token=phone&&safeGet('abj-online-token:'+phone);
+  if(!token){showMessage('Connecte-toi pour vérifier ton âge.');openAccountGate();return;}
+  try{
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+    const response=await fetch(api+'/api/account/adult-access',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}',cache:'no-store'});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||data.adult!==true){showMessage(data.error||'Accès réservé aux personnes majeures.');return;}
+    window.__ABJ_ADULT_CONFIRMED=true;
+    enterBuilding(door);
+  }catch(error){showMessage('Vérification d’âge indisponible. Réessaie lorsque le serveur sera accessible.');console.warn('Vérification âge établissement:',error);}
+}
+
 function enterBuilding(door) {
   if(!door || !door.home || currentInterior || !player || (door.creatorOnly&&!isCreatorAccount(activeGameAccount))) return;
-  if(door.adultOnly&&door.buildingType==='nightclub'&&!window.__ABJ_ADULT_CONFIRMED){const ok=window.confirm('LE TALON — établissement fictif réservé aux personnes de 18 ans et plus. Les interactions sont sociales et non explicites. Aucun échange d’argent réel ni transaction sexuelle n’est proposé. Confirmer que tu as 18 ans ou plus ?');if(!ok)return;window.__ABJ_ADULT_CONFIRMED=true;}
+  if(door.adultOnly&&door.buildingType==='nightclub'&&!window.__ABJ_ADULT_CONFIRMED){requestAdultVenueAccess(door);return;}
   const interior=interiors[door.id]; if(!interior) return;
   lastExteriorPosition={x:door.x+door.normal.x*3.6,z:door.z+door.normal.z*3.6,y:terrainHeight(door.x+door.normal.x*3.6,door.z+door.normal.z*3.6)+0.02,rotation:Math.atan2(door.normal.x,door.normal.z),door};
   currentInterior=interior;currentApartment=null;interior.group.visible=true;interior.currentFloor=0;currentFloor=0;restoreHomeDecor(interior);
@@ -5579,10 +5608,33 @@ function renderCreatorOffersApp(){
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
 }
 
+async function renderIdentityCardApp(){
+  const apps=document.getElementById('phoneApps'),content=document.getElementById('phoneAppContent'),shell=document.getElementById('phoneHomeShell');
+  if(!content)return;
+  if(apps)apps.style.display='none';if(shell)shell.style.display='none';content.style.display='block';
+  content.innerHTML='<button id="abjIdentityBack">← Applications</button><h3>🪪 Ma carte d’identité</h3><p>Chargement de ton identité privée…</p>';
+  const back=()=>{content.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();};
+  const firstBack=document.getElementById('abjIdentityBack');if(firstBack)firstBack.onclick=back;
+  const phone=normalizeIvorianMobile(activeGameAccount),token=phone&&safeGet('abj-online-token:'+phone);
+  if(!token){content.insertAdjacentHTML('beforeend','<p>Connecte-toi pour consulter ta carte.</p>');return;}
+  try{
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+    const response=await fetch(api+'/api/account/identity',{headers:{Authorization:'Bearer '+token},cache:'no-store'});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||'Identité indisponible.');
+    if(!data.identity){content.innerHTML='<button id="abjIdentityBack">← Applications</button><h3>🪪 Ma carte d’identité</h3><p>Ton identité de personnage n’est pas encore complète. Reconnecte-toi et termine l’inscription avec ta date et ta commune de naissance.</p>';document.getElementById('abjIdentityBack').onclick=back;return;}
+    const safe=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const residence=typeof getDistrictNames==='function'?getDistrictNames().commune:'Abidjan';
+    content.innerHTML='<button id="abjIdentityBack">← Applications</button><h3>🪪 Ma carte d’identité</h3><article style="padding:16px;margin:10px 0;border-radius:18px;background:linear-gradient(145deg,#f7eed9,#e8d8b5);color:#183a39;border:1px solid #d8b66d"><small>ABIDJAN LIFE · DOCUMENT DE PERSONNAGE</small><h2 style="margin:8px 0;color:#183a39">'+safe(data.name)+'</h2><p><b>Identifiant :</b> '+safe(data.characterId||'En cours')+'</p><p><b>Date de naissance :</b> '+safe(data.identity.birthDate)+'</p><p><b>Lieu de naissance :</b> '+safe(data.identity.birthPlace)+'</p><p><b>Commune actuelle :</b> '+safe(residence)+'</p><p><b>Statut :</b> '+(data.adult?'Majeur (18+)':'Accès adulte non autorisé')+'</p></article><p style="font-size:11px;color:#9bb0b7">Tes informations de naissance sont privées et ne sont pas partagées avec les autres joueurs. Cette carte est fictive et n’est pas une pièce d’identité officielle.</p>';
+    document.getElementById('abjIdentityBack').onclick=back;
+  }catch(error){content.innerHTML='<button id="abjIdentityBack">← Applications</button><h3>🪪 Ma carte d’identité</h3><p style="color:#b44">'+String(error.message||'Erreur de chargement.')+'</p>';document.getElementById('abjIdentityBack').onclick=back;}
+}
+
 function openPhoneApp(app){
   const apps=document.getElementById('phoneApps'),content=document.getElementById('phoneAppContent');
   const shell=document.getElementById('phoneHomeShell');
   if(!apps||!content)return;
+  if(app==='identite'){renderIdentityCardApp();return;}
   if(app==='localisation'){closePhone();openBigMap();return;}
   if(shell)shell.style.display='none';
   if(app==='cheats'){renderCheatApp();return;}
@@ -11654,6 +11706,16 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
  }
  const original=window.openPhoneApp;
  if(typeof original==='function'&&!window.__ABJ_SUBS_PHONE_WRAPPED){window.__ABJ_SUBS_PHONE_WRAPPED=true;window.openPhoneApp=function(app){if(app==='offrescreateur'){render();return;}return original.apply(this,arguments);};}
+})();
+</script>
+<script id="abj-identity-phone-app">
+(function(){
+  const host=document.getElementById('phoneApps');if(!host||host.querySelector('[data-app="identite"]'))return;
+  let page=host.querySelector('.phoneAppsPage:last-child');
+  if(!page){page=document.createElement('div');page.className='phoneAppsPage';host.appendChild(page);}
+  if(page.querySelectorAll('.phoneApp').length>=9){page=document.createElement('div');page.className='phoneAppsPage';host.appendChild(page);}
+  const button=document.createElement('button');button.type='button';button.className='phoneApp';button.dataset.app='identite';button.innerHTML='<span>🪪</span><b>Carte d’identité</b>';
+  button.addEventListener('click',()=>openPhoneApp('identite'));page.appendChild(button);
 })();
 </script>
 </body>
