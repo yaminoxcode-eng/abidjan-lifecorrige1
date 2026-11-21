@@ -862,6 +862,30 @@ function openRecoverFlow(){
   showAccountStatus('Un code sera envoyé à ton adresse si elle correspond au compte.',false);
   setAccountFieldVisibility();
 }
+function requestCreatorSecret(){
+  return new Promise(resolve=>{
+    const old=document.getElementById('abjCreatorAuthCodeDialog');if(old)old.remove();
+    const overlay=document.createElement('div');overlay.id='abjCreatorAuthCodeDialog';
+    overlay.style.cssText='position:fixed;inset:0;z-index:100600;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(4,13,20,.94);backdrop-filter:blur(10px);';
+    overlay.innerHTML='<section style="width:min(420px,100%);padding:24px;border-radius:20px;background:#fff;color:#172a31;box-shadow:0 20px 70px #0009"><h2 style="margin:0 0 8px">Vérification du compte créateur</h2><p style="font-size:14px;line-height:1.5;color:#52656b">Saisis ton code secret dans le champ ci-dessous pour continuer la connexion.</p><label for="abjCreatorAuthCode" style="display:block;font-weight:800;font-size:12px;margin:12px 0 6px">Code secret</label><input id="abjCreatorAuthCode" type="password" autocomplete="off" inputmode="numeric" style="box-sizing:border-box;width:100%;padding:14px;border:1px solid #b8c9c4;border-radius:10px;background:#fff;color:#172a31;font-size:18px;letter-spacing:4px"><p id="abjCreatorAuthCodeError" role="status" style="min-height:18px;color:#b33;font-size:12px"></p><div style="display:flex;gap:8px;justify-content:flex-end"><button id="abjCreatorAuthCodeCancel" type="button" style="padding:11px 14px;border:1px solid #b8c9c4;border-radius:10px;background:#fff;color:#172a31">Annuler</button><button id="abjCreatorAuthCodeSubmit" type="button" style="padding:11px 14px;border:0;border-radius:10px;background:#ed760d;color:#fff;font-weight:900">Continuer</button></div></section>';
+    document.body.appendChild(overlay);
+    const input=overlay.querySelector('#abjCreatorAuthCode'),error=overlay.querySelector('#abjCreatorAuthCodeError');
+    const finish=value=>{overlay.remove();resolve(value);};
+    overlay.querySelector('#abjCreatorAuthCodeCancel').onclick=()=>finish(null);
+    overlay.querySelector('#abjCreatorAuthCodeSubmit').onclick=()=>{const value=String(input.value||'').trim();if(!value){error.textContent='Saisis ton code secret pour continuer.';input.focus();return;}finish(value);};
+    input.addEventListener('keydown',e=>{if(e.key==='Enter')overlay.querySelector('#abjCreatorAuthCodeSubmit').click();});
+    setTimeout(()=>input.focus(),80);
+  });
+}
+async function fetchWithCreatorCode(url,options){
+  let response=await fetch(url,options);
+  if(response.status!==428)return response;
+  const code=await requestCreatorSecret();
+  if(!code)return response;
+  let body={};try{body=JSON.parse(options&&options.body||'{}');}catch(e){}
+  body.creatorCode=code;
+  return fetch(url,{...options,body:JSON.stringify(body)});
+}
 function showAccountStatus(msg, isError){
   const status=document.getElementById('accountStatus');
   if(!status)return;
@@ -883,7 +907,7 @@ async function accountContinue(){
     if(!pass){showAccountStatus('Entre ton mot de passe.', true);return;}
     const localAccount=findGameAccount(accounts,phone);
     const api=window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
-    let response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});
+    let response=await fetchWithCreatorCode(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});
     let data=await response.json().catch(()=>({}));
     if(!response.ok && response.status===401 && localAccount){
       const legacyHash=await passwordDigest(pass);
@@ -892,7 +916,7 @@ async function accountContinue(){
       }
       let save=null;
       try{const raw=safeGet('abidjan-life-life-v1:'+phone);save=raw?JSON.parse(raw):null;}catch(e){}
-      response=await fetch(api+'/api/auth/migrate-local',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,legacyPasswordHash:legacyHash,email:localAccount.email,security:{...localAccount.security,birthDay:localAccount.security?.birthDay||1,birthMonth:localAccount.security?.birthMonth||1},save})});
+      response=await fetchWithCreatorCode(api+'/api/auth/migrate-local',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,legacyPasswordHash:legacyHash,email:localAccount.email,security:{...localAccount.security,birthDay:localAccount.security?.birthDay||1,birthMonth:localAccount.security?.birthMonth||1},save})});
       data=await response.json().catch(()=>({}));
     }
     if(!response.ok){showAccountStatus(data.error||'Connexion au serveur impossible. Vérifie le numéro et le mot de passe.',true);return;}
@@ -936,11 +960,11 @@ async function accountContinue(){
     const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
     let response,data;
     try{
-      response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
+      response=await fetchWithCreatorCode(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
       data=await response.json().catch(()=>({}));
     }catch(registrationError){
       console.warn('Réponse de création de compte interrompue, vérification de la session…',registrationError);
-      try{response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});data=await response.json().catch(()=>({}));}
+      try{response=await fetchWithCreatorCode(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});data=await response.json().catch(()=>({}));}
       catch(verificationError){console.error('Connexion après création interrompue:',verificationError);showAccountStatus('Connexion interrompue. Réessaie de te connecter avec les mêmes identifiants.',true);return;}
     }
     if(!response.ok){showAccountStatus(data.error||'Création du compte impossible sur le serveur.',true);return;}
