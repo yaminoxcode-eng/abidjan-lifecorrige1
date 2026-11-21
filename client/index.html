@@ -884,6 +884,12 @@ async function accountContinue(){
     const api=window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
     let response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});
     let data=await response.json().catch(()=>({}));
+    if(response.status===428&&data.codeRequired){
+      const creatorCode=window.prompt('Quel est ton code secret ?');
+      if(!creatorCode){showAccountStatus('Vérification du compte créateur annulée.',true);return;}
+      response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,creatorCode:String(creatorCode).trim()})});
+      data=await response.json().catch(()=>({}));
+    }
     if(!response.ok && response.status===401 && localAccount){
       const legacyHash=await passwordDigest(pass);
       if(!/^[a-f0-9]{64}$/i.test(legacyHash)){
@@ -913,7 +919,6 @@ async function accountContinue(){
   if(accountFlow==='registerInfo'){
     const em=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
     if(!em||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){showAccountStatus('Informations incorrectes : l’adresse e-mail est fausse ou vide. Vérifie-la puis réessaie.',true);return;}
-    if(findGameAccount(accounts,phone)){showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».',true);return;}
     if(Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone&&String(a&&a.email||'').trim().toLowerCase()===em)){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.',true);return;}
     accountFlow='register';
     document.getElementById('accountTitle').textContent='Choisis ton mot de passe';
@@ -924,7 +929,6 @@ async function accountContinue(){
   }
 
   if(accountFlow==='register'){
-    if(findGameAccount(accounts,phone)){showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».',true);return;}
     if(pass.length<8){showAccountStatus('Choisis un mot de passe d’au moins 8 caractères.',true);return;}
     const email=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
     if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){showAccountStatus('Informations incorrectes : adresse e-mail fausse ou vide.',true);return;}
@@ -937,6 +941,12 @@ async function accountContinue(){
     try{
       response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
       data=await response.json().catch(()=>({}));
+      if(response.status===428&&data.codeRequired){
+        const creatorCode=window.prompt('Quel est ton code secret ?');
+        if(!creatorCode){showAccountStatus('Vérification du compte créateur annulée.',true);return;}
+        response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email,creatorCode:String(creatorCode).trim()})});
+        data=await response.json().catch(()=>({}));
+      }
     }catch(registrationError){
       console.warn('Réponse de création de compte interrompue, vérification de la session…',registrationError);
       try{response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});data=await response.json().catch(()=>({}));}
