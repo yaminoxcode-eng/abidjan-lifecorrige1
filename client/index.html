@@ -11627,5 +11627,39 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
  let tries=0;const timer=setInterval(()=>{tries++;addTile();if(tries>300)clearInterval(timer);},1000);
 })();
 </script>
+<script id="abj-gem-subscriptions">
+(function(){
+ 'use strict';
+ if(window.__ABJ_GEM_SUBSCRIPTIONS)return;window.__ABJ_GEM_SUBSCRIPTIONS=true;
+ const $=id=>document.getElementById(id);
+ const api=()=>String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+ const token=()=>{try{return activeGameAccount&&safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount));}catch(e){return null;}};
+ async function render(){
+  const apps=$('phoneApps'),content=$('phoneAppContent'),shell=$('phoneHomeShell');
+  if(typeof openPhone==='function')openPhone();
+  if(apps)apps.style.display='none';if(shell)shell.style.display='none';if(!content)return;content.style.display='block';
+  content.innerHTML='<button id="abjSubsBack">← Applications</button><h3>✨ Abonnements en gemmes</h3><p>Les abonnements se règlent uniquement avec les gemmes du jeu.</p><p>Chargement des offres…</p>';
+  $('abjSubsBack').onclick=()=>{content.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();};
+  const t=token();if(!t){content.insertAdjacentHTML('beforeend','<p>Connecte-toi pour consulter ton solde et souscrire.</p>');return;}
+  try{
+   const r=await fetch(api()+'/api/subscriptions/me',{headers:{Authorization:'Bearer '+t},cache:'no-store'}),d=await r.json();if(!r.ok)throw new Error(d.error||'Offres indisponibles.');
+   const active=d.subscription,activeHtml=active?'<section style="padding:13px;border-radius:14px;background:#e7f7ef;color:#172a31;margin:10px 0"><b>Abonnement actif : '+active.name+'</b><p style="margin:5px 0;font-size:12px">Expire le '+new Date(active.expiresAt).toLocaleString('fr-FR')+'</p></section>':'<p style="font-size:12px;color:#60747a">Aucun abonnement actif.</p>';
+   const cards=(d.plans||[]).map(p=>{
+    const blocked=!!(active&&active.planId!==p.id&&Number(active.expiresAt)>Date.now());
+    return '<article style="padding:14px;margin:10px 0;border:1px solid #cbd9d5;border-radius:16px;background:#fff;color:#172a31"><b style="font-size:16px">'+p.name+'</b><div style="font-size:22px;font-weight:900;color:#188454;margin:6px 0">'+p.price+' 💎</div><p style="font-size:12px;color:#60747a">'+p.durationDays+' jours · '+p.benefit+'</p><button data-buy="'+p.id+'" '+(blocked?'disabled':'')+' style="width:100%;padding:11px;border:0;border-radius:10px;background:'+(blocked?'#e8efed':'#ed760d')+';color:'+(blocked?'#60747a':'#fff')+';font-weight:900">'+(blocked?'Offre disponible après expiration':'Souscrire avec mes gemmes')+'</button></article>';
+   }).join('');
+   content.innerHTML='<button id="abjSubsBack">← Applications</button><h3>✨ Abonnements en gemmes</h3><section style="padding:13px;border-radius:14px;background:#e7f7ef;color:#172a31"><b>Solde : '+Number(d.gems||0).toLocaleString('fr-FR')+' gemmes</b><div style="font-size:11px;color:#60747a;margin-top:4px">Les gemmes gagnées dans les missions peuvent aussi servir aux abonnements.</div></section>'+activeHtml+cards+'<p style="padding:11px;border-radius:12px;background:#fff2df;color:#79502a;font-size:12px">L’achat de gemmes avec de l’argent réel reste désactivé : aucun prestataire de paiement n’est connecté, donc aucun paiement ne sera simulé ou débité.</p>';
+   $('abjSubsBack').onclick=()=>{content.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();};
+   content.querySelectorAll('[data-buy]').forEach(btn=>btn.onclick=async()=>{
+    btn.disabled=true;btn.textContent='Souscription…';
+    try{const pr=await fetch(api()+'/api/subscriptions/purchase',{method:'POST',headers:{Authorization:'Bearer '+t,'Content-Type':'application/json'},body:JSON.stringify({planId:btn.dataset.buy})}),pd=await pr.json();if(!pr.ok)throw new Error(pd.error||'Souscription impossible.');if(typeof showMessage==='function')showMessage('Abonnement activé : '+pd.subscription.name);await render();}
+    catch(e){btn.disabled=false;btn.textContent='Réessayer';if(typeof showMessage==='function')showMessage(e.message||'Erreur de souscription.');}
+   });
+  }catch(e){content.innerHTML='<button id="abjSubsBack">← Applications</button><h3>✨ Abonnements</h3><p style="color:#b33">'+String(e.message||'Service indisponible.')+'</p>';const b=$('abjSubsBack');if(b)b.onclick=()=>{content.style.display='none';if(typeof showPhoneHome==='function')showPhoneHome();};}
+ }
+ const original=window.openPhoneApp;
+ if(typeof original==='function'&&!window.__ABJ_SUBS_PHONE_WRAPPED){window.__ABJ_SUBS_PHONE_WRAPPED=true;window.openPhoneApp=function(app){if(app==='offrescreateur'){render();return;}return original.apply(this,arguments);};}
+})();
+</script>
 </body>
 </html>
