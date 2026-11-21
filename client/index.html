@@ -521,6 +521,7 @@ button,input,select{font:inherit}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+<script src="./assets3d/abidjan-model-factory.js"></script>
 <script>
 
 window.addEventListener('DOMContentLoaded',()=>{const intro=document.getElementById('afGamerIntro');if(intro){setTimeout(()=>{intro.style.opacity='0';intro.style.visibility='hidden';setTimeout(()=>intro.remove(),900);},2800);}});
@@ -3967,12 +3968,13 @@ function createCharacter(opts) {
   }
   const armL=makeArm(-1),armR=makeArm(1),legL=makeLeg(-1),legR=makeLeg(1);
   g.userData={armL,armR,legL,legR,phase:0,headGroup,torso,hips,anatomyVersion:4,bodyType,hairstyle,outfit};
+  if(opts.abj3dDetails&&window.ABJ3DModels)window.ABJ3DModels.decorateCharacter(THREE,g,opts.abj3dDetails===true?{}:opts.abj3dDetails);
   return g;
 }
 function applyPlayerClothing(){if(!player||!lifeState.playerProfile)return;const shirt=lifeState.playerProfile.shirt||0xe74c3c,pants=lifeState.playerProfile.pants||0x2c3e50;player.traverse(o=>{if(!o.isMesh||!o.userData.clothingPart)return;o.material.color.setHex(o.userData.clothingPart==='shirt'?shirt:pants);});}
 function createPlayer() {
   const profile=lifeState.playerProfile||{};
-  player = createCharacter({ shirt: profile.shirt||0xe74c3c, pants: profile.pants||0x2c3e50, skin: profile.skin||0x7a4a24, hair:profile.hair||0x17120f, gender:profile.gender||'homme',bodyType:profile.bodyType,hairstyle:profile.hairstyle,outfit:profile.outfit });
+  player = createCharacter({ shirt: profile.shirt||0xe74c3c, pants: profile.pants||0x2c3e50, skin: profile.skin||0x7a4a24, hair:profile.hair||0x17120f, gender:profile.gender||'homme',bodyType:profile.bodyType,hairstyle:profile.hairstyle,outfit:profile.outfit,abj3dDetails:true });
   player.userData.displayName=profile.name||'Mon personnage';
   let sx=-80, sz=-40;
   try{ const c=geoToWorld(5.323,-4.02); sx=c.x+40; sz=c.z+60; }catch(e){}
@@ -3999,7 +4001,7 @@ function createNPCs(count) {
     const bodies=['standard','fin','athletique','fort'];
     const outfits=['urbain','chic','sport'];
     const gender=Math.random()>.48?'femme':'homme';
-    const npc = createCharacter({ gender, skin:skins[Math.floor(Math.random()*skins.length)], hair:hairs[Math.floor(Math.random()*hairs.length)], shirt: shirts[Math.floor(Math.random() * shirts.length)], pants: pants[Math.floor(Math.random() * pants.length)], bodyType:bodies[Math.floor(Math.random()*bodies.length)], hairstyle:styles[Math.floor(Math.random()*styles.length)], outfit:outfits[Math.floor(Math.random()*outfits.length)] });
+    const npc = createCharacter({ gender, skin:skins[Math.floor(Math.random()*skins.length)], hair:hairs[Math.floor(Math.random()*hairs.length)], shirt: shirts[Math.floor(Math.random() * shirts.length)], pants: pants[Math.floor(Math.random() * pants.length)], bodyType:bodies[Math.floor(Math.random()*bodies.length)], hairstyle:styles[Math.floor(Math.random()*styles.length)], outfit:outfits[Math.floor(Math.random()*outfits.length)],abj3dDetails:Math.random()<0.2 });
     npc.traverse(o=>{if(o.isMesh)o.castShadow=false;});
     const s = 0.88 + Math.random() * 0.25;
     npc.scale.set(s, s, s);
