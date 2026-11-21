@@ -30,6 +30,8 @@
     tire.position.set(x, y, z);
     tire.castShadow = true;
     parent.add(tire);
+    parent.userData.wheels = parent.userData.wheels || [];
+    parent.userData.wheels.push(tire);
     var hub = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.43, radius * 0.43, 0.19, 12), hubMaterial);
     hub.rotation.z = Math.PI / 2;
     hub.position.set(x, y, z);
@@ -90,6 +92,7 @@
   function createTaxi(THREE, options) {
     options = options || {};
     var group = new THREE.Group();
+    group.userData.wheels = [];
     group.name = 'Abidjan_Taxi';
     var yellow = mat(THREE, options.color || 0xf2c230);
     var glass = new THREE.MeshStandardMaterial({ color: 0x8db4c4, roughness: 0.24, metalness: 0.08, transparent: true, opacity: 0.78 });
@@ -115,7 +118,6 @@
     box(THREE, group, [1.72, 0.13, 0.12], [0, 0.49, 1.79], dark, 'front-bumper');
     box(THREE, group, [0.48, 0.13, 0.22], [0, 1.68, -0.1], mat(THREE, 0xf5e7bd), 'taxi-roof-sign');
     group.userData.vehicleType = 'taxi';
-    group.userData.wheels = [];
     group.traverse(function (node) { if (node.name === 'taxi-body') node.userData.mainBody = true; });
     return group;
   }
@@ -123,6 +125,7 @@
   function createGbaka(THREE, options) {
     options = options || {};
     var group = new THREE.Group();
+    group.userData.wheels = [];
     group.name = 'Abidjan_Gbaka';
     var body = mat(THREE, options.color || 0xf1eee4);
     var accent = mat(THREE, options.accentColor || 0x168447);
