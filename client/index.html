@@ -1306,7 +1306,7 @@ async function syncCharacterIdentity(name){
   try{
     const phone=normalizeIvorianMobile(activeGameAccount),token=phone&&safeGet('abj-online-token:'+phone);
     if(!token)return;
-    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
     const headers={Authorization:'Bearer '+token,'Content-Type':'application/json'};
     const current=await fetch(api+'/api/account/identity',{headers,cache:'no-store'});
     const data=await current.json().catch(()=>({}));
@@ -4205,7 +4205,7 @@ async function requestAdultVenueAccess(door){
   const phone=normalizeIvorianMobile(activeGameAccount),token=phone&&safeGet('abj-online-token:'+phone);
   if(!token){showMessage('Connecte-toi pour vérifier ton âge.');openAccountGate();return;}
   try{
-    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
     const response=await fetch(api+'/api/account/adult-access',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}',cache:'no-store'});
     const data=await response.json().catch(()=>({}));
     if(!response.ok||data.adult!==true){showMessage(data.error||'Accès réservé aux personnes majeures.');return;}
@@ -5618,7 +5618,7 @@ async function renderIdentityCardApp(){
   const phone=normalizeIvorianMobile(activeGameAccount),token=phone&&safeGet('abj-online-token:'+phone);
   if(!token){content.insertAdjacentHTML('beforeend','<p>Connecte-toi pour consulter ta carte.</p>');return;}
   try{
-    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+    const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
     const response=await fetch(api+'/api/account/identity',{headers:{Authorization:'Bearer '+token},cache:'no-store'});
     const data=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(data.error||'Identité indisponible.');
