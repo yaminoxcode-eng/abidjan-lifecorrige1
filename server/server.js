@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const crypto = require('crypto');
 const { multiplayerZone, multiplayerZoneRooms } = require('./spatial-zones');
+const { COMMUNES, normalizeIdentity, calculateAge } = require('./account-identity');
 
 const PORT = Number(process.env.PORT || 10000);
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('hex');
@@ -69,6 +70,7 @@ function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.siz
 
 const recoveryTickets = new Map();
 const emailRecoveryTickets = new Map();
+const emailVerificationTickets = new Map();
 const attempts = new Map();
 const worldTelemetry = { npcTotal: 0, npcActive: 0, vehicles: {}, updatedAt: 0 };
 const creatorReports = [];
@@ -456,21 +458,49 @@ app.post('/api/admin/updates/publish', requireUpdateAdmin, (req, res) => {
   });
 });
 
+app.post('/api/auth/register-email-code', async (req,res) => {
+  if (!rateLimit(req.ip+':register-email-code',5,60000)) return res.status(429).json({error:'Trop de demandes de code. Réessaie dans une minute.'});
+  if (!mailTransport) return res.status(503).json({error:'La vérification e-mail attend la configuration SMTP sécurisée sur Render.'});
+  const phone=phoneOf(req.body.phone),email=clean(req.body.email,120).toLowerCase();
+  if(!phone || !/^\\S+@\\S+\\.\\S{2,}$/.test(email)) return res.status(400).json({error:'Saisis un numéro ivoirien et une adresse e-mail valides.'});
+  if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
+  const code=String(crypto.randomInt(0,1000000)).padStart(6,'0');
+  const codeHash=crypto.createHash('sha256').update(phone+':'+email+':'+code+':'+JWT_SECRET).digest('hex');
+  emailVerificationTickets.set(phone,{email,codeHash,expires:Date.now()+10*60*1000,attempts:0});
+  try {
+    await mailTransport.sendMail({from:SMTP_FROM,to:email,subject:'Vérification de ton e-mail — Abidjan Life',text:'Ton code de vérification Abidjan Life est : '+code+'\\nIl expire dans 10 minutes. Si tu n’as pas demandé ce code, ignore ce message.'});
+  } catch(error) {
+    emailVerificationTickets.delete(phone);
+    console.error('Envoi code inscription impossible:',error.message);
+    return res.status(503).json({error:'Le code n’a pas pu être envoyé. Réessaie plus tard.'});
+  }
+  res.set('Cache-Control','no-store').json({ok:true,message:'Code envoyé si la demande est valide.'});
+});
+
 app.post('/api/auth/register', async (req,res) => {
   if (!rateLimit(req.ip + ':register', 5, 60000)) return res.status(429).json({error:'Trop de créations de compte. Réessaie dans une minute.'});
   const phone=phoneOf(req.body.phone), password=String(req.body.password||'');
   const email=clean(req.body.email,120).toLowerCase();
+  const code=String(req.body.emailCode||'').replace(/\\D/g,'').slice(0,6);
+  const identity=normalizeIdentity({birthDate:req.body.birthDate,birthPlace:req.body.birthPlace});
   if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
   if(password.length<8||password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
-  if(email && !/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
+  if(!/^\\S+@\\S+\\.\\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
+  if(!identity) return res.status(400).json({error:'Date de naissance ou commune de naissance invalide.'});
   if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
-  if(email && [...accounts.values()].some(a=>a.email===email)) return res.status(409).json({error:'Cette adresse e-mail est déjà utilisée.'});
-  const account={phone,email:email||null,passwordHash:await bcrypt.hash(password,12),security:{},
-    profile:{name:safePlayerName(phone,'Mon personnage'),gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50},
+  const ticket=emailVerificationTickets.get(phone);
+  if(!ticket || ticket.email!==email || ticket.expires<Date.now()) return res.status(400).json({error:'Demande un nouveau code de vérification e-mail.'});
+  if(++ticket.attempts>5){emailVerificationTickets.delete(phone);return res.status(429).json({error:'Trop de codes incorrects. Demande un nouveau code.'});}
+  const actual=crypto.createHash('sha256').update(phone+':'+email+':'+code+':'+JWT_SECRET).digest('hex');
+  if(!code || !crypto.timingSafeEqual(Buffer.from(ticket.codeHash),Buffer.from(actual))) return res.status(400).json({error:'Code e-mail incorrect.'});
+  const account={phone,email,passwordHash:await bcrypt.hash(password,12),
+    security:{identity,emailVerifiedAt:Date.now()},
+    profile:{name:safePlayerName(phone,clean(req.body.name,24)||'Mon personnage'),gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50},
     position:{x:0,z:0,yaw:0},needs:null,save:null,createdAt:Date.now()};
   try { await persistAccount(account); }
-  catch(error){ console.error('Échec enregistrement nouveau compte:',error.message); return res.status(503).json({error:'Impossible de sauvegarder le compte. Réessaie.'}); }
+  catch(error){console.error('Échec enregistrement nouveau compte:',error.message);return res.status(503).json({error:'Impossible de sauvegarder le compte. Réessaie.'});}
   accounts.set(phone,account);
+  emailVerificationTickets.delete(phone);
   res.set('Cache-Control','no-store').status(201).json({token:issueToken(phone),player:{id:phone,profile:account.profile,position:account.position,save:null}});
 });
 
@@ -514,11 +544,6 @@ app.post('/api/auth/migrate-local', async (req, res) => {
     return res.status(400).json({error:'Adresse e-mail invalide.'});
   }
 
-  if (email && [...accounts.values()].some(a => a.email === email)) {
-    return res.status(409).json({
-      error: 'Cette adresse e-mail est déjà utilisée.'
-    });
-  }
 
   const save = req.body.save && typeof req.body.save === 'object'
     ? req.body.save
@@ -619,6 +644,12 @@ app.post('/api/auth/reset-email', async (req,res) => {
   if (password.length<8 || password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
   const account=accounts.get(phone);
   if (!account || account.email!==email) return res.status(400).json({error:'Compte introuvable ou adresse non reconnue.'});
+  const storedIdentity=account.security&&account.security.identity;
+  if(storedIdentity){
+    const suppliedIdentity=normalizeIdentity({birthDate:req.body.birthDate,birthPlace:req.body.birthPlace});
+    if(!suppliedIdentity || suppliedIdentity.birthDate!==storedIdentity.birthDate || suppliedIdentity.birthPlace!==storedIdentity.birthPlace)
+      return res.status(401).json({error:'Les informations de naissance ne correspondent pas au compte.'});
+  }
   const previousHash=account.passwordHash;
   account.passwordHash=await bcrypt.hash(password,12);
   try {await persistAccount(account);}
@@ -626,6 +657,44 @@ app.post('/api/auth/reset-email', async (req,res) => {
   emailRecoveryTickets.delete(phone);
   res.set('Cache-Control','no-store').json({ok:true});
 });
+// Identité privée du personnage : ces données ne sont jamais incluses dans publicPlayer().
+app.get('/api/account/identity', auth, (req,res) => {
+  const account=accounts.get(req.phone);
+  const identity=account.security&&account.security.identity||null;
+  const age=identity?calculateAge(identity.birthDate):null;
+  res.set('Cache-Control','no-store').json({
+    ok:true,
+    identity,
+    name:clean(account.profile&&account.profile.name,24)||'Citoyen',
+    characterId:identity&&identity.characterId||null,
+    age,
+    adult:age!==null&&age>=18
+  });
+});
+app.post('/api/account/identity', auth, async (req,res) => {
+  const account=accounts.get(req.phone);
+  const identity=normalizeIdentity({birthDate:req.body.birthDate,birthPlace:req.body.birthPlace});
+  const name=clean(req.body.name,24);
+  if(!identity) return res.status(400).json({error:'Date ou commune de naissance invalide.'});
+  if(name.length<2) return res.status(400).json({error:'Le nom du personnage doit contenir au moins 2 caractères.'});
+  const previousSecurity=account.security||{};
+  const previousProfile=account.profile||{};
+  const nextIdentity={...identity,characterId:previousSecurity.identity&&previousSecurity.identity.characterId||('ABJ-'+crypto.randomBytes(4).toString('hex').toUpperCase())};
+  account.security={...previousSecurity,identity:nextIdentity};
+  account.profile={...previousProfile,name:safePlayerName(req.phone,name)};
+  try { await persistAccount(account); }
+  catch(error) { account.security=previousSecurity;account.profile=previousProfile;return res.status(503).json({error:'Identité non enregistrée. Réessaie.'}); }
+  res.set('Cache-Control','no-store').json({ok:true,name:account.profile.name,identity:nextIdentity,age:calculateAge(identity.birthDate),adult:calculateAge(identity.birthDate)>=18});
+});
+app.post('/api/account/adult-access', auth, (req,res) => {
+  const account=accounts.get(req.phone);
+  const identity=account.security&&account.security.identity;
+  const age=identity?calculateAge(identity.birthDate):null;
+  if(age===null) return res.status(403).json({ok:false,adult:false,error:'Complète ton identité dans ton compte avant d’accéder à cet établissement.'});
+  if(age<18) return res.status(403).json({ok:false,adult:false,error:'Cet établissement est réservé aux personnages majeurs de 18 ans et plus.'});
+  res.set('Cache-Control','no-store').json({ok:true,adult:true,age});
+});
+
 // Suppression définitive du compte connecté et de toutes ses données de jeu.
 app.delete('/api/account/me', auth, async (req, res) => {
   const phone = req.phone;
