@@ -1139,7 +1139,7 @@ io.on('connection', (socket) => {
     ) {
       const previousPosition=state.position||{x:pos.x,z:pos.z};
       const travelled=Math.hypot(pos.x-(Number(previousPosition.x)||0),pos.z-(Number(previousPosition.z)||0));
-      if(travelled>0.03&&travelled<10){
+      if(!payload.vehicle&&travelled>0.03&&travelled<10){
         const missionState=ensureDailyMissionState(account);
         missionState.walkMeters=Math.min(100000,missionState.walkMeters+travelled);
       }
