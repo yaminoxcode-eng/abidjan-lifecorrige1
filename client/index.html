@@ -2289,6 +2289,38 @@ function isSignatureLandmarkTag(tag){
 function buildOSMBuildings(ways,nodes) {
   const palette=[0xe2bd8c,0xd9a77e,0xe8d6b4,0xc98f72,0xb8c6a0,0xd6b7a0,0xe7c77e,0xa9c1c2,0xc4a7c8,0xd9c2a4];
   const SECTOR_SIZE=650;
+  // Index spatial des rues : permet de dégager les empreintes OSM qui empiètent réellement sur une chaussée.
+  // Les bâtiments restent tous présents ; seule leur empreinte est légèrement reculée si nécessaire.
+  const ROAD_CELL=120,roadBuckets=new Map();
+  const roadCellKey=(x,z)=>Math.floor(x/ROAD_CELL)+':'+Math.floor(z/ROAD_CELL);
+  for(const road of osmRoadSegments){
+    const x0=Math.floor((Math.min(road.a.x,road.b.x)-8)/ROAD_CELL),x1=Math.floor((Math.max(road.a.x,road.b.x)+8)/ROAD_CELL);
+    const z0=Math.floor((Math.min(road.a.z,road.b.z)-8)/ROAD_CELL),z1=Math.floor((Math.max(road.a.z,road.b.z)+8)/ROAD_CELL);
+    for(let gx=x0;gx<=x1;gx++)for(let gz=z0;gz<=z1;gz++){const key=gx+':'+gz;if(!roadBuckets.has(key))roadBuckets.set(key,[]);roadBuckets.get(key).push(road);}
+  }
+  function clearBuildingFootprint(footprint){
+    let pts=footprint.map(p=>({x:p.x,z:p.z}));
+    for(let pass=0;pass<2;pass++){
+      const cx=pts.reduce((s,p)=>s+p.x,0)/pts.length,cz=pts.reduce((s,p)=>s+p.z,0)/pts.length;
+      const minX=Math.min(...pts.map(p=>p.x))-12,maxX=Math.max(...pts.map(p=>p.x))+12,minZ=Math.min(...pts.map(p=>p.z))-12,maxZ=Math.max(...pts.map(p=>p.z))+12;
+      const seen=new Set();let best=null;
+      for(let gx=Math.floor(minX/ROAD_CELL);gx<=Math.floor(maxX/ROAD_CELL);gx++)for(let gz=Math.floor(minZ/ROAD_CELL);gz<=Math.floor(maxZ/ROAD_CELL);gz++)for(const road of (roadBuckets.get(gx+':'+gz)||[])){
+        if(seen.has(road))continue;seen.add(road);
+        if(!['motorway','trunk','primary','secondary','tertiary','residential','living_street','unclassified','service'].includes(road.type))continue;
+        const dx=road.b.x-road.a.x,dz=road.b.z-road.a.z,l2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((cx-road.a.x)*dx+(cz-road.a.z)*dz)/l2));
+        const qx=road.a.x+t*dx,qz=road.a.z+t*dz,centerDist=Math.hypot(cx-qx,cz-qz);
+        let edgeDist=Infinity;for(const p of pts)edgeDist=Math.min(edgeDist,Math.hypot(p.x-(road.a.x+Math.max(0,Math.min(1,((p.x-road.a.x)*dx+(p.z-road.a.z)*dz)/l2))*dx),p.z-(road.a.z+Math.max(0,Math.min(1,((p.x-road.a.x)*dx+(p.z-road.a.z)*dz)/l2))*dz));
+        const clearance=(road.width||4)/2+2.1,penetration=clearance-Math.min(centerDist,edgeDist);
+        if(penetration>.35&&(!best||penetration>best.penetration))best={road,qx,qz,dx,dz,l2,centerDist,penetration};
+      }
+      if(!best)break;
+      let vx=cx-best.qx,vz=cz-best.qz,dist=Math.hypot(vx,vz);
+      if(dist<.08){const len=Math.sqrt(best.l2)||1,side=(best.dx*(cz-best.road.a.z)-best.dz*(cx-best.road.a.x))>=0?1:-1;vx=(-best.dz/len)*side;vz=(best.dx/len)*side;dist=1;}
+      const move=Math.min(14,best.penetration+.65),sx=vx/dist*move,sz=vz/dist*move;
+      pts=pts.map(p=>({x:p.x+sx,z:p.z+sz}));
+    }
+    return pts;
+  }
   const sectors=new Map();
   let count=0,facadeWindowCount=0;
   const MAX_FACADE_WINDOWS=mobilePerformanceMode?9000:24000;
@@ -2303,7 +2335,7 @@ function buildOSMBuildings(ways,nodes) {
   }
   ways.forEach(w=>{
     if(count>=(mobilePerformanceMode?2300:6000) || w.nodes.length<4)return;
-    const pts=w.nodes.map(id=>nodes.get(id)).filter(Boolean);
+    let pts=w.nodes.map(id=>nodes.get(id)).filter(Boolean);
     if(pts.length<4)return;
     const area=Math.abs(pts.reduce((v,p,i)=>{const q=pts[(i+1)%pts.length];return v+p.x*q.z-q.x*p.z;},0))/2;
     if(area<18||area>12000)return;
@@ -2311,6 +2343,7 @@ function buildOSMBuildings(ways,nodes) {
     if(isSignatureLandmarkTag(tag))return;
     if(['school','university','college'].includes(tag.building)||['school','university','college'].includes(tag.amenity))
       addPOI(pts.reduce((v,p)=>v+p.x,0)/pts.length,pts.reduce((v,p)=>v+p.z,0)/pts.length,tag.amenity==='university'||tag.building==='university'?'universite':'ecole',tag.name||tag['name:fr']||'Établissement scolaire',tag);
+    pts=clearBuildingFootprint(pts);
     const xs=pts.map(p=>p.x),zs=pts.map(p=>p.z);
     const cx=(Math.min(...xs)+Math.max(...xs))/2,cz=(Math.min(...zs)+Math.max(...zs))/2;
     const ww=Math.max(1,Math.max(...xs)-Math.min(...xs)),dd=Math.max(1,Math.max(...zs)-Math.min(...zs));
