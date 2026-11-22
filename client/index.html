@@ -9598,9 +9598,14 @@ function advanceGameDay(){
 }
 function formatGameDate(){
   const c=ensureCalendar();
-  const totalDays=(c.year-2026)*365+Math.floor((c.month-1)*30.4)+c.day;
-  const wd=ABJ_WEEKDAYS[((totalDays-1)%7+7)%7];
-  return wd+' '+c.day+' '+ABJ_MONTHS[c.month-1]+' '+c.year+' · S'+c.week;
+  const date=new Date(Date.UTC(c.year,c.month-1,c.day));
+  const weekday=(date.getUTCDay()+6)%7;
+  const wd=ABJ_WEEKDAYS[weekday];
+  const thursday=new Date(date);thursday.setUTCDate(date.getUTCDate()+3-weekday);
+  const jan4=new Date(Date.UTC(thursday.getUTCFullYear(),0,4));
+  const week=Math.ceil((((thursday-jan4)/86400000)+1)/7);
+  c.week=week;
+  return wd+' '+c.day+' '+ABJ_MONTHS[c.month-1]+' '+c.year+' · S'+week;
 }
 function applyOfflineTimeProgress(){
   try{
