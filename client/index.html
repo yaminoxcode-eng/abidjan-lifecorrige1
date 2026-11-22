@@ -524,12 +524,38 @@ button,input,select{font:inherit}
 <script src="./assets3d/abidjan-model-factory.js"></script>
 <script>
 
-window.addEventListener('DOMContentLoaded',()=>{const intro=document.getElementById('afGamerIntro');if(intro){setTimeout(()=>{intro.style.opacity='0';intro.style.visibility='hidden';setTimeout(()=>intro.remove(),900);},2800);}});
+window.addEventListener('DOMContentLoaded',()=>{
+  const intro=document.getElementById('afGamerIntro');
+  const revealHomeIfIdle=()=>{
+    // The AF Gamer splash must never leave a blank page if account/session startup did not finish.
+    const started=(()=>{try{return typeof gameStarted!=='undefined'&&gameStarted===true;}catch(e){return false;}})();
+    const accountOpen=!!document.querySelector('#accountOverlay.open,#creatorOverlay.open,#accountIntro.open,#statusStartOverlay.open');
+    const home=document.getElementById('startScreen');
+    if(!started&&!accountOpen&&home){
+      home.style.display='flex';
+      home.style.visibility='visible';
+      home.style.opacity='1';
+    }
+  };
+  if(intro){
+    setTimeout(()=>{
+      intro.style.opacity='0';
+      intro.style.visibility='hidden';
+      setTimeout(()=>{intro.remove();revealHomeIfIdle();},900);
+    },2800);
+  }else{
+    setTimeout(revealHomeIfIdle,100);
+  }
+  // A second guard covers slow devices and delayed account/session scripts.
+  setTimeout(revealHomeIfIdle,6500);
+});
 window.addEventListener('keydown',function(e){if((e.key==='r'||e.key==='R')&&heldFurniture&&currentInterior){heldFurniture.rotation.y+=Math.PI/2;e.preventDefault();showMessage('Meuble orienté. Appuie sur F pour le poser.');}},true);
 window.addEventListener('error', function(e) {
   const box = document.getElementById('errorBox');
-  box.style.display = 'block';
-  box.textContent = 'ERREUR: ' + e.message + ' (ligne ' + e.lineno + ')';
+  if(box){
+    box.style.display = 'block';
+    box.textContent = 'ERREUR: ' + (e.message||'Erreur JavaScript') + ' (ligne ' + (e.lineno||0) + ')';
+  }
 });
 
 const CITY_SIZE = 48000; // couvre les 13 communes du District autonome d'Abidjan
