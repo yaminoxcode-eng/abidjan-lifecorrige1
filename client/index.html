@@ -7399,7 +7399,15 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
     });
    });
    socket.on('connect_error',e=>console.warn('Connexion multijoueur refusée :',e.message));
-   socket.on('world:players',list=>(list||[]).forEach(updateRemote));
+   socket.on('world:players',list=>{
+    // Le serveur envoie la liste complète des joueurs de la zone à chaque connexion/reconnexion.
+    // On retire les avatars absents de cet instantané pour éviter les fantômes après une coupure réseau.
+    const snapshot=Array.isArray(list)?list:[];
+    const present=new Set(snapshot.map(p=>p&&p.id).filter(Boolean));
+    remote.forEach((obj,id)=>{if(!present.has(id))removeRemote(id);});
+    pendingRemotePlayers.forEach((data,id)=>{if(!present.has(id))pendingRemotePlayers.delete(id);});
+    snapshot.forEach(updateRemote);
+   });
    socket.on('player:joined',updateRemote);socket.on('player:moved',updateRemote);
    socket.on('social:message',m=>window.dispatchEvent(new CustomEvent('abj-online-message',{detail:m})));
    socket.on('social:call',m=>window.dispatchEvent(new CustomEvent('abj-online-call',{detail:m})));
