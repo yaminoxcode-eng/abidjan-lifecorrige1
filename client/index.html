@@ -7661,6 +7661,9 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    const r=await fetch(api()+'/api/updates/latest',{cache:'no-store'});
    if(!r.ok)return;const m=await r.json();
    if(!m.version||m.version===window.ABJ_BUILD_VERSION)return;
+   // Conserver aussi l'annonce dans la messagerie du téléphone, même si le joueur était hors ligne lors de la publication.
+   const noticeId='update-'+m.version;
+   window.dispatchEvent(new CustomEvent('abj-online-message',{detail:{id:noticeId,from:'system',fromName:'AF GAMER CI',text:'📢 Nouvelle mise à jour Abidjan Life '+m.version+' disponible. '+(m.releaseNotes||'Corrections et améliorations du jeu.')+' Tu peux l’accepter pendant ta partie ou la refuser temporairement ; elle sera installée automatiquement au retour au menu principal.',system:true,createdAt:m.publishedAt?new Date(m.publishedAt).getTime():Date.now()}}));
    const key='abj-update-last-applied-'+m.version;
    if(sessionStorage.getItem(key))return;
    if(document.getElementById('abjUpdateOverlay'))return;
@@ -9011,7 +9014,9 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   el.textContent=text;el.style.display='block';clearTimeout(el._hide);el._hide=setTimeout(()=>el.style.display='none',5200);
  }
  window.addEventListener('abj-online-message',e=>{
-  const m=e.detail||{};lifeState.onlineMessages=lifeState.onlineMessages||[];lifeState.onlineMessages.push(m);lifeState.onlineMessages=lifeState.onlineMessages.slice(-100);saveLifeProgress(false);
+  const m=e.detail||{};lifeState.onlineMessages=lifeState.onlineMessages||[];
+  if(m.id&&lifeState.onlineMessages.some(x=>x&&x.id===m.id))return;
+  lifeState.onlineMessages.push(m);lifeState.onlineMessages=lifeState.onlineMessages.slice(-100);saveLifeProgress(false);
   toast('💬 '+(m.fromName||'Joueur')+' : '+(m.text||'Nouveau message'));
  });
  window.addEventListener('abj-online-call',e=>{
