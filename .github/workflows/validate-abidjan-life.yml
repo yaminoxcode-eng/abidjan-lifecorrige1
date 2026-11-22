@@ -14,6 +14,10 @@ jobs:
           node-version: 20
       - name: Check server JavaScript syntax
         run: node --check server/server.js
+      - name: Check 3D asset factory syntax
+        run: node --check client/assets3d/abidjan-model-factory.js
+      - name: Run server unit tests
+        run: node --test server/*.test.js
       - name: Check inline browser scripts
         run: |
           node <<'NODE'
