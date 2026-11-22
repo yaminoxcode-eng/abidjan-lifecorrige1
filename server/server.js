@@ -156,12 +156,6 @@ function phoneOf(v) {
 }
 
 const CREATOR_ACCOUNT_PHONE = phoneOf(process.env.CREATOR_ACCOUNT_PHONE || '');
-const CREATOR_IDENTITY_CODE = String(process.env.CREATOR_IDENTITY_CODE || '');
-function creatorIdentityCodeValid(value) {
-  const supplied = Buffer.from(String(value || ''), 'utf8');
-  const expected = Buffer.from(CREATOR_IDENTITY_CODE, 'utf8');
-  return !!CREATOR_IDENTITY_CODE && supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
-}
 function answer(v) {
   return clean(v, 100).toLowerCase()
     .normalize('NFD')
@@ -574,15 +568,6 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(429).json({
       error: 'Trop de tentatives. Attends une minute.'
     });
-  }
-
-  if (isCreatorPhone(phone)) {
-    if (!CREATOR_IDENTITY_CODE) return res.status(503).json({error:'Vérification créateur indisponible : configure le secret côté serveur.'});
-    if (!req.body.creatorCode) return res.status(428).json({codeRequired:true,error:'Vérification secrète du compte créateur requise.'});
-    if (!creatorIdentityCodeValid(req.body.creatorCode)) {
-      if (!rateLimit(req.ip + ':creator-identity', 5, 60000)) return res.status(429).json({error:'Trop de tentatives de vérification. Réessaie dans une minute.'});
-      return res.status(401).json({error:'Code secret incorrect. Identité du créateur non confirmée.'});
-    }
   }
 
   const a = phone && accounts.get(phone);
