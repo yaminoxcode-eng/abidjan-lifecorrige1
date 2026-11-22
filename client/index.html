@@ -1382,7 +1382,7 @@ function init() {
   renderer.domElement.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none;z-index:0';
   renderer.shadowMap.enabled = !mobileLite;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobileLite ? 1 : 1.5));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobileLite ? 0.9 : 1.25));
   document.body.appendChild(renderer.domElement);
   clock = new THREE.Clock();
 
@@ -6816,8 +6816,8 @@ function v15StartAudio(){
     // Musique de fond : nappes harmoniques et petites notes en arpège, à volume audible.
     const musicGain=ac.createGain();musicGain.gain.value=.22;musicGain.connect(master);
     [110,164.81,220,261.63].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain(),lp=ac.createBiquadFilter();o.type='triangle';o.frequency.value=f;lp.type='lowpass';lp.frequency.value=700;g.gain.value=.12/(i+1);o.connect(lp);lp.connect(g);g.connect(musicGain);o.start();});
-    const melody=[220,261.63,329.63,293.66,246.94,196,220,164.81];let mi=0;
-    const playNote=()=>{if(!V13.audioOn||ac.state!=='running')return;const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=melody[mi++%melody.length];g.gain.setValueAtTime(.0001,ac.currentTime);g.gain.exponentialRampToValueAtTime(.045,ac.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+1.05);o.connect(g);g.connect(musicGain);o.start();o.stop(ac.currentTime+1.1);};
+    const melodySets={home:[261.63,329.63,392,440,392,329.63,293.66,261.63],creator:[196,246.94,293.66,369.99,329.63,293.66,246.94,220],loading:[146.83,196,220,293.66,261.63,220,196,164.81],world:[220,261.63,329.63,293.66,246.94,196,220,164.81]};let mi=0;
+    const playNote=()=>{if(!V13.audioOn||ac.state!=='running')return;const melody=melodySets[window.__ABJ_SOUND_SCENE||'world']||melodySets.world;const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=melody[mi++%melody.length];g.gain.setValueAtTime(.0001,ac.currentTime);g.gain.exponentialRampToValueAtTime(.035,ac.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+1.05);o.connect(g);g.connect(musicGain);o.start();o.stop(ac.currentTime+1.1);};
     const melodyTimer=setInterval(playNote,1150);
     // Ambiance continue : vent doux, circulation grave et pluie en couche séparée.
     const wind=makeNoise(420,.035),traffic=makeNoise(170,.045),rain=makeNoise(4200,.0001);
@@ -6835,6 +6835,15 @@ function v15AudioTick(){
   a.traffic.g.gain.setTargetAtTime((vehicles.length? .055:.018),a.ac.currentTime,1.2);
   a.crowd.g.gain.setTargetAtTime((npcs.length? .028:.0001),a.ac.currentTime,1.5);
 }
+// Ambiances distinctes : accueil, création, chargement et ville explorable.
+window.__ABJ_SOUND_SCENE='home';
+window.abjSetSoundScene=function(scene){window.__ABJ_SOUND_SCENE=['home','creator','loading','world'].includes(scene)?scene:'home';const a=V13.audioNodes;if(!a||!V13.audioOn)return;const t=a.ac.currentTime;const s=window.__ABJ_SOUND_SCENE;a.musicGain.gain.setTargetAtTime(s==='world'?.22:s==='loading'?.17:.14,t,.7);a.wind.g.gain.setTargetAtTime(s==='world'?.035:s==='loading'?.025:.012,t,1);a.traffic.g.gain.setTargetAtTime(s==='world'?.05:.0001,t,1);a.crowd.g.gain.setTargetAtTime(s==='world'?.025:.0001,t,1);a.rain.g.gain.setTargetAtTime(s==='world'&&V12.weather==='pluie'&&!currentInterior?.07:.0001,t,1);};
+(function(){
+ const start=()=>{try{if(typeof v15StartAudio==='function')v15StartAudio();if(V13.audioNodes&&V13.audioNodes.ac.state==='suspended')V13.audioNodes.ac.resume();}catch(e){console.info('Audio différé par le navigateur',e);}};
+ document.addEventListener('pointerdown',start,{once:true,capture:true});
+ let last='';
+ setInterval(()=>{const loading=document.getElementById('loadingScreen'),creator=document.getElementById('creatorOverlay'),account=document.getElementById('accountOverlay');let scene='home';if(loading&&loading.style.display!=='none'&&loading.style.display)scene='loading';else if(creator&&creator.classList.contains('open'))scene='creator';else if(typeof gameStarted!=='undefined'&&gameStarted&&typeof worldReady!=='undefined'&&worldReady)scene='world';else if(account&&account.classList.contains('open'))scene='creator';if(scene!==last){last=scene;window.abjSetSoundScene(scene);if(V13.audioNodes)window.abjSetSoundScene(scene);}},350);
+})();
 document.addEventListener('pointerdown',e=>{
   if(V15.mouseMode&&e.target===renderer?.domElement){const handled=v15GroundClick(e);if(handled){e.preventDefault();return;}}
   if(gameStarted&&V13.audioOn)v15StartAudio();
