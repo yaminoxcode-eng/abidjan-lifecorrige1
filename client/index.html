@@ -2125,7 +2125,7 @@ function buildOSMRoads(ways, nodes) {
   }
   function addWalkQuad(a,b,w,y){
     const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<.4)return;
-    const ext=Math.min(1.2,len*.08),ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext};
+    const ext=Math.min(.12,len*.008),ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext};
     const nx=-dz/len*w/2,nz=dx/len*w/2,k=walkVertices.length/3;
     const p1={x:aa.x+nx,z:aa.z+nz},p2={x:aa.x-nx,z:aa.z-nz},p3={x:bb.x-nx,z:bb.z-nz},p4={x:bb.x+nx,z:bb.z+nz};
     const lift=Math.max(Number(y)||0,.025);walkVertices.push(p1.x,terrainHeight(p1.x,p1.z)+lift,p1.z,p2.x,terrainHeight(p2.x,p2.z)+lift,p2.z,p3.x,terrainHeight(p3.x,p3.z)+lift,p3.z,p4.x,terrainHeight(p4.x,p4.z)+lift,p4.z);
@@ -2237,7 +2237,9 @@ function decorateOSMStreets(){
     crossingCount++;
   }
   function addMerged(v,idx,color){if(!v.length)return;const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(v,3));geo.setIndex(idx);geo.computeVertexNormals();const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color,side:THREE.DoubleSide}));m.receiveShadow=true;scene.add(m);}
-  addMerged(sidewalkV,sidewalkI,0xc9c3b7);addMerged(lineV,lineI,0xf0e5c4);
+  // Les trottoirs continus sont déjà fusionnés dans osm-sidewalks-distinct lors du chargement OSM.
+  // Ne pas les redessiner une seconde fois : cela superpose les surfaces aux carrefours.
+  addMerged(lineV,lineI,0xf0e5c4);
 }
 function createStreetLamp(x,z){
   const g=new THREE.Group();const poleMat=new THREE.MeshLambertMaterial({color:0x555b5c}),armMat=new THREE.MeshLambertMaterial({color:0x44494a});
@@ -6025,12 +6027,12 @@ function v11Skyline(){
 function v11BuildLoading(){
   if(document.getElementById('loadingScreen'))return;
   const st=v11El('style','',
-  '#loadingScreen{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;background:#1a1d4a;transition:opacity .7s ease;overflow:hidden}'+
+  '#loadingScreen{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 38%,#174552 0%,#0b2632 42%,#06131e 100%);transition:opacity .7s ease;overflow:hidden}'+
   '#loadingScreen.done{opacity:0;pointer-events:none}#loadingScreen svg{position:absolute;inset:0;width:100%;height:100%}'+
-  '#loadingScreen .ls-title{position:relative;font:900 clamp(46px,11vw,150px)/.95 "Arial Black",Impact,sans-serif;letter-spacing:.04em;color:#fff3d6;text-align:center;text-shadow:0 6px 0 #b3441f,0 14px 34px #0009;padding:0 16px}'+
-  '#loadingScreen .ls-bar{position:relative;margin-top:30px;width:min(560px,76vw);height:16px;border-radius:9px;background:#0b0f2a99;border:2px solid #fff3d6;overflow:hidden}'+
-  '#loadingScreen .ls-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd166,#ef476f)}'+
-  '#loadingScreen .ls-txt{position:relative;margin-top:12px;font:600 15px "Segoe UI",Arial,sans-serif;color:#fff3d6;text-shadow:0 2px 6px #000a}'+
+  '#loadingScreen .ls-title{position:relative;font:900 clamp(42px,10vw,132px)/.95 "Arial Black",Impact,sans-serif;letter-spacing:.055em;color:#f5e8c8;text-align:center;text-shadow:0 3px 0 #17434b,0 12px 38px #000b;padding:0 16px}'+
+  '#loadingScreen .ls-bar{position:relative;margin-top:30px;width:min(560px,76vw);height:12px;border-radius:3px;background:#06151dcc;border:1px solid #79d8cf;overflow:hidden;box-shadow:0 0 28px #37c8bd33}'+
+  '#loadingScreen .ls-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#d9a85e,#f0d79b,#42c9bf)}'+
+  '#loadingScreen .ls-txt{position:relative;margin-top:12px;font:600 14px "Segoe UI",Arial,sans-serif;letter-spacing:.06em;color:#c9e6df;text-shadow:0 2px 8px #000a}'+
   '#itemMenu{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:40;display:none;background:#0a1626ee;border:2px solid #ffd166;border-radius:14px;padding:12px 14px;min-width:260px;text-align:center}'+
   '#itemMenu b{display:block;margin-bottom:8px}#itemMenu button{display:block;width:100%;margin:5px 0;padding:9px;border:0;border-radius:9px;background:#264b66;color:#fff;font:600 14px Arial;cursor:pointer}#itemMenu button:hover{background:#2f6a90}'+
   '#itemHint{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:12;display:none;background:#000a;border:1px solid #ffd166;border-radius:20px;padding:6px 16px;font:600 14px Arial;pointer-events:none}'+
@@ -6684,7 +6686,7 @@ function v13RainTick(dt){const c=V13.rainCanvas,ctx=V13.rainCtx;if(!c||!ctx)retu
 function v13StartAudio(){if(V13.audio||!V13.audioOn)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;try{const ac=new AC(),master=ac.createGain();master.gain.value=.16;master.connect(ac.destination);const pad=ac.createGain();pad.gain.value=.16;pad.connect(master);[110,164.81,220].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain(),filter=ac.createBiquadFilter();o.type='sine';o.frequency.value=f;filter.type='lowpass';filter.frequency.value=420;g.gain.value=.12/(i+1);o.connect(filter);filter.connect(g);g.connect(pad);o.start();});const noiseBuffer=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate),data=noiseBuffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.22;const noise=ac.createBufferSource(),ng=ac.createGain(),nf=ac.createBiquadFilter();noise.buffer=noiseBuffer;noise.loop=true;nf.type='lowpass';nf.frequency.value=260;ng.gain.value=.025;noise.connect(nf);nf.connect(ng);ng.connect(master);noise.start();V13.audio={ac,master,noise};}catch(e){console.warn('Audio non disponible',e);}}
 function v13Sound(kind){if(!V13.audioOn||!V13.audio)return;const ac=V13.audio.ac;if(ac.state==='suspended')ac.resume();const o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();o.type=kind==='traffic'?'sawtooth':'sine';o.frequency.value=kind==='traffic'?55:kind==='crowd'?330:kind==='rain'?180:440;f.type='lowpass';f.frequency.value=kind==='traffic'?110:kind==='crowd'?700:1200;g.gain.setValueAtTime(.0001,ac.currentTime);g.gain.exponentialRampToValueAtTime(kind==='crowd'?.018:.025,ac.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+(.45+Math.random()*.35));o.connect(f);f.connect(g);g.connect(V13.audio.master);o.start();o.stop(ac.currentTime+1);}
 function v13AudioTick(){if(!V13.audioOn)return;}
-function v13SettingsPatch(){const old=renderAccountSettingsApp;renderAccountSettingsApp=function(){old();const c=document.getElementById('phoneAppContent');if(!c)return;const block=document.createElement('section');block.style.cssText='margin-top:12px;padding:12px;border-radius:12px;background:#ffffff12';block.innerHTML='<h3>🎮 Commandes du jeu</h3><p style="font-size:12px;line-height:1.8">ZQSD / WASD : marcher<br>Maj : courir · Espace : sauter<br>Souris : orienter la caméra<br>E : entrer, parler ou utiliser un lieu<br>F : interagir avec un objet<br>M : ouvrir le téléphone<br>Carte : application Plans<br>Échap : libérer la souris</p><h3>🔊 Ambiance sonore</h3><button id="v13AudioToggle">'+(V13.audioOn?'Désactiver les sons':'Activer les sons')+'</button><p style="font-size:11px;color:#c6d8e5">Musique d\'ambiance originale et sons synthétiques de circulation, pluie et foule.</p>';c.appendChild(block);const b=block.querySelector('#v13AudioToggle');b.onclick=()=>{V13.audioOn=!V13.audioOn;if(V13.audioOn){v13StartAudio();if(V13.audio)V13.audio.master.gain.setTargetAtTime(.16,V13.audio.ac.currentTime,.2);}else if(V13.audio)V13.audio.master.gain.setTargetAtTime(0,V13.audio.ac.currentTime,.2);b.textContent=V13.audioOn?'Désactiver les sons':'Activer les sons';};};}
+function v13SettingsPatch(){const old=renderAccountSettingsApp;renderAccountSettingsApp=function(){old();const c=document.getElementById('phoneAppContent');if(!c)return;const block=document.createElement('section');block.style.cssText='margin-top:12px;padding:12px;border-radius:12px;background:#ffffff12';block.innerHTML='<h3>🎮 Commandes du jeu</h3><p style="font-size:12px;line-height:1.8">ZQSD / WASD : marcher<br>Maj : courir · Espace : sauter<br>Souris : orienter la caméra<br>E : entrer, parler ou utiliser un lieu<br>F : interagir avec un objet<br>M : ouvrir le téléphone<br>Carte : application Plans<br>Échap : libérer la souris</p>';c.appendChild(block);};}
 const v13OrigTick=V11tick;
 V11tick=function(dt){v13OrigTick(dt);v13InitHUD();v13NeedsTick(dt);v13RainTick(dt);v13UpdateSpeech(dt);v13AudioTick();V13.uiTimer-=dt;if(V13.uiTimer<=0){V13.uiTimer=.3;if(document.getElementById('needPanel')?.classList.contains('open'))v13NeedPanel();}if(!V13.miniReady){V13.miniReady=true;v13InitRain();}v13MiniMap();};
 // Restore the map's full city-wide view and make the commune extents visible on first opening.
@@ -9101,7 +9103,8 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
   var isStandalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
   function makeButton(){
-    if(isStandalone || document.getElementById('abjInstallApp')) return;
+    var existing=document.getElementById('abjInstallApp');if(existing)existing.remove();
+    return;
     var b=document.createElement('button');
     b.id='abjInstallApp'; b.type='button'; b.textContent='⬇ Installer';
     b.setAttribute('aria-label','Installer Abidjan Life sur cet appareil');
@@ -9120,8 +9123,8 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
     document.body.appendChild(b);
   }
   window.addEventListener('beforeinstallprompt',function(e){
-    e.preventDefault(); deferredPrompt=e; makeButton();
-    var b=document.getElementById('abjInstallApp'); if(b) b.textContent='⬇ Installer le jeu';
+    e.preventDefault(); deferredPrompt=null;
+    var b=document.getElementById('abjInstallApp'); if(b) b.remove();
   });
   window.addEventListener('appinstalled',function(){
     var b=document.getElementById('abjInstallApp'); if(b) b.remove();
@@ -11539,7 +11542,6 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
     ['needs','🙂','Besoins','Afficher faim, énergie, santé, hygiène et loisirs'],
     ['map','🗺️','Carte','Voir Abidjan et choisir une destination'],
     ['phone','📱','Téléphone','Ouvrir les applications, messages et services'],
-    ['inventory','🎒','Sac','Consulter les objets et équipements'],
     ['transport','🚕','Transport','Accéder aux taxis et transports'],
     ['camera','📷','Caméra','Prendre une photo ou enregistrer une vidéo']
   ].map(x=>'<button type="button" data-quick="'+x[0]+'" title="'+x[3]+'" aria-label="'+x[3]+'"><span>'+x[1]+'</span><small>'+x[2]+'</small></button>').join('');
