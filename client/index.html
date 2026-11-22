@@ -7650,7 +7650,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    socket.on('players:count',v=>updateOnlineCount(v?.count));
    socket.on('world:host',v=>{window.ABJ_WORLD_HOST=!!v&&v.id===socket.id;});
    socket.on('creator:report:new',()=>{if(isCreatorAccount(activeGameAccount)){creatorOrbAlert=true;showMessage('⚠️ Nouveau signalement reçu au siège AF_GAMER.');}});
-   socket.on('world:state',w=>{if(!w||!lifeState)return;lifeState.hour=Number(w.hour)||0;lifeState.minute=Number(w.minute)||0;if(typeof V12!=='undefined'){V12.weather=w.weather||'ensoleille';V12.temperature=Number(w.temperature)||31;V12.weatherTimer=4;const rain=document.getElementById('v12Rain');if(rain)rain.style.display=V12.weather==='pluie'?'block':'none';}if(typeof updateLifeLighting==='function')updateLifeLighting();});
+   socket.on('world:clock',w=>window.dispatchEvent(new CustomEvent('abj-server-clock',{detail:w})));socket.on('world:state',w=>{if(!w||!lifeState)return;lifeState.hour=Number(w.hour)||0;lifeState.minute=Number(w.minute)||0;if(typeof V12!=='undefined'){V12.weather=w.weather||'ensoleille';V12.temperature=Number(w.temperature)||31;V12.weatherTimer=4;const rain=document.getElementById('v12Rain');if(rain)rain.style.display=V12.weather==='pluie'?'block':'none';}if(typeof updateLifeLighting==='function')updateLifeLighting();});
    socket.on('session:replaced',()=>{socket.disconnect();showAccountStatus('Ton compte vient d’être connecté sur un autre appareil.',true);});
    socket.on('update:available',checkUpdate);
    window.ABJ_GAME_SOCKET=socket;
@@ -7666,6 +7666,15 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    if(document.getElementById('abjUpdateOverlay'))return;
 
    if(typeof gameStarted!=='undefined'&&gameStarted&&worldReady&&window.__abjUpdateAccepted!==m.version&&typeof window.abjShowUpdateToast==='function'){window.abjShowUpdateToast(m,checkUpdate);return;}
+   // Si le joueur a refusé pendant la partie, l'installation démarre automatiquement au menu principal.
+   if(!(typeof gameStarted!=='undefined'&&gameStarted&&worldReady)||window.__abjUpdateAccepted===m.version){
+    const target=new URL(m.clientUrl||location.href,location.href);target.searchParams.set('abjVersion',m.version);
+    const response=await fetch(target.toString(),{cache:'no-store'});
+    if(!response.ok)throw new Error('Téléchargement impossible (HTTP '+response.status+').');
+    sessionStorage.setItem(key,'1');
+    location.replace(target.toString());
+    return;
+   }
    const overlay=document.createElement('div');overlay.id='abjUpdateOverlay';
    overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:linear-gradient(145deg,#06121fF5,#102e40F5);color:white;display:grid;place-items:center;font:16px system-ui;text-align:center;padding:22px;backdrop-filter:blur(8px)';
    const panel=document.createElement('div');panel.style.cssText='width:min(460px,100%);padding:28px 22px;border:1px solid #e9c77b;border-radius:20px;background:linear-gradient(145deg,#1b394b,#0b1b29);box-shadow:0 22px 70px #000b';
@@ -10088,7 +10097,7 @@ function bootV134(){
   if(!worldReady||!scene)return false;
   try{
     ensureCalendar();
-    applyOfflineTimeProgress();
+    // Le calendrier ne progresse plus hors ligne : il suit la date réelle.
     enhanceNightLighting();
     decorateEmptyAreas();
     buildMarketStands();
@@ -11671,7 +11680,7 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
     ['transport','🚕','Transport','Accéder aux taxis et transports'],
     ['camera','📷','Caméra','Prendre une photo ou enregistrer une vidéo']
   ].map(x=>'<button type="button" data-quick="'+x[0]+'" title="'+x[3]+'" aria-label="'+x[3]+'"><span>'+x[1]+'</span><small>'+x[2]+'</small></button>').join('');
-  document.body.appendChild(dock);
+  dock.remove(); // Raccourcis rapides supprimés à la demande.
   const css=document.createElement('style');
   css.textContent=`
     #abjQuickDock{position:fixed;z-index:32;left:50%;bottom:18px;transform:translateX(-50%);display:none;align-items:center;gap:8px;padding:8px 10px;border:1px solid #ffffffd9;border-radius:23px;background:rgba(250,250,246,.94);box-shadow:0 10px 34px #06151d45;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
@@ -11848,5 +11857,43 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
  if(typeof original==='function'&&!window.__ABJ_SUBS_PHONE_WRAPPED){window.__ABJ_SUBS_PHONE_WRAPPED=true;window.openPhoneApp=function(app){if(app==='offrescreateur'){render();return;}return original.apply(this,arguments);};}
 })();
 </script>
+
+<script>
+/* Horloge et calendrier partagés — date réelle officielle UTC / Africa-Abidjan. */
+(function(){
+ 'use strict';
+ const months=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+ const weekdays=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+ let serverBase=Date.now(),receivedAt=Date.now(),hasServerClock=false;
+ function isoWeek(d){
+  const x=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));
+  const day=x.getUTCDay()||7;x.setUTCDate(x.getUTCDate()+4-day);
+  const start=new Date(Date.UTC(x.getUTCFullYear(),0,1));
+  return Math.ceil((((x-start)/86400000)+1)/7);
+ }
+ function applyClock(iso){
+  const now=iso?new Date(iso):new Date(serverBase+(Date.now()-receivedAt));
+  if(!Number.isFinite(now.getTime()))return;
+  const y=now.getUTCFullYear(),mo=now.getUTCMonth()+1,day=now.getUTCDate(),hour=now.getUTCHours(),minute=now.getUTCMinutes();
+  if(typeof lifeState!=='undefined'&&lifeState){
+   lifeState.hour=hour;lifeState.minute=minute;
+   lifeState.calendar=lifeState.calendar&&typeof lifeState.calendar==='object'?lifeState.calendar:{};
+   lifeState.calendar.year=y;lifeState.calendar.month=mo;lifeState.calendar.day=day;lifeState.calendar.week=isoWeek(now);
+  }
+  const hh=String(hour).padStart(2,'0'),mm=String(minute).padStart(2,'0');
+  const dateText=weekdays[now.getUTCDay()]+' '+day+' '+months[mo-1]+' '+y+' · S'+isoWeek(now);
+  const clock=document.getElementById('lifeClock');
+  if(clock){clock.innerHTML=hh+':'+mm+'<br><small style="font-size:9px;font-weight:700;opacity:.85">'+dateText+'</small>';clock.style.lineHeight='1.15';clock.style.textAlign='right';}
+  const phoneClock=document.getElementById('phoneClock');if(phoneClock)phoneClock.textContent=hh+':'+mm;
+ }
+ window.addEventListener('abj-server-clock',e=>{
+  const iso=e.detail&&e.detail.iso;if(!iso)return;
+  serverBase=new Date(iso).getTime();receivedAt=Date.now();hasServerClock=true;applyClock(iso);
+ });
+ setInterval(()=>applyClock(),250);
+ document.addEventListener('DOMContentLoaded',()=>applyClock());
+})();
+</script>
+
 </body>
 </html>
