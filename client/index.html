@@ -11923,7 +11923,7 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
  'use strict';
  const BUILD='1.41.3';
  window.ABJ_BUILD_VERSION=BUILD;
- const api=()=>String(window.ABJ_ONLINE_SERVER||'https://abidjan-lifecorrige1.onrender.com').replace(new RegExp('/;
+ const api=()=>String(window.ABJ_ONLINE_SERVER||'https://abidjan-lifecorrige1.onrender.com').replace(new RegExp('/'+String.fromCharCode(36)),'');
  const inWorld=()=>{try{return !!(typeof gameStarted!=='undefined'&&gameStarted&&typeof worldReady!=='undefined'&&worldReady);}catch(e){return false;}};
  const refusedKey=v=>'abj-update-later-'+v;
  const appliedKey=v=>'abj-update-last-applied-'+v;
