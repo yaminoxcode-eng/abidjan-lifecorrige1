@@ -2845,13 +2845,14 @@ function handleTransitStop(v,stop){
 }
 function trafficSignalShouldStop(px,pz,dx,dz){
   const len=Math.hypot(dx,dz)||1,ux=dx/len,uz=dz/len;
+  const horizontal=Math.abs(dx)>=Math.abs(dz),axis=horizontal?'x':'z';
   for(const light of trafficLights){
-    if(light.intersectionX===undefined||light.intersectionZ===undefined||!light.axis)continue;
-    const horizontal=Math.abs(dx)>=Math.abs(dz);
-    if((horizontal?'x':'z')!==light.axis)continue;
+    if(light.intersectionX===undefined||light.intersectionZ===undefined||light.axis!==axis)continue;
     const rx=light.intersectionX-px,rz=light.intersectionZ-pz;
     const along=rx*ux+rz*uz,lateral=Math.abs(rx*uz-rz*ux);
-    if(along>-2.5&&along<17&&lateral<10&&light.phase!==2)return true;
+    // Zone d'approche resserrée sur la voie : évite les arrêts provoqués
+    // par un feu situé sur une rue parallèle ou sur l'autre côté du carrefour.
+    if(along>-2.5&&along<19&&lateral<6.2&&light.phase!==2)return true;
   }
   return false;
 }
@@ -2860,8 +2861,11 @@ function trafficJunctionOccupied(v,px,pz){
     if(light.intersectionX===undefined||light.intersectionZ===undefined||!light.axis)continue;
     const cx=light.intersectionX,cz=light.intersectionZ;
     if(Math.hypot(cx-px,cz-pz)>17)continue;
-    for(const other of vehicles){
-      if(other===v||other.userData.wreck||!other.visible)continue;
+    // Réutilise l'index spatial déjà construit pour cette frame au lieu de
+    // parcourir toute la flotte pour chaque véhicule à chaque mise à jour.
+    const nearby=abjTrafficGridNearby(abjTrafficVehicleGrid,cx,cz);
+    for(const other of nearby){
+      if(other===v||!other.userData||other.userData.wreck||!other.visible)continue;
       if(Math.hypot(other.position.x-cx,other.position.z-cz)<7.2&&Math.hypot(other.position.x-px,other.position.z-pz)>3.2)return true;
     }
   }
@@ -2900,7 +2904,7 @@ function advanceTrafficVehicle(v,delta){
       for(const other of nearbyVehicles){
         if(other===v||other.userData.wreck||!other.visible)continue;
         const rx=other.position.x-px,rz=other.position.z-pz,ahead=rx*ux+rz*uz,lateral=Math.abs(rx*uz-rz*ux);
-        if(ahead>0&&ahead<9&&lateral<3.1){stop=true;break;}
+        if(ahead>0&&ahead<12&&lateral<2.8){stop=true;break;}
       }
     }
     if(!stop){
@@ -2908,10 +2912,10 @@ function advanceTrafficVehicle(v,delta){
       for(const npc of nearbyNPCs){
         if(npc.userData.dead||!npc.visible)continue;
         const rx=npc.position.x-px,rz=npc.position.z-pz,ahead=rx*ux+rz*uz,lateral=Math.abs(rx*uz-rz*ux);
-        if(ahead>0&&ahead<7&&lateral<2.2){stop=true;break;}
+        if(ahead>0&&ahead<9&&lateral<2.5){stop=true;break;}
       }
     }
-    if(stop){d.speedFactor=Math.max(0,(d.speedFactor||1)-delta*5);updateTrafficVehiclePose(v);return;}
+    if(stop){d.speedFactor=Math.max(0,(d.speedFactor===undefined?1:d.speedFactor)-delta*4.5);updateTrafficVehiclePose(v);return;}
     if(d.transit&&d.transitStopCooldown<=0&&transportStops.length){
       const nearby=transportStops.find(st=>Math.hypot(st.x-px,st.z-pz)<9.5&&st.id!==d.lastTransitStop);
       if(nearby){d.transitDwell=2.8;d.transitStopCooldown=18;d.lastTransitStop=nearby.id||('stop-'+Math.round(nearby.x*10)+'-'+Math.round(nearby.z*10));d.speedFactor=0;handleTransitStop(v,nearby);updateTrafficVehiclePose(v);return;}
