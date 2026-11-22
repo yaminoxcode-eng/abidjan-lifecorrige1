@@ -635,7 +635,7 @@ let creatorVerifiedPhone=null;
 let creatorRoleVerified=false;
 const MONEY_CAPS={none:999999999999,S:10000000000000,Z:100000000000000,SZ:1e21};
 const CHEAT_MONEY_AMOUNT=100000;
-function isCreatorAccount(phone){const target=phone!=null?phone:activeGameAccount;const a=normalizeIvorianMobile(target),b=normalizeIvorianMobile(activeGameAccount);const official='+2250799259362';return a===official&&b===official;}
+function isCreatorAccount(phone){const target=normalizeIvorianMobile(phone!=null?phone:activeGameAccount),active=normalizeIvorianMobile(activeGameAccount);return !!creatorRoleVerified&&!!creatorVerifiedPhone&&target===creatorVerifiedPhone&&active===creatorVerifiedPhone;}
 function getCreatorTier(){return isCreatorAccount(activeGameAccount)?'SZ':'none';}
 function getMoneyCap(){return MONEY_CAPS[getCreatorTier()]||MONEY_CAPS.none;}
 function clampMoney(){lifeState.money=Math.max(0,Math.min(getMoneyCap(),Number(lifeState.money)||0));lifeState.bankBalance=Math.max(0,Math.min(getMoneyCap(),Number(lifeState.bankBalance)||0));}
@@ -863,7 +863,15 @@ function openRecoverFlow(){
   setAccountFieldVisibility();
 }
 async function fetchWithCreatorCode(url,options){
-  return fetch(url,options);
+  const first=await fetch(url,options);
+  if(first.status!==428)return first;
+  const challenge=await first.clone().json().catch(()=>({}));
+  if(!challenge.codeRequired)return first;
+  const creatorCode=window.prompt('Vérification du compte créateur : entre ton code secret.');
+  if(!creatorCode)return first;
+  let body={};
+  try{body=JSON.parse(options&&options.body||'{}');}catch(e){}
+  return fetch(url,{...options,body:JSON.stringify({...body,creatorCode:String(creatorCode)})});
 }
 function showAccountStatus(msg, isError){
   const status=document.getElementById('accountStatus');
@@ -1022,7 +1030,7 @@ async function activateGameAccount(phone){
   const canonical=normalizeIvorianMobile(phone);
   if(!canonical){showAccountStatus('Numéro mobile ivoirien invalide.', true);return;}
   creatorVerifiedPhone=null;creatorRoleVerified=false;
-  try{const token=safeGet('abj-online-token:'+canonical),base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');if(token){const check=await fetch(base+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));const officialCreator=canonical==='+2250799259362';creatorRoleVerified=officialCreator||!!(check.ok&&result.creator===true&&canonical==='+2250799259362');if(creatorRoleVerified&&canonical==='+2250799259362')creatorVerifiedPhone=canonical;else{creatorRoleVerified=officialCreator;creatorVerifiedPhone=officialCreator?canonical:null;}}}catch(error){console.warn('Vérification des privilèges du compte impossible :',error);}
+  try{const token=safeGet('abj-online-token:'+canonical),base=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');if(token){const check=await fetch(base+'/api/account/role',{headers:{Authorization:'Bearer '+token},cache:'no-store'});const result=await check.json().catch(()=>({}));creatorRoleVerified=!!(check.ok&&result.creator===true);creatorVerifiedPhone=creatorRoleVerified?canonical:null;}}catch(error){creatorRoleVerified=false;creatorVerifiedPhone=null;console.warn('Vérification des privilèges du compte impossible :',error);}
   const oldKeys=Object.keys(readGameAccounts()).filter(k=>normalizeIvorianMobile(k)===canonical);
   const saveKey='abidjan-life-life-v1:'+canonical;
   if(!safeGet(saveKey)){
