@@ -2336,7 +2336,7 @@ function buildOSMBuildings(ways,nodes) {
         if(!['motorway','trunk','primary','secondary','tertiary','residential','living_street','unclassified','service'].includes(road.type))continue;
         const dx=road.b.x-road.a.x,dz=road.b.z-road.a.z,l2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((cx-road.a.x)*dx+(cz-road.a.z)*dz)/l2));
         const qx=road.a.x+t*dx,qz=road.a.z+t*dz,centerDist=Math.hypot(cx-qx,cz-qz);
-        let edgeDist=Infinity;for(const p of pts)edgeDist=Math.min(edgeDist,Math.hypot(p.x-(road.a.x+Math.max(0,Math.min(1,((p.x-road.a.x)*dx+(p.z-road.a.z)*dz)/l2))*dx),p.z-(road.a.z+Math.max(0,Math.min(1,((p.x-road.a.x)*dx+(p.z-road.a.z)*dz)/l2))*dz));
+        let edgeDist=Infinity;for(const p of pts){const tEdge=Math.max(0,Math.min(1,((p.x-road.a.x)*dx+(p.z-road.a.z)*dz)/l2));const qxEdge=road.a.x+tEdge*dx,qzEdge=road.a.z+tEdge*dz;edgeDist=Math.min(edgeDist,Math.hypot(p.x-qxEdge,p.z-qzEdge));}
         const clearance=(road.width||4)/2+2.1,penetration=clearance-Math.min(centerDist,edgeDist);
         if(penetration>.35&&(!best||penetration>best.penetration))best={road,qx,qz,dx,dz,l2,centerDist,penetration};
       }
