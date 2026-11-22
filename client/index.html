@@ -11918,5 +11918,68 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
 })();
 </script>
 
+<script id="abj-v1412-hotfix">
+(function(){
+ 'use strict';
+ const BUILD='1.41.2';
+ window.ABJ_BUILD_VERSION=BUILD;
+ const api=()=>String(window.ABJ_ONLINE_SERVER||'https://abidjan-lifecorrige1.onrender.com').replace(/\/$/,'');
+ const inWorld=()=>{try{return !!(typeof gameStarted!=='undefined'&&gameStarted&&typeof worldReady!=='undefined'&&worldReady);}catch(e){return false;}};
+ const refusedKey=v=>'abj-update-later-'+v;
+ const appliedKey=v=>'abj-update-last-applied-'+v;
+ function targetFor(m){const u=new URL(m.clientUrl||'https://abidjan-life.pages.dev',location.href);u.searchParams.set('abjVersion',String(m.version||BUILD));u.searchParams.set('abjReload',String(Date.now()));return u.href;}
+ function apply(m){if(!m||!m.version)return;try{sessionStorage.setItem(appliedKey(m.version),'1');}catch(e){}location.replace(targetFor(m));}
+ window.abjShowUpdateToast=function(m){
+  if(!m||!m.version||m.version===BUILD||document.getElementById('abjUpdateToast'))return;
+  try{if(sessionStorage.getItem(refusedKey(m.version)))return;}catch(e){}
+  const box=document.createElement('div');box.id='abjUpdateToast';
+  box.style.cssText='position:fixed;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);z-index:999999;width:min(520px,94vw);padding:15px;border:1px solid #e9c77b;border-radius:18px;background:linear-gradient(145deg,#102b3c,#071522);color:#fff;box-shadow:0 18px 55px #000c;font:14px system-ui;display:flex;gap:12px;align-items:center';
+  const info=document.createElement('div');info.style.flex='1';info.innerHTML='<b style="color:#ffe0a0">🚀 Mise à jour Abidjan Life disponible</b><div style="margin-top:5px;color:#d2e1e9">Version '+String(m.version).replace(/[<>&]/g,'')+' · Ta sauvegarde est conservée.</div>';
+  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:7px;flex-wrap:wrap';
+  const yes=document.createElement('button');yes.type='button';yes.textContent='ACCEPTER';yes.style.cssText='border:0;border-radius:10px;padding:10px 13px;background:#e5b85e;color:#17232c;font-weight:900;cursor:pointer';
+  const no=document.createElement('button');no.type='button';no.textContent='REFUSER';no.style.cssText='border:1px solid #ffffff55;border-radius:10px;padding:10px 12px;background:#142d3c;color:#fff;font-weight:800;cursor:pointer';
+  yes.addEventListener('click',()=>{yes.disabled=true;yes.textContent='OUVERTURE…';window.__abjUpdateAccepted=m.version;try{sessionStorage.removeItem(refusedKey(m.version));}catch(e){}apply(m);});
+  no.addEventListener('click',()=>{try{sessionStorage.setItem(refusedKey(m.version),'1');}catch(e){}box.remove();try{if(typeof showMessage==='function')showMessage('Mise à jour refusée. Tu continues sur cette version ; elle sera proposée au retour au menu.');}catch(e){}});
+  actions.append(yes,no);box.append(info,actions);document.body.appendChild(box);
+ };
+ let checking=false;
+ async function checkAndApply(){
+  if(checking)return;checking=true;
+  try{
+   const response=await fetch(api()+'/api/updates/latest',{cache:'no-store'});
+   if(!response.ok)throw new Error('Manifeste de mise à jour indisponible (HTTP '+response.status+').');
+   const m=await response.json();if(!m.version||m.version===BUILD)return;
+   let refused=false;try{refused=sessionStorage.getItem(refusedKey(m.version))==='1';}catch(e){}
+   if(inWorld()){if(!refused&&window.__abjUpdateAccepted!==m.version)window.abjShowUpdateToast(m);return;}
+   apply(m);
+  }catch(error){console.warn('Vérification de mise à jour :',error);}
+  finally{checking=false;}
+ }
+ window.ABJ_CHECK_UPDATE=checkAndApply;checkAndApply();setInterval(checkAndApply,12000);window.addEventListener('focus',checkAndApply);window.addEventListener('abj-menu-open',checkAndApply);
+ function removeAudioButton(){document.getElementById('abjAudioButton')?.remove();}
+ removeAudioButton();try{new MutationObserver(removeAudioButton).observe(document.body,{childList:true,subtree:true});}catch(e){}
+ let audioStarted=false;
+ function startWorldAudio(){
+  if(audioStarted||!inWorld())return;
+  try{if(typeof V13!=='undefined'){V13.audioOn=true;if(typeof v15StartAudio==='function')v15StartAudio();const ac=V13.audioNodes&&V13.audioNodes.ac;if(ac&&ac.state!=='running')ac.resume().catch(()=>{});if(typeof v15SetAudioVolume==='function')v15SetAudioVolume(.72);audioStarted=true;document.removeEventListener('pointerdown',startWorldAudio,true);document.removeEventListener('keydown',startWorldAudio,true);}}catch(e){console.warn('Démarrage audio différé :',e);}
+ }
+ document.addEventListener('pointerdown',startWorldAudio,true);document.addEventListener('keydown',startWorldAudio,true);
+ function ensureSettingsApp(){
+  const host=document.getElementById('phoneApps');if(!host)return;
+  let button=host.querySelector('[data-app="parametres"]');
+  if(!button){const page=host.querySelector('.phoneAppsPage')||host;button=document.createElement('button');button.type='button';button.className='phoneApp';button.dataset.app='parametres';button.innerHTML='<span>⚙️</span><b>Paramètres</b>';page.appendChild(button);}
+  if(button.dataset.v1412Bound!=='1'){button.dataset.v1412Bound='1';button.addEventListener('click',()=>{if(typeof window.openPhoneApp==='function')window.openPhoneApp('parametres');});}
+ }
+ const oldShowPhoneHome=window.showPhoneHome;
+ if(typeof oldShowPhoneHome==='function'&&!oldShowPhoneHome.__v1412){const wrapped=function(){const result=oldShowPhoneHome.apply(this,arguments);setTimeout(ensureSettingsApp,0);return result;};wrapped.__v1412=true;window.showPhoneHome=wrapped;}
+ ensureSettingsApp();setInterval(ensureSettingsApp,900);
+ const mini=document.getElementById('miniMapWrap');
+ if(mini&&!mini.dataset.v1412Clickable){mini.dataset.v1412Clickable='1';mini.style.pointerEvents='auto';mini.style.cursor='pointer';mini.title='Cliquer pour ouvrir la carte complète';mini.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();if(typeof window.openBigMap==='function')window.openBigMap();});}
+ const phoneStyle=document.createElement('style');phoneStyle.id='abj-v1412-phone-style';
+ phoneStyle.textContent='#phone{background:linear-gradient(145deg,#273542 0%,#0b121b 72%)!important;border:7px solid #090e14!important;border-radius:38px!important;color:#edf5fa!important;box-shadow:0 28px 80px #000c,inset 0 0 0 1px #ffffff30!important}#phoneTop{color:#eaf4fa!important;border-color:#ffffff22!important}#phoneClock{color:#a9d9e8!important}#phoneClose{background:#263846!important;color:#fff!important;border:1px solid #607989!important}#phoneScreen{background:radial-gradient(circle at 12% 0%,#28475c 0%,#132838 45%,#091722 100%)!important;color:#edf5fa!important;border:1px solid #ffffff30!important;box-shadow:inset 0 0 24px #0007!important}#phoneScreen h3{color:#f6d99b!important}#phoneScreen p{color:#c3d5df!important}.phoneApp{background:linear-gradient(145deg,#29485c,#142a3b)!important;color:#f4f7fa!important;border:1px solid #6f8b9d80!important;box-shadow:0 8px 18px #0006,inset 0 1px #ffffff18!important;border-radius:19px!important}.phoneApp span{background:linear-gradient(145deg,#456b7d,#1c3445)!important;color:white!important;box-shadow:0 4px 10px #0005!important}#phoneAppContent{color:#eaf2f7!important}#phoneAppContent button{background:#254357!important;color:#fff!important;border-color:#c9a35c!important}#miniMapWrap{pointer-events:auto!important;cursor:pointer!important;touch-action:manipulation}';
+ document.head.appendChild(phoneStyle);
+ console.info('Abidjan Life V1.41.2 hotfix chargé.');
+})();
+</script>
 </body>
 </html>
