@@ -22,7 +22,7 @@ const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 const mailTransport = SMTP_HOST && SMTP_USER && SMTP_PASS ? nodemailer.createTransport({host:SMTP_HOST,port:SMTP_PORT,secure:SMTP_PORT===465,auth:{user:SMTP_USER,pass:SMTP_PASS}}) : null;
-const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.38.0';
+const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.41.0';
 const DEFAULT_CLIENT_URL = process.env.CLIENT_URL || '';
 const CLIENT_SIZE_BYTES = Math.max(0, Number(process.env.CLIENT_SIZE_BYTES) || 1059828);
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -33,7 +33,7 @@ let updateManifest = {
   version: DEFAULT_GAME_VERSION,
   minVersion: process.env.MIN_GAME_VERSION || DEFAULT_GAME_VERSION,
   clientUrl: DEFAULT_CLIENT_URL,
-  releaseNotes: process.env.RELEASE_NOTES || 'V1.38.0 : version demandée ; restauration de la carte détaillée d’Abidjan et conservation des bâtiments, routes et lieux cartographiés.',
+  releaseNotes: process.env.RELEASE_NOTES || 'V1.41.0 : multijoueur synchronisé, calendrier réel commun, raccourcis rapides retirés et notifications de mise à jour.',
   publishedAt: new Date().toISOString(),
   previous: null,
   history: []
@@ -340,17 +340,12 @@ app.post('/api/admin/updates/publish', requireUpdateAdmin, (req, res) => {
   }
 
   if (!/^https:\/\//i.test(clientUrl)) {
-    return res.status(400).json({
-      error: 'Une URL HTTPS de déploiement Vercel est obligatoire.'
-    });
+    return res.status(400).json({ error: 'Une URL HTTPS de déploiement est obligatoire.' });
   }
-
   try {
     const u = new URL(clientUrl);
-    if (!u.hostname.endsWith('.vercel.app')) {
-      return res.status(400).json({
-        error: 'Utilise l’URL unique du déploiement Vercel, pas un alias de production.'
-      });
+    if (!['vercel.app','pages.dev'].some(domain => u.hostname === domain || u.hostname.endsWith('.' + domain))) {
+      return res.status(400).json({ error: 'Utilise une URL HTTPS Vercel ou Cloudflare Pages.' });
     }
   } catch {
     return res.status(400).json({ error: 'URL de déploiement invalide.' });
@@ -392,6 +387,12 @@ app.post('/api/admin/updates/publish', requireUpdateAdmin, (req, res) => {
     version,
     releaseNotes,
     publishedAt: updateManifest.publishedAt
+  });
+  io.emit('social:message', {
+    id: 'update-' + crypto.randomBytes(8).toString('hex'),
+    from: 'system', fromName: 'AF GAMER CI',
+    text: '📢 Nouvelle mise à jour Abidjan Life ' + version + ' disponible. ' + releaseNotes + ' Tu peux l’accepter maintenant ou la refuser temporairement ; elle sera installée automatiquement au retour au menu principal.',
+    system: true, createdAt: Date.now()
   });
 
   res.json({
@@ -441,6 +442,12 @@ app.post('/api/admin/updates/publish', requireUpdateAdmin, (req, res) => {
     releaseNotes: 'Retour à la version précédente.',
     publishedAt: updateManifest.publishedAt,
     rollback: true
+  });
+  io.emit('social:message', {
+    id: 'update-' + crypto.randomBytes(8).toString('hex'),
+    from: 'system', fromName: 'AF GAMER CI',
+    text: '📢 La version d’Abidjan Life a été rétablie : ' + updateManifest.version + '. Le jeu appliquera cette version au retour au menu principal.',
+    system: true, createdAt: Date.now()
   });
 
   res.json({
@@ -1003,6 +1010,11 @@ app.get('/api/players', (_req, res) => {
     moving: !!p.moving
   })) });
 });
+
+// Horloge et calendrier officiels : UTC = heure légale de Côte d’Ivoire.
+function officialWorldClock(){return {iso:new Date().toISOString(),timezone:'Africa/Abidjan'};}
+setInterval(()=>io.emit('world:clock',officialWorldClock()),1000).unref?.();
+
 io.on('connection', (socket) => {
   const account = accounts.get(socket.phone);
 
@@ -1031,16 +1043,17 @@ io.on('connection', (socket) => {
   };
 
   activePlayers.set(socket.id, state);
-  socket.join(multiplayerZoneRooms(state.zone));
+  socket.join('world:all');
   if (!worldStateOwner) worldStateOwner = socket.id;
   socket.emit('world:host', { id: worldStateOwner });
+  socket.emit('world:clock', officialWorldClock());
   if (sharedWorldState) socket.emit('world:state', sharedWorldState);
   broadcastPlayerCount();
 
   socket.emit(
     'world:players',
     [...activePlayers.values()]
-      .filter(p => p.id !== socket.id && multiplayerZoneRooms(state.zone).includes(p.zone))
+      .filter(p => p.id !== socket.id)
       .map(p => ({
         id: p.id,
         profile: p.profile,
@@ -1051,7 +1064,7 @@ io.on('connection', (socket) => {
       }))
   );
 
-  io.to(multiplayerZoneRooms(state.zone)).except(socket.id).emit('player:joined', {
+  io.to('world:all').except(socket.id).emit('player:joined', {
     id: socket.id,
     profile: state.profile,
     position: state.position,
@@ -1137,11 +1150,11 @@ io.on('connection', (socket) => {
       if (nextZone !== state.zone) {
         const oldRooms = multiplayerZoneRooms(state.zone);
         const nextRooms = multiplayerZoneRooms(nextZone);
-        io.to(oldRooms).except(socket.id).emit('player:left', socket.id);
+        io.to('world:all').except(socket.id).emit('player:left', socket.id);
         for (const room of oldRooms) if (!nextRooms.includes(room)) socket.leave(room);
         for (const room of nextRooms) if (!oldRooms.includes(room)) socket.join(room);
         state.zone = nextZone;
-        io.to(nextRooms).except(socket.id).emit('player:joined', {
+        io.to('world:all').except(socket.id).emit('player:joined', {
           id: socket.id, profile: state.profile, position: state.position,
           needs: state.needs, moving: !!state.moving, vehicle: state.vehicle
         });
@@ -1201,7 +1214,7 @@ io.on('connection', (socket) => {
       };
     }
 
-    io.to(state.zone).except(socket.id).emit('player:moved', {
+    io.to('world:all').except(socket.id).emit('player:moved', {
       id: socket.id,
       profile: state.profile,
       position: state.position,
@@ -1275,7 +1288,7 @@ io.on('connection', (socket) => {
       persistAccount(account).catch(error => console.error('Échec sauvegarde déconnexion:', error.message));
     }
     activePlayers.delete(socket.id);
-    io.to(multiplayerZoneRooms(state.zone)).except(socket.id).emit('player:left', socket.id);
+    io.to('world:all').except(socket.id).emit('player:left', socket.id);
     if (worldStateOwner === socket.id) {
       worldStateOwner = activePlayers.keys().next().value || null;
       if (worldStateOwner) io.to(worldStateOwner).emit('world:host', { id: worldStateOwner });
