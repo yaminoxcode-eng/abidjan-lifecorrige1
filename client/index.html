@@ -862,29 +862,8 @@ function openRecoverFlow(){
   showAccountStatus('Un code sera envoyé à ton adresse si elle correspond au compte.',false);
   setAccountFieldVisibility();
 }
-function requestCreatorSecret(){
-  return new Promise(resolve=>{
-    const old=document.getElementById('abjCreatorAuthCodeDialog');if(old)old.remove();
-    const overlay=document.createElement('div');overlay.id='abjCreatorAuthCodeDialog';
-    overlay.style.cssText='position:fixed;inset:0;z-index:100600;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(4,13,20,.94);backdrop-filter:blur(10px);';
-    overlay.innerHTML='<section style="width:min(420px,100%);padding:24px;border-radius:20px;background:#fff;color:#172a31;box-shadow:0 20px 70px #0009"><h2 style="margin:0 0 8px">Vérification du compte créateur</h2><p style="font-size:14px;line-height:1.5;color:#52656b">Saisis ton code secret dans le champ ci-dessous pour continuer la connexion.</p><label for="abjCreatorAuthCode" style="display:block;font-weight:800;font-size:12px;margin:12px 0 6px">Code secret</label><input id="abjCreatorAuthCode" type="password" autocomplete="off" inputmode="numeric" style="box-sizing:border-box;width:100%;padding:14px;border:1px solid #b8c9c4;border-radius:10px;background:#fff;color:#172a31;font-size:18px;letter-spacing:4px"><p id="abjCreatorAuthCodeError" role="status" style="min-height:18px;color:#b33;font-size:12px"></p><div style="display:flex;gap:8px;justify-content:flex-end"><button id="abjCreatorAuthCodeCancel" type="button" style="padding:11px 14px;border:1px solid #b8c9c4;border-radius:10px;background:#fff;color:#172a31">Annuler</button><button id="abjCreatorAuthCodeSubmit" type="button" style="padding:11px 14px;border:0;border-radius:10px;background:#ed760d;color:#fff;font-weight:900">Continuer</button></div></section>';
-    document.body.appendChild(overlay);
-    const input=overlay.querySelector('#abjCreatorAuthCode'),error=overlay.querySelector('#abjCreatorAuthCodeError');
-    const finish=value=>{overlay.remove();resolve(value);};
-    overlay.querySelector('#abjCreatorAuthCodeCancel').onclick=()=>finish(null);
-    overlay.querySelector('#abjCreatorAuthCodeSubmit').onclick=()=>{const value=String(input.value||'').trim();if(!value){error.textContent='Saisis ton code secret pour continuer.';input.focus();return;}finish(value);};
-    input.addEventListener('keydown',e=>{if(e.key==='Enter')overlay.querySelector('#abjCreatorAuthCodeSubmit').click();});
-    setTimeout(()=>input.focus(),80);
-  });
-}
 async function fetchWithCreatorCode(url,options){
-  let response=await fetch(url,options);
-  if(response.status!==428)return response;
-  const code=await requestCreatorSecret();
-  if(!code)return response;
-  let body={};try{body=JSON.parse(options&&options.body||'{}');}catch(e){}
-  body.creatorCode=code;
-  return fetch(url,{...options,body:JSON.stringify(body)});
+  return fetch(url,options);
 }
 function showAccountStatus(msg, isError){
   const status=document.getElementById('accountStatus');
@@ -11580,49 +11559,7 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
 })();
 </script>
 
-<script id="abj-creator-launch-verification">
-(function(){
- 'use strict';
- if(window.__ABJ_CREATOR_LAUNCH_GATE)return;window.__ABJ_CREATOR_LAUNCH_GATE=true;
- const OFFICIAL='+2250799259362';
- const canonical=v=>{try{return typeof normalizeIvorianMobile==='function'?normalizeIvorianMobile(v):null;}catch(e){return null;}};
- function askCode(){
-  return new Promise(resolve=>{
-   const old=document.getElementById('abjCreatorLaunchGate');if(old)old.remove();
-   const overlay=document.createElement('div');overlay.id='abjCreatorLaunchGate';
-   overlay.style.cssText='position:fixed;inset:0;z-index:100500;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(4,13,20,.94);backdrop-filter:blur(12px);color:#172a31;font-family:Segoe UI,system-ui,sans-serif';
-   overlay.innerHTML='<section style="width:min(420px,100%);padding:26px;border-radius:24px;background:#fafaf6;box-shadow:0 24px 80px #0009;text-align:left"><div style="font-size:12px;font-weight:900;letter-spacing:2px;color:#a66a20">AF GAMER CI · SÉCURITÉ</div><h2 style="margin:10px 0 8px;color:#172a31">Vérification du créateur</h2><p style="color:#60747a;line-height:1.5;font-size:14px">Entre ton code secret pour autoriser l’ouverture du monde. Cette vérification protège ton compte créateur à chaque lancement.</p><label for="abjCreatorLaunchCode" style="display:block;margin:14px 0 6px;font-size:12px;font-weight:800">Code secret</label><input id="abjCreatorLaunchCode" type="password" autocomplete="off" inputmode="numeric" style="width:100%;padding:14px;border:1px solid #cbd9d5;border-radius:12px;background:#fff;color:#172a31;font-size:18px;letter-spacing:5px"><p id="abjCreatorLaunchStatus" role="status" style="min-height:20px;font-size:12px;color:#b33;margin:8px 0"></p><div style="display:flex;gap:8px;justify-content:flex-end"><button id="abjCreatorLaunchCancel" type="button" style="padding:12px 16px;border:1px solid #cbd9d5;border-radius:12px;background:#fff;color:#172a31;font-weight:800">Annuler</button><button id="abjCreatorLaunchConfirm" type="button" style="padding:12px 16px;border:0;border-radius:12px;background:#ed760d;color:#fff;font-weight:900">Vérifier et entrer</button></div></section>';
-   document.body.appendChild(overlay);
-   const input=overlay.querySelector('#abjCreatorLaunchCode'),status=overlay.querySelector('#abjCreatorLaunchStatus'),ok=overlay.querySelector('#abjCreatorLaunchConfirm');
-   const finish=v=>{overlay.remove();resolve(v);};
-   overlay.querySelector('#abjCreatorLaunchCancel').onclick=()=>finish(null);
-   ok.onclick=()=>{const value=String(input.value||'').trim();if(!value){status.textContent='Saisis ton code secret.';input.focus();return;}ok.disabled=true;ok.textContent='Vérification…';finish(value);};
-   input.addEventListener('keydown',e=>{if(e.key==='Enter')ok.click();});
-   setTimeout(()=>input.focus(),60);
-  });
- }
- const previous=window.activateGameAccount;
- if(typeof previous==='function'&&!window.__ABJ_CREATOR_LAUNCH_WRAPPED){
-  window.__ABJ_CREATOR_LAUNCH_WRAPPED=true;
-  window.activateGameAccount=async function(phone){
-   const normalized=canonical(phone);
-   if(normalized===OFFICIAL){
-    const token=typeof safeGet==='function'?safeGet('abj-online-token:'+OFFICIAL):null;
-    if(!token){if(typeof showAccountStatus==='function')showAccountStatus('Reconnecte-toi pour vérifier ton compte créateur.',true);return;}
-    const code=await askCode();
-    if(!code){if(typeof showAccountStatus==='function')showAccountStatus('Vérification annulée. Le monde ne sera pas chargé.',true);return;}
-    const endpoint=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'')+'/api/creator/verify-launch';
-    try{
-     const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({creatorCode:code}),cache:'no-store'});
-     const data=await response.json().catch(()=>({}));
-     if(!response.ok||data.verified!==true){if(typeof showAccountStatus==='function')showAccountStatus(data.error||'Vérification du créateur refusée.',true);return;}
-    }catch(error){if(typeof showAccountStatus==='function')showAccountStatus('Serveur de sécurité indisponible. Le monde reste verrouillé.',true);return;}
-   }
-   return previous.apply(this,arguments);
-  };
- }
-})();
-</script>
+
 <script id="abj-daily-gem-missions">
 (function(){
  'use strict';
