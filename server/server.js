@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const crypto = require('crypto');
-const { multiplayerZone, multiplayerZoneRooms } = require('./spatial-zones');
+const { multiplayerZone } = require('./spatial-zones');
 
 const PORT = Number(process.env.PORT || 10000);
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('hex');
@@ -389,7 +389,7 @@ app.post('/api/admin/updates/publish', requireUpdateAdmin, (req, res) => {
     publishedAt: updateManifest.publishedAt
   });
   io.emit('social:message', {
-    id: 'update-' + crypto.randomBytes(8).toString('hex'),
+    id: 'update-' + version,
     from: 'system', fromName: 'AF GAMER CI',
     text: '📢 Nouvelle mise à jour Abidjan Life ' + version + ' disponible. ' + releaseNotes + ' Tu peux l’accepter maintenant ou la refuser temporairement ; elle sera installée automatiquement au retour au menu principal.',
     system: true, createdAt: Date.now()
@@ -444,7 +444,7 @@ app.post('/api/admin/updates/publish', requireUpdateAdmin, (req, res) => {
     rollback: true
   });
   io.emit('social:message', {
-    id: 'update-' + crypto.randomBytes(8).toString('hex'),
+    id: 'update-' + updateManifest.version,
     from: 'system', fromName: 'AF GAMER CI',
     text: '📢 La version d’Abidjan Life a été rétablie : ' + updateManifest.version + '. Le jeu appliquera cette version au retour au menu principal.',
     system: true, createdAt: Date.now()
@@ -1147,18 +1147,7 @@ io.on('connection', (socket) => {
 
       account.position = state.position;
       const nextZone = multiplayerZone(state.position);
-      if (nextZone !== state.zone) {
-        const oldRooms = multiplayerZoneRooms(state.zone);
-        const nextRooms = multiplayerZoneRooms(nextZone);
-        io.to('world:all').except(socket.id).emit('player:left', socket.id);
-        for (const room of oldRooms) if (!nextRooms.includes(room)) socket.leave(room);
-        for (const room of nextRooms) if (!oldRooms.includes(room)) socket.join(room);
-        state.zone = nextZone;
-        io.to('world:all').except(socket.id).emit('player:joined', {
-          id: socket.id, profile: state.profile, position: state.position,
-          needs: state.needs, moving: !!state.moving, vehicle: state.vehicle
-        });
-      }
+      if (nextZone !== state.zone) state.zone = nextZone;
     }
 
     if (payload.profile && typeof payload.profile === 'object') {
