@@ -863,15 +863,8 @@ function openRecoverFlow(){
   setAccountFieldVisibility();
 }
 async function fetchWithCreatorCode(url,options){
-  const first=await fetch(url,options);
-  if(first.status!==428)return first;
-  const challenge=await first.clone().json().catch(()=>({}));
-  if(!challenge.codeRequired)return first;
-  const creatorCode=window.prompt('Vérification du compte créateur : entre ton code secret.');
-  if(!creatorCode)return first;
-  let body={};
-  try{body=JSON.parse(options&&options.body||'{}');}catch(e){}
-  return fetch(url,{...options,body:JSON.stringify({...body,creatorCode:String(creatorCode)})});
+  // L'identification créateur ne demande plus de code secret supplémentaire.
+  return fetch(url,options);
 }
 function showAccountStatus(msg, isError){
   const status=document.getElementById('accountStatus');
