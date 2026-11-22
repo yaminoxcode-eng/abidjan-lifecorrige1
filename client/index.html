@@ -9659,6 +9659,26 @@ if(__oldSky){
 /* ---------- 4) Intérieurs : masquer le monde extérieur qui traverse (arbres/« feuilles ») ---------- */
 function hideWorldForInterior(hide){
   try{
+    // Les façades OSM sont regroupées par secteur. Comme l'intérieur est construit au même emplacement,
+    // leurs grandes faces extérieures peuvent rester devant la caméra et apparaître comme un panneau blanc.
+    // On masque temporairement ces groupes extérieurs, sans toucher aux meshes de l'intérieur.
+    if(hide){
+      if(!window.__abjExteriorBuildingVisibility){
+        window.__abjExteriorBuildingVisibility=[];
+        if(typeof distanceManagedBuildings!=='undefined')distanceManagedBuildings.forEach(entry=>{
+          const group=entry&&entry.group;if(!group||group===currentInterior?.group)return;
+          window.__abjExteriorBuildingVisibility.push({group,visible:group.visible,detail:entry.detailMesh,detailVisible:entry.detailMesh?entry.detailMesh.visible:null});
+          group.visible=false;if(entry.detailMesh)entry.detailMesh.visible=false;
+        });
+      }
+    }else if(window.__abjExteriorBuildingVisibility){
+      window.__abjExteriorBuildingVisibility.forEach(state=>{
+        if(!state.group)return;
+        state.group.visible=state.visible;
+        if(state.detail)state.detail.visible=state.detailVisible;
+      });
+      window.__abjExteriorBuildingVisibility=null;
+    }
     if(typeof outdoorGround!=='undefined'&&outdoorGround)outdoorGround.visible=!hide;
     if(typeof laguneMesh!=='undefined'&&laguneMesh)laguneMesh.visible=!hide;
     if(typeof npcs!=='undefined')npcs.forEach(n=>{if(n)n.visible=!hide&&!n.userData.dead;});
