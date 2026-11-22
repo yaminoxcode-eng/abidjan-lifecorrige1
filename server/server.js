@@ -156,6 +156,12 @@ function phoneOf(v) {
 }
 
 const CREATOR_ACCOUNT_PHONE = phoneOf(process.env.CREATOR_ACCOUNT_PHONE || '');
+const CREATOR_IDENTITY_CODE = String(process.env.CREATOR_IDENTITY_CODE || '');
+function creatorIdentityCodeValid(value) {
+  const supplied = Buffer.from(String(value || ''), 'utf8');
+  const expected = Buffer.from(CREATOR_IDENTITY_CODE, 'utf8');
+  return !!CREATOR_IDENTITY_CODE && supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+}
 function answer(v) {
   return clean(v, 100).toLowerCase()
     .normalize('NFD')
@@ -460,6 +466,7 @@ app.post('/api/auth/register', async (req,res) => {
   const phone=phoneOf(req.body.phone), password=String(req.body.password||'');
   const email=clean(req.body.email,120).toLowerCase();
   if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
+  if(isCreatorPhone(phone)) return res.status(403).json({error:'Le compte créateur officiel ne peut pas être créé ou revendiqué depuis l’inscription publique.'});
   if(password.length<8||password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
   if(email && !/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
   if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
@@ -567,6 +574,15 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(429).json({
       error: 'Trop de tentatives. Attends une minute.'
     });
+  }
+
+  if (isCreatorPhone(phone)) {
+    if (!CREATOR_IDENTITY_CODE) return res.status(503).json({error:'Vérification créateur indisponible : configure le secret côté serveur.'});
+    if (!req.body.creatorCode) return res.status(428).json({codeRequired:true,error:'Vérification secrète du compte créateur requise.'});
+    if (!creatorIdentityCodeValid(req.body.creatorCode)) {
+      if (!rateLimit(req.ip + ':creator-identity', 5, 60000)) return res.status(429).json({error:'Trop de tentatives de vérification. Réessaie dans une minute.'});
+      return res.status(401).json({error:'Code secret incorrect. Identité du créateur non confirmée.'});
+    }
   }
 
   const a = phone && accounts.get(phone);
