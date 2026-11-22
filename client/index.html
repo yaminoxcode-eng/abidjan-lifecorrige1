@@ -587,6 +587,7 @@ button,input,select{font:inherit}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+<script src="./assets3d/abidjan-model-factory.js"></script>
 <script>
 
 window.addEventListener('DOMContentLoaded',()=>{
@@ -3907,12 +3908,12 @@ function createVehicles(count) {
     const pos = -CITY_SIZE / 2 + Math.random() * CITY_SIZE;
     const type = Math.random() < 0.32 ? 'gbaka' : Math.random() < 0.55 ? 'taxi' : Math.random() < 0.75 ? 'moto' : 'voiture';
     const v = createVehicleMesh(type);
-    v.userData = {
+    v.userData = Object.assign(v.userData || {}, {
       type, isHorizontal: isH, roadLine: line, dir, laneOffset,
       speed: type === 'moto' ? 0.19 : type === 'gbaka' ? 0.11 : 0.15,
       baseSpeed: type === 'moto' ? 0.19 : type === 'gbaka' ? 0.11 : 0.15,
       pos, health: 100, exploding: false, wreck: false
-    };
+    });
     if (isH) { v.position.set(pos, 0.02, line + laneOffset); v.rotation.y = dir > 0 ? Math.PI / 2 : -Math.PI / 2; }
     else { v.position.set(line - laneOffset, 0.02, pos); v.rotation.y = dir > 0 ? 0 : Math.PI; }
     scene.add(v);
@@ -3921,6 +3922,9 @@ function createVehicles(count) {
 }
 
 function createVehicleMesh(type) {
+  if(window.ABJ3DModels&&type==='bus')return window.ABJ3DModels.createSotraBus(THREE);
+  if(window.ABJ3DModels&&type==='gbaka')return window.ABJ3DModels.createGbaka(THREE);
+  if(window.ABJ3DModels&&type==='taxi')return window.ABJ3DModels.createTaxi(THREE);
   const g = new THREE.Group();
   const glassMat = new THREE.MeshLambertMaterial({ color: 0x88aacc, transparent: true, opacity: 0.55 });
   const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffcc });
@@ -4129,12 +4133,13 @@ function createCharacter(opts) {
   }
   const armL=makeArm(-1),armR=makeArm(1),legL=makeLeg(-1),legR=makeLeg(1);
   g.userData={armL,armR,legL,legR,phase:0,headGroup,torso,hips,anatomyVersion:4,bodyType,hairstyle,outfit};
+  if(opts.abj3dDetails&&window.ABJ3DModels)window.ABJ3DModels.decorateCharacter(THREE,g,opts.abj3dDetails===true?{}:opts.abj3dDetails);
   return g;
 }
 function applyPlayerClothing(){if(!player||!lifeState.playerProfile)return;const shirt=lifeState.playerProfile.shirt||0xe74c3c,pants=lifeState.playerProfile.pants||0x2c3e50;player.traverse(o=>{if(!o.isMesh||!o.userData.clothingPart)return;o.material.color.setHex(o.userData.clothingPart==='shirt'?shirt:pants);});}
 function createPlayer() {
   const profile=lifeState.playerProfile||{};
-  player = createCharacter({ shirt: profile.shirt||0xe74c3c, pants: profile.pants||0x2c3e50, skin: profile.skin||0x7a4a24, hair:profile.hair||0x17120f, gender:profile.gender||'homme',bodyType:profile.bodyType,hairstyle:profile.hairstyle,outfit:profile.outfit });
+  player = createCharacter({ shirt: profile.shirt||0xe74c3c, pants: profile.pants||0x2c3e50, skin: profile.skin||0x7a4a24, hair:profile.hair||0x17120f, gender:profile.gender||'homme',bodyType:profile.bodyType,hairstyle:profile.hairstyle,outfit:profile.outfit,abj3dDetails:true });
   player.userData.displayName=profile.name||'Mon personnage';
   // Spawn près du noyau urbain (Plateau) pour éviter un monde vide au démarrage
   let sx=-80, sz=-40;
