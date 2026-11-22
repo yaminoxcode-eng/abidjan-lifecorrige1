@@ -2198,7 +2198,7 @@ function decorateOSMStreets(){
     const dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,len=Math.hypot(dx,dz);if(len<7)continue;
     const nx=-dz/len,nz=dx/len;
     const sidewalkWidth=(r.type==='primary'||r.type==='secondary')?3.1:2.55;
-    for(const side of [-1,1]){
+    if(['motorway','trunk','tertiary_link'].includes(r.type))for(const side of [-1,1]){
       const off=r.width/2+sidewalkWidth/2+.12;
       const a={x:r.a.x+nx*off*side,z:r.a.z+nz*off*side},b={x:r.b.x+nx*off*side,z:r.b.z+nz*off*side};
       const c={x:r.b.x+nx*(off+sidewalkWidth)*side,z:r.b.z+nz*(off+sidewalkWidth)*side};
@@ -2237,9 +2237,9 @@ function decorateOSMStreets(){
     crossingCount++;
   }
   function addMerged(v,idx,color){if(!v.length)return;const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(v,3));geo.setIndex(idx);geo.computeVertexNormals();const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color,side:THREE.DoubleSide}));m.receiveShadow=true;scene.add(m);}
-  // Les trottoirs continus sont déjà fusionnés dans osm-sidewalks-distinct lors du chargement OSM.
-  // Ne pas les redessiner une seconde fois : cela superpose les surfaces aux carrefours.
-  addMerged(lineV,lineI,0xf0e5c4);
+  // Les rues locales ont déjà leurs trottoirs dans osm-sidewalks-distinct.
+  // Ici, seuls les grands axes non couverts ajoutent leur trottoir ; les marquages restent fusionnés.
+  addMerged(sidewalkV,sidewalkI,0xc9c3b7);addMerged(lineV,lineI,0xf0e5c4);
 }
 function createStreetLamp(x,z){
   const g=new THREE.Group();const poleMat=new THREE.MeshLambertMaterial({color:0x555b5c}),armMat=new THREE.MeshLambertMaterial({color:0x44494a});
