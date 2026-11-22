@@ -2112,7 +2112,7 @@ function buildOSMRoads(ways, nodes) {
     const tag=w.tags.highway;if(ignored.has(tag))return;
     const raw=w.nodes.map(id=>nodes.get(id)).filter(Boolean);if(raw.length<2)return;
     if(!pedestrianOnly.has(tag)&&!ignored.has(tag))for(let j=1;j<raw.length;j++){
-      const a=raw[j-1],b=raw[j];if(Math.hypot(b.x-a.x,b.z-a.z)>.35)trafficRoadSegments.push({a,b,width:roadWidths[tag]||4,type:tag,name:w.tags.name||''});
+      const a=raw[j-1],b=raw[j];if(Math.hypot(b.x-a.x,b.z-a.z)>.35)trafficRoadSegments.push({a,b,width:roadWidths[tag]||4,type:tag,name:w.tags.name||'',oneway:w.tags.oneway||'',junction:w.tags.junction||''});
     }
     if(pedestrianOnly.has(tag)){
       let last=null;
@@ -2139,7 +2139,7 @@ function buildOSMRoads(ways, nodes) {
         if(['primary','secondary','tertiary'].includes(tag)&&len>24){const dash=5,space=13,ux=(b.x-a.x)/len,uz=(b.z-a.z)/len;for(let at=8;at<len-3;at+=space){const p0={x:a.x+ux*at,z:a.z+uz*at},p1={x:a.x+ux*Math.min(len,at+dash),z:a.z+uz*Math.min(len,at+dash)};addStripTo(p0,p1,.16,.035,markVertices,markIndices);}}
         pedestrianNodes.push(l1,l2,r1,r2);
       }
-      osmRoadSegments.push({a,b,width,type:tag,name:w.tags.name||''});
+      osmRoadSegments.push({a,b,width,type:tag,name:w.tags.name||'',oneway:w.tags.oneway||'',junction:w.tags.junction||''});
       if(['primary','secondary','tertiary','residential','living_street'].includes(tag)&&(i%3===0||i===pts.length-1)){
         const dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz)||1,nx=-dz/l*(width/2+2.8),nz=dx/l*(width/2+2.8);
         pedestrianNodes.push({x:b.x+nx,z:b.z+nz},{x:b.x-nx,z:b.z-nz});
@@ -2751,6 +2751,7 @@ function buildOSMWaterAndParks(ways,nodes) {
 function makeStreetLabel(x,z,label){const c=document.createElement('canvas');c.width=512;c.height=64;const ctx=c.getContext('2d');ctx.fillStyle='rgba(20,28,30,.78)';ctx.fillRect(0,0,512,64);ctx.fillStyle='#f5f0df';ctx.font='bold 25px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label.slice(0,36),256,32);const t=new THREE.CanvasTexture(c);const m=new THREE.Mesh(new THREE.PlaneGeometry(22,2.8),new THREE.MeshBasicMaterial({map:t,transparent:true,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(x,terrainHeight(x,z)+0.08,z);scene.add(m);}
 
 function trafficNodeKey(p){return Math.round(p.x*2)/2+':'+Math.round(p.z*2)/2;}
+function trafficSegmentDirections(seg){const one=String(seg.oneway||'').toLowerCase();if(one==='-1')return [false];if(one==='yes'||one==='1'||one==='true'||seg.junction==='roundabout'||seg.junction==='circular')return [true];return [true,false];}
 function buildTrafficGraph(){
   trafficGraph=new Map();
   const source=trafficRoadSegments.length?trafficRoadSegments:osmRoadSegments;
@@ -2759,7 +2760,7 @@ function buildTrafficGraph(){
     if(Math.hypot(seg.b.x-seg.a.x,seg.b.z-seg.a.z)<.35)return;
     const ka=trafficNodeKey(seg.a),kb=trafficNodeKey(seg.b);
     if(!trafficGraph.has(ka))trafficGraph.set(ka,[]);if(!trafficGraph.has(kb))trafficGraph.set(kb,[]);
-    trafficGraph.get(ka).push({seg,forward:true});trafficGraph.get(kb).push({seg,forward:false});
+    const directions=trafficSegmentDirections(seg);if(directions.includes(true))trafficGraph.get(ka).push({seg,forward:true});if(directions.includes(false))trafficGraph.get(kb).push({seg,forward:false});
   });
 }
 function buildTrafficRoute(firstSeg,firstForward,maxSegments){
@@ -2784,7 +2785,7 @@ function createAbidjanTraffic(count){
   if(!trafficGraph.size)buildTrafficGraph();
   const source=trafficRoadSegments.length?trafficRoadSegments:osmRoadSegments;
   const px=player?player.position.x:0,pz=player?player.position.z:0;
-  const eligible=source.filter(r=>trafficGraph.get(trafficNodeKey(r.a))&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>12&&r.width>=5);
+  const eligible=source.filter(r=>(trafficGraph.get(trafficNodeKey(r.a))||[]).some(o=>o.seg===r)&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>12&&r.width>=5);
   const within=radius=>eligible.filter(r=>{const x=(r.a.x+r.b.x)*.5-px,z=(r.a.z+r.b.z)*.5-pz;return x*x+z*z<=radius*radius;});
   let candidates=within(2800);if(candidates.length<24)candidates=within(6000);
   const weight=r=>['primary','trunk','motorway'].includes(r.type)?3.2:r.type==='secondary'?2.4:r.type==='tertiary'?1.8:['residential','living_street'].includes(r.type)?1.25:.75;
@@ -2793,7 +2794,7 @@ function createAbidjanTraffic(count){
     if(!candidates.length)break;
     let pick=Math.random()*totalWeight,r=candidates[candidates.length-1];
     for(const candidate of candidates){pick-=weight(candidate);if(pick<=0){r=candidate;break;}}
-    const forward=Math.random()<.5,t=Math.random();
+    const directions=trafficSegmentDirections(r),forward=directions[Math.floor(Math.random()*directions.length)],t=Math.random();
     const route=buildTrafficRoute(r,forward,36);if(!route.length)continue;
     const first=route[0],len=Math.hypot(first.b.x-first.a.x,first.b.z-first.a.z)||1;
     const progress=(forward?t:1-t)*len;
@@ -2925,9 +2926,9 @@ function advanceTrafficVehicle(v,delta){
       remaining-=Math.max(0,available);d.routeIndex++;d.progress=0;
       if(d.routeIndex>=d.route.length){
         const end=seg.b,opts=(trafficGraph.get(trafficNodeKey(end))||[]).filter(o=>o.seg!==seg.source);
-        if(!opts.length){const forward=trafficNodeKey(seg.source.a)===trafficNodeKey(end);d.route=buildTrafficRoute(seg.source,forward,36);d.routeIndex=0;}
+        if(!opts.length){const reverse=trafficNodeKey(seg.source.a)===trafficNodeKey(end);d.route=trafficSegmentDirections(seg.source).includes(reverse)?buildTrafficRoute(seg.source,reverse,36):[];d.routeIndex=0;}
         else{const next=opts[Math.floor(Math.random()*opts.length)];d.route=buildTrafficRoute(next.seg,next.forward,36);d.routeIndex=0;}
-        if(!d.route.length)return;
+        if(!d.route.length){v.visible=false;return;}
       }
     }
   }
