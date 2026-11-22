@@ -11601,7 +11601,7 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
     #abjPhoneSwitchLoading .abj-switch-bar i{display:block;width:45%;height:100%;border-radius:8px;background:#ed760d;animation:abjSwitchSlide .8s ease-in-out infinite alternate}
     @keyframes abjSwitchPulse{to{transform:scale(1.12);opacity:.65}}@keyframes abjSwitchSlide{to{transform:translateX(120%)}}
     #phoneScreen{position:relative}
-    @media(max-width:760px){#abjQuickDock{bottom:calc(96px + env(safe-area-inset-bottom));gap:5px;padding:6px;border-radius:19px;max-width:calc(100vw - 12px)}#abjQuickDock button{width:clamp(44px,14vw,57px);min-height:53px;border-radius:14px}#abjQuickDock button span{font-size:21px}#abjQuickDock button small{font-size:9px}}
+    @media(max-width:760px){#abjQuickDock{bottom:calc(220px + env(safe-area-inset-bottom));gap:5px;padding:6px;border-radius:19px;max-width:calc(100vw - 12px)}#abjQuickDock button{width:clamp(44px,14vw,57px);min-height:53px;border-radius:14px}#abjQuickDock button span{font-size:21px}#abjQuickDock button small{font-size:9px}#miniMapWrap{left:auto!important;right:10px!important;top:64px!important;width:108px!important;height:108px!important}#quartier{top:178px!important;right:10px!important;font-size:12px!important}#etage{top:198px!important;right:10px!important;font-size:11px!important}#mapTop{top:62px!important;left:10px!important;right:10px!important;max-height:30vh!important;overflow:visible}#mapCard{bottom:calc(145px + env(safe-area-inset-bottom))!important}#itemHint{bottom:calc(178px + env(safe-area-inset-bottom))!important}}
     @media(max-width:380px){#abjQuickDock{gap:3px}#abjQuickDock button{width:43px}#abjQuickDock button small{font-size:8px}}
   `;
   document.head.appendChild(css);
@@ -11612,7 +11612,7 @@ console.info('ABJ V1.39 — commandes créateur, hélicoptère en approche, tran
     phoneScreen.appendChild(loader);
   }
   function refreshDock(){
-    const visible=!!(typeof gameStarted!=='undefined'&&gameStarted&&typeof worldReady!=='undefined'&&worldReady);
+    const visible=!!(typeof gameStarted!=='undefined'&&gameStarted&&typeof worldReady!=='undefined'&&worldReady&&!mapOpen&&!phoneOpen&&!dialogOpen&&!panelOpen);
     dock.style.display=visible?'flex':'none';
   }
   setInterval(refreshDock,350);
