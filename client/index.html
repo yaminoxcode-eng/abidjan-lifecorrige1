@@ -2002,7 +2002,7 @@ function abjOpenOSMCache(){
 async function abjReadOSMCache(){
  const db=await abjOpenOSMCache();
  try{return await new Promise((resolve,reject)=>{
-  const tx=db.transaction('snapshots','readonly'),req=tx.objectStore('snapshots').get('abidjan-district-v2');
+  const tx=db.transaction('snapshots','readonly'),req=tx.objectStore('snapshots').get('abidjan-district-v3');
   req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error||new Error('Lecture cache impossible'));
  });}finally{db.close();}
 }
@@ -2010,14 +2010,14 @@ async function abjWriteOSMCache(data){
  const db=await abjOpenOSMCache();
  try{await new Promise((resolve,reject)=>{
   const tx=db.transaction('snapshots','readwrite');
-  tx.objectStore('snapshots').put({savedAt:Date.now(),data},'abidjan-district-v2');
+  tx.objectStore('snapshots').put({savedAt:Date.now(),data},'abidjan-district-v3');
   tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Écriture cache impossible'));tx.onabort=()=>reject(tx.error||new Error('Cache annulé'));
  });}finally{db.close();}
 }
 
 async function loadAbidjanOSM() {
   const b = ABIDJAN_BBOX;
-  const query = `[out:json][timeout:90];(way[highway](${b.south},${b.west},${b.north},${b.east});way[building](${b.south},${b.west},${b.north},${b.east});way[amenity~"^(hospital|clinic|marketplace|bus_station|school|university|police|fire_station|train_station)$"](${b.south},${b.west},${b.north},${b.east});way[shop~"^(supermarket|convenience|marketplace)$"](${b.south},${b.west},${b.north},${b.east});way[natural=water](${b.south},${b.west},${b.north},${b.east});way[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});way[natural=beach](${b.south},${b.west},${b.north},${b.east});way[leisure=park](${b.south},${b.west},${b.north},${b.east});relation[natural=water](${b.south},${b.west},${b.north},${b.east});relation[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});node[shop](${b.south},${b.west},${b.north},${b.east});node[amenity](${b.south},${b.west},${b.north},${b.east});node[office](${b.south},${b.west},${b.north},${b.east});node[tourism](${b.south},${b.west},${b.north},${b.east});node[public_transport](${b.south},${b.west},${b.north},${b.east});node[highway=bus_stop](${b.south},${b.west},${b.north},${b.east});relation[route=bus](${b.south},${b.west},${b.north},${b.east}););out body;>;out skel qt;`;
+  const query = `[out:json][timeout:90];(way[highway](${b.south},${b.west},${b.north},${b.east});way[building](${b.south},${b.west},${b.north},${b.east});way[amenity~"^(hospital|clinic|marketplace|bus_station|school|university|police|fire_station|train_station|fuel|car_repair|car_wash|parking|bank|atm|pharmacy|restaurant|cafe|fast_food|post_office|townhall|cinema|theatre|library|ferry_terminal)$"](${b.south},${b.west},${b.north},${b.east});way[shop~"^(supermarket|convenience|marketplace|department_store|mall|car_repair|car|tyres|motorcycle|hardware|clothes|bakery|butcher|greengrocer|chemist|electronics|mobile_phone)$"](${b.south},${b.west},${b.north},${b.east});way[railway~"^(station|halt|tram_stop)$"](${b.south},${b.west},${b.north},${b.east});way[natural=water](${b.south},${b.west},${b.north},${b.east});way[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});way[natural=beach](${b.south},${b.west},${b.north},${b.east});way[leisure=park](${b.south},${b.west},${b.north},${b.east});relation[natural=water](${b.south},${b.west},${b.north},${b.east});relation[waterway=riverbank](${b.south},${b.west},${b.north},${b.east});node[shop](${b.south},${b.west},${b.north},${b.east});node[amenity](${b.south},${b.west},${b.north},${b.east});node[office](${b.south},${b.west},${b.north},${b.east});node[tourism](${b.south},${b.west},${b.north},${b.east});node[public_transport](${b.south},${b.west},${b.north},${b.east});node[highway=bus_stop](${b.south},${b.west},${b.north},${b.east});relation[route=bus](${b.south},${b.west},${b.north},${b.east}););out body;>;out skel qt;`;
   let data = null;
   let loadedFromCache = false;
   // Une copie locale récente évite de retélécharger toute la carte des 13 communes à chaque connexion.
@@ -2165,7 +2165,7 @@ function buildOSMRoads(ways, nodes) {
     // Le graphe de navigation conserve chaque nœud OSM original : la simplification
     // graphique ci-dessous peut supprimer un carrefour situé au milieu d'une voie.
     if(!pedestrianOnly.has(tag)&&!ignored.has(tag))for(let j=1;j<raw.length;j++){
-      const a=raw[j-1],b=raw[j];if(Math.hypot(b.x-a.x,b.z-a.z)>.35)trafficRoadSegments.push({a,b,width:roadWidths[tag]||4,type:tag,name:w.tags.name||''});
+      const a=raw[j-1],b=raw[j];if(Math.hypot(b.x-a.x,b.z-a.z)>.35)trafficRoadSegments.push({a,b,width:roadWidths[tag]||4,type:tag,name:w.tags.name||'',oneway:w.tags.oneway||'',junction:w.tags.junction||''});
     }
     if(pedestrianOnly.has(tag)){
       let last=null;
@@ -2194,7 +2194,7 @@ function buildOSMRoads(ways, nodes) {
         if(['primary','secondary','tertiary'].includes(tag)&&len>24){const dash=5,space=13,ux=(b.x-a.x)/len,uz=(b.z-a.z)/len;for(let at=8;at<len-3;at+=space){const p0={x:a.x+ux*at,z:a.z+uz*at},p1={x:a.x+ux*Math.min(len,at+dash),z:a.z+uz*Math.min(len,at+dash)};addStripTo(p0,p1,.16,.035,markVertices,markIndices);}}
         pedestrianNodes.push(l1,l2,r1,r2);
       }
-      osmRoadSegments.push({a,b,width,type:tag,name:w.tags.name||''});
+      osmRoadSegments.push({a,b,width,type:tag,name:w.tags.name||'',oneway:w.tags.oneway||'',junction:w.tags.junction||''});
       if(['primary','secondary','tertiary','residential','living_street'].includes(tag)&&(i%3===0||i===pts.length-1)){
         const dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz)||1,nx=-dz/l*(width/2+2.8),nz=dx/l*(width/2+2.8);
         pedestrianNodes.push({x:b.x+nx,z:b.z+nz},{x:b.x-nx,z:b.z-nz});
@@ -2286,10 +2286,10 @@ function buildOSMNodePlaces(elements,nodes){
   for(const el of tagged){
     if(shown>=1800)break;
     const p=nodes.get(el.id),t=el.tags||{};
-    const isStop=t.highway==='bus_stop'||t.public_transport==='platform'||t.public_transport==='stop_position'||t.amenity==='bus_station'||t.amenity==='ferry_terminal'||t.public_transport==='station';
+    const isStop=t.highway==='bus_stop'||t.public_transport==='platform'||t.public_transport==='stop_position'||t.amenity==='bus_station'||t.amenity==='ferry_terminal'||t.public_transport==='station'||['station','halt','tram_stop'].includes(t.railway);
     const isEducation=['school','university','college','kindergarten'].includes(t.amenity)||['school','university','college'].includes(t.building);
-    const type=t.shop?'commerce':t.amenity==='university'||t.amenity==='college'||t.building==='university'?'universite':isEducation?'ecole':t.amenity==='hospital'||t.amenity==='clinic'||t.amenity==='pharmacy'?'sante':t.amenity==='place_of_worship'?'culte':isStop?'transport':t.tourism?'tourisme':'service';
-    const name=t.name||t['name:fr']||t.shop||t.amenity||t.office||t.tourism||(isStop?'Arrêt de transport': 'Lieu de quartier');
+    const type=t.shop?'commerce':t.amenity==='university'||t.amenity==='college'||t.building==='university'?'universite':isEducation?'ecole':['hospital','clinic','pharmacy','doctors'].includes(t.amenity)?'sante':['fuel','car_repair','car_wash','parking','bank','atm','post_office'].includes(t.amenity)||t.building==='garage'?'service':t.amenity==='place_of_worship'?'culte':isStop?'transport':t.tourism?'tourisme':'service';
+    const name=t.name||t['name:fr']||t.shop||t.amenity||t.railway||t.office||t.tourism||(isStop?'Arrêt de transport': 'Lieu de quartier');
     const key=Math.round(p.x/8)+':'+Math.round(p.z/8);
     if(isStop){
       if(!transportStops.some(st=>Math.hypot(st.x-p.x,st.z-p.z)<12)){
@@ -2427,13 +2427,13 @@ function buildOSMBuildings(ways,nodes) {
     else{for(let i=0;i<pa.count;i++)sector.indices.push(base+i);}
     addObstacle(cx,cz,ww,dd,h);
     allBuildings.push({x:cx,z:cz,w:ww,d:dd,h,type:'osm-building',name:tag.name||tag['name:fr']||''});
-    if(tag.shop||['retail','commercial','supermarket','kiosk','office','public'].includes(tag.building)||['restaurant','cafe','bank','fast_food','school','university','college','hospital','clinic','doctors','pharmacy','police','fire_station','townhall','community_centre','library','post_office'].includes(tag.amenity)){
+    if(tag.shop||['retail','commercial','supermarket','kiosk','office','public','garage','garages'].includes(tag.building)||['restaurant','cafe','bank','atm','fast_food','school','university','college','hospital','clinic','doctors','pharmacy','police','fire_station','townhall','community_centre','library','post_office','fuel','car_repair','car_wash','parking','marketplace','bus_station','train_station','ferry_terminal','cinema','theatre'].includes(tag.amenity)||['station','halt','tram_stop'].includes(tag.railway)){
       const amenity=String(tag.amenity||'').toLowerCase(),shop=String(tag.shop||'').toLowerCase();
       const poiType=/hospital|clinic|doctors|pharmacy/.test(amenity)?'sante':
         /marketplace/.test(amenity+' '+shop)?'marche':
-        /bus_station|train_station|ferry_terminal/.test(amenity)?'transport':
+        /bus_station|train_station|ferry_terminal/.test(amenity)||['station','halt','tram_stop'].includes(tag.railway)?'transport':
         /school|university|college/.test(amenity)?'ecole':
-        /police|fire_station/.test(amenity)?'service':'commerce';
+        /police|fire_station|fuel|car_repair|car_wash|parking|bank|atm|post_office/.test(amenity)||['garage','garages'].includes(tag.building)?'service':'commerce';
       addPOI(cx,cz,poiType,tag.name||tag.shop||tag.amenity||'Commerce',tag);
       addOSMStorefront(pts,tag);
       createOSMStoreEntrance(pts,tag,h,col);
@@ -2833,6 +2833,7 @@ function buildOSMWaterAndParks(ways,nodes) {
 function makeStreetLabel(x,z,label){const c=document.createElement('canvas');c.width=512;c.height=64;const ctx=c.getContext('2d');ctx.fillStyle='rgba(20,28,30,.78)';ctx.fillRect(0,0,512,64);ctx.fillStyle='#f5f0df';ctx.font='bold 25px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label.slice(0,36),256,32);const t=new THREE.CanvasTexture(c);const m=new THREE.Mesh(new THREE.PlaneGeometry(22,2.8),new THREE.MeshBasicMaterial({map:t,transparent:true,side:THREE.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.set(x,terrainHeight(x,z)+0.08,z);scene.add(m);}
 
 function trafficNodeKey(p){return Math.round(p.x*2)/2+':'+Math.round(p.z*2)/2;}
+function trafficSegmentDirections(seg){const one=String(seg.oneway||'').toLowerCase();if(one==='-1')return [false];if(one==='yes'||one==='1'||one==='true'||seg.junction==='roundabout'||seg.junction==='circular')return [true];return [true,false];}
 function buildTrafficGraph(){
   trafficGraph=new Map();
   // Les véhicules utilisent les mêmes segments OSM que la carte du jeu.
@@ -2842,7 +2843,7 @@ function buildTrafficGraph(){
     if(Math.hypot(seg.b.x-seg.a.x,seg.b.z-seg.a.z)<.35)return;
     const ka=trafficNodeKey(seg.a),kb=trafficNodeKey(seg.b);
     if(!trafficGraph.has(ka))trafficGraph.set(ka,[]);if(!trafficGraph.has(kb))trafficGraph.set(kb,[]);
-    trafficGraph.get(ka).push({seg,forward:true});trafficGraph.get(kb).push({seg,forward:false});
+    const directions=trafficSegmentDirections(seg);if(directions.includes(true))trafficGraph.get(ka).push({seg,forward:true});if(directions.includes(false))trafficGraph.get(kb).push({seg,forward:false});
   });
 }
 function buildTrafficRoute(firstSeg,firstForward,maxSegments){
@@ -2868,7 +2869,7 @@ function createAbidjanTraffic(count){
   if(!trafficGraph.size)buildTrafficGraph();
   const source=trafficRoadSegments.length?trafficRoadSegments:osmRoadSegments;
   const px=player?player.position.x:0,pz=player?player.position.z:0;
-  const eligible=source.filter(r=>trafficGraph.get(trafficNodeKey(r.a))&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>12&&r.width>=5);
+  const eligible=source.filter(r=>(trafficGraph.get(trafficNodeKey(r.a))||[]).some(o=>o.seg===r)&&Math.hypot(r.b.x-r.a.x,r.b.z-r.a.z)>12&&r.width>=5);
   const within=radius=>eligible.filter(r=>{const x=(r.a.x+r.b.x)*.5-px,z=(r.a.z+r.b.z)*.5-pz;return x*x+z*z<=radius*radius;});
   let candidates=within(2800);if(candidates.length<24)candidates=within(6000);
   const weight=r=>['primary','trunk','motorway'].includes(r.type)?3.2:r.type==='secondary'?2.4:r.type==='tertiary'?1.8:['residential','living_street'].includes(r.type)?1.25:.75;
@@ -2877,7 +2878,7 @@ function createAbidjanTraffic(count){
     if(!candidates.length)break;
     let pick=Math.random()*totalWeight,r=candidates[candidates.length-1];
     for(const candidate of candidates){pick-=weight(candidate);if(pick<=0){r=candidate;break;}}
-    const forward=Math.random()<.5,t=Math.random();
+    const directions=trafficSegmentDirections(r),forward=directions[Math.floor(Math.random()*directions.length)],t=Math.random();
     const route=buildTrafficRoute(r,forward,36);if(!route.length)continue;
     const first=route[0],len=Math.hypot(first.b.x-first.a.x,first.b.z-first.a.z)||1;
     const progress=(forward?t:1-t)*len;
@@ -2938,7 +2939,7 @@ function trafficSignalShouldStop(px,pz,dx,dz){
     if((horizontal?'x':'z')!==light.axis)continue;
     const rx=light.intersectionX-px,rz=light.intersectionZ-pz;
     const along=rx*ux+rz*uz,lateral=Math.abs(rx*uz-rz*ux);
-    if(along>-2.5&&along<17&&lateral<10&&light.phase!==2)return true;
+    if(along>-2.5&&along<19&&lateral<6.2&&light.phase!==2)return true;
   }
   return false;
 }
@@ -2947,8 +2948,9 @@ function trafficJunctionOccupied(v,px,pz){
     if(light.intersectionX===undefined||light.intersectionZ===undefined||!light.axis)continue;
     const cx=light.intersectionX,cz=light.intersectionZ;
     if(Math.hypot(cx-px,cz-pz)>17)continue;
-    for(const other of vehicles){
-      if(other===v||other.userData.wreck||!other.visible)continue;
+    const nearby=abjTrafficGridNearby(abjTrafficVehicleGrid,cx,cz);
+    for(const other of nearby){
+      if(other===v||!other.userData||other.userData.wreck||!other.visible)continue;
       if(Math.hypot(other.position.x-cx,other.position.z-cz)<7.2&&Math.hypot(other.position.x-px,other.position.z-pz)>3.2)return true;
     }
   }
@@ -2988,7 +2990,7 @@ function advanceTrafficVehicle(v,delta){
       for(const other of nearbyVehicles){
         if(other===v||other.userData.wreck||!other.visible)continue;
         const rx=other.position.x-px,rz=other.position.z-pz,ahead=rx*ux+rz*uz,lateral=Math.abs(rx*uz-rz*ux);
-        if(ahead>0&&ahead<9&&lateral<3.1){stop=true;break;}
+        if(ahead>0&&ahead<12&&lateral<2.8){stop=true;break;}
       }
     }
     if(!stop){
@@ -2996,10 +2998,10 @@ function advanceTrafficVehicle(v,delta){
       for(const npc of nearbyNPCs){
         if(npc.userData.dead||!npc.visible)continue;
         const rx=npc.position.x-px,rz=npc.position.z-pz,ahead=rx*ux+rz*uz,lateral=Math.abs(rx*uz-rz*ux);
-        if(ahead>0&&ahead<7&&lateral<2.2){stop=true;break;}
+        if(ahead>0&&ahead<9&&lateral<2.5){stop=true;break;}
       }
     }
-    if(stop){d.speedFactor=Math.max(0,(d.speedFactor||1)-delta*5);updateTrafficVehiclePose(v);return;}
+    if(stop){d.speedFactor=Math.max(0,(d.speedFactor===undefined?1:d.speedFactor)-delta*4.5);updateTrafficVehiclePose(v);return;}
     if(d.transit&&d.transitStopCooldown<=0&&transportStops.length){
       const nearby=transportStops.find(st=>Math.hypot(st.x-px,st.z-pz)<9.5&&st.id!==d.lastTransitStop);
       if(nearby){d.transitDwell=2.8;d.transitStopCooldown=18;d.lastTransitStop=nearby.id||('stop-'+Math.round(nearby.x*10)+'-'+Math.round(nearby.z*10));d.speedFactor=0;handleTransitStop(v,nearby);updateTrafficVehiclePose(v);return;}
@@ -3014,9 +3016,9 @@ function advanceTrafficVehicle(v,delta){
       remaining-=Math.max(0,available);d.routeIndex++;d.progress=0;
       if(d.routeIndex>=d.route.length){
         const end=seg.b,opts=(trafficGraph.get(trafficNodeKey(end))||[]).filter(o=>o.seg!==seg.source);
-        if(!opts.length){const forward=trafficNodeKey(seg.source.a)===trafficNodeKey(end);d.route=buildTrafficRoute(seg.source,forward,36);d.routeIndex=0;}
+        if(!opts.length){const reverse=trafficNodeKey(seg.source.a)===trafficNodeKey(end);d.route=trafficSegmentDirections(seg.source).includes(reverse)?buildTrafficRoute(seg.source,reverse,36):[];d.routeIndex=0;}
         else{const next=opts[Math.floor(Math.random()*opts.length)];d.route=buildTrafficRoute(next.seg,next.forward,36);d.routeIndex=0;}
-        if(!d.route.length)return;
+        if(!d.route.length){v.visible=false;return;}
       }
     }
   }
