@@ -4637,10 +4637,11 @@ function updateDynamicSky(delta){
  const sunLight=scene.userData.sun;
  sunLight.position.set((player?player.position.x:0)+sunDir.x*900,(player?player.position.y:0)+Math.max(80,sunDir.y*900),(player?player.position.z:0)+sunDir.z*900);
  const daylight=Math.max(0,Math.sin(angle));
- sunLight.intensity=.08+daylight*.92+dawn*.12+dusk*.1;
+ sunLight.intensity=.12+daylight*.88+dawn*.12+dusk*.1;
  sunLight.color.copy(new THREE.Color(0xffd2a1).lerp(new THREE.Color(0xfff2dc),daylight));
  const ambient=scene.children.find(o=>o.isAmbientLight);
- if(ambient)ambient.intensity=.18+daylight*.58+starAlpha*.04;
+ // Éclairage de remplissage renforcé : conserver le cycle jour/nuit sans laisser les rues illisibles la nuit.
+ if(ambient)ambient.intensity=.32+daylight*.50+starAlpha*.06;
  scene.background=skyColor;
  if(scene.fog){scene.fog.color.copy(skyColor);scene.fog.near=2600;scene.fog.far=14000;}
  sky.group.position.set(player?player.position.x:0,0,player?player.position.z:0);
