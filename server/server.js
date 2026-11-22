@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const crypto = require('crypto');
+const { multiplayerZone, multiplayerZoneRooms } = require('./spatial-zones');
 
 const PORT = Number(process.env.PORT || 10000);
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('hex');
@@ -1018,6 +1019,7 @@ io.on('connection', (socket) => {
     phone: socket.phone,
     profile: account.profile,
     position: account.position,
+    zone: multiplayerZone(account.position),
     needs: account.needs,
     vehicle: null,
     moving: false,
@@ -1029,6 +1031,7 @@ io.on('connection', (socket) => {
   };
 
   activePlayers.set(socket.id, state);
+  socket.join(multiplayerZoneRooms(state.zone));
   if (!worldStateOwner) worldStateOwner = socket.id;
   socket.emit('world:host', { id: worldStateOwner });
   if (sharedWorldState) socket.emit('world:state', sharedWorldState);
@@ -1037,7 +1040,7 @@ io.on('connection', (socket) => {
   socket.emit(
     'world:players',
     [...activePlayers.values()]
-      .filter(p => p.id !== socket.id)
+      .filter(p => p.id !== socket.id && multiplayerZoneRooms(state.zone).includes(p.zone))
       .map(p => ({
         id: p.id,
         profile: p.profile,
@@ -1048,7 +1051,7 @@ io.on('connection', (socket) => {
       }))
   );
 
-  socket.broadcast.emit('player:joined', {
+  io.to(multiplayerZoneRooms(state.zone)).except(socket.id).emit('player:joined', {
     id: socket.id,
     profile: state.profile,
     position: state.position,
@@ -1130,6 +1133,19 @@ io.on('connection', (socket) => {
       };
 
       account.position = state.position;
+      const nextZone = multiplayerZone(state.position);
+      if (nextZone !== state.zone) {
+        const oldRooms = multiplayerZoneRooms(state.zone);
+        const nextRooms = multiplayerZoneRooms(nextZone);
+        io.to(oldRooms).except(socket.id).emit('player:left', socket.id);
+        for (const room of oldRooms) if (!nextRooms.includes(room)) socket.leave(room);
+        for (const room of nextRooms) if (!oldRooms.includes(room)) socket.join(room);
+        state.zone = nextZone;
+        io.to(nextRooms).except(socket.id).emit('player:joined', {
+          id: socket.id, profile: state.profile, position: state.position,
+          needs: state.needs, moving: !!state.moving, vehicle: state.vehicle
+        });
+      }
     }
 
     if (payload.profile && typeof payload.profile === 'object') {
@@ -1185,7 +1201,7 @@ io.on('connection', (socket) => {
       };
     }
 
-    socket.broadcast.emit('player:moved', {
+    io.to(state.zone).except(socket.id).emit('player:moved', {
       id: socket.id,
       profile: state.profile,
       position: state.position,
@@ -1259,7 +1275,7 @@ io.on('connection', (socket) => {
       persistAccount(account).catch(error => console.error('Échec sauvegarde déconnexion:', error.message));
     }
     activePlayers.delete(socket.id);
-    socket.broadcast.emit('player:left', socket.id);
+    io.to(multiplayerZoneRooms(state.zone)).except(socket.id).emit('player:left', socket.id);
     if (worldStateOwner === socket.id) {
       worldStateOwner = activePlayers.keys().next().value || null;
       if (worldStateOwner) io.to(worldStateOwner).emit('world:host', { id: worldStateOwner });
