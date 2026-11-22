@@ -9016,7 +9016,20 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  window.addEventListener('abj-online-message',e=>{
   const m=e.detail||{};lifeState.onlineMessages=lifeState.onlineMessages||[];
   if(m.id&&lifeState.onlineMessages.some(x=>x&&x.id===m.id))return;
-  lifeState.onlineMessages.push(m);lifeState.onlineMessages=lifeState.onlineMessages.slice(-100);saveLifeProgress(false);
+  lifeState.onlineMessages.push(m);lifeState.onlineMessages=lifeState.onlineMessages.slice(-100);
+  if(m.system||m.from==='system'||m.fromName==='AF GAMER CI'){
+   const contactId='afgamer-system';lifeState.contacts=lifeState.contacts||[];
+   if(!lifeState.contacts.some(c=>c&&c.id===contactId))lifeState.contacts.unshift({id:contactId,name:'AF GAMER CI',relation:100,firstMet:'Annonces officielles'});
+   lifeState.messages=lifeState.messages||[];
+   if(!lifeState.messages.some(x=>x&&x.id===m.id)){
+    const stamp=new Date(Number(m.createdAt)||Date.now());
+    lifeState.messages.push({id:m.id,contactId,text:String(m.text||'Nouvelle annonce AF GAMER CI'),from:'contact',time:String(stamp.getUTCHours()).padStart(2,'0')+':'+String(stamp.getUTCMinutes()).padStart(2,'0')});
+    lifeState.messages=lifeState.messages.slice(-100);
+   }
+   const notification=document.getElementById('phoneNotification');
+   if(notification){const title=document.getElementById('phoneNotificationTitle'),body=document.getElementById('phoneNotificationBody');if(title)title.textContent='✉️ AF GAMER CI';if(body)body.textContent=String(m.text||'Nouvelle mise à jour disponible.');notification.style.display='block';clearTimeout(window.__abjPhoneNotificationTimer);window.__abjPhoneNotificationTimer=setTimeout(()=>notification.style.display='none',8000);}
+  }
+  saveLifeProgress(false);
   toast('💬 '+(m.fromName||'Joueur')+' : '+(m.text||'Nouveau message'));
  });
  window.addEventListener('abj-online-call',e=>{
