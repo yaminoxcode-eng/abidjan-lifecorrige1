@@ -22,7 +22,7 @@ const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 const mailTransport = SMTP_HOST && SMTP_USER && SMTP_PASS ? nodemailer.createTransport({host:SMTP_HOST,port:SMTP_PORT,secure:SMTP_PORT===465,auth:{user:SMTP_USER,pass:SMTP_PASS}}) : null;
-const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.41.1';
+const DEFAULT_GAME_VERSION = process.env.GAME_VERSION || '1.41.2';
 const DEFAULT_CLIENT_URL = process.env.CLIENT_URL || '';
 const CLIENT_SIZE_BYTES = Math.max(0, Number(process.env.CLIENT_SIZE_BYTES) || 1059828);
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -33,7 +33,7 @@ let updateManifest = {
   version: DEFAULT_GAME_VERSION,
   minVersion: process.env.MIN_GAME_VERSION || DEFAULT_GAME_VERSION,
   clientUrl: DEFAULT_CLIENT_URL,
-  releaseNotes: process.env.RELEASE_NOTES || 'V1.41.1 : multijoueur synchronisé, calendrier réel commun, raccourcis rapides retirés et notifications de mise à jour.',
+  releaseNotes: process.env.RELEASE_NOTES || 'V1.41.2 : correctif du téléchargement des mises à jour, téléphone assombri, accès Paramètres, son sans bouton et mini-carte cliquable.',
   publishedAt: new Date().toISOString(),
   previous: null,
   history: []
