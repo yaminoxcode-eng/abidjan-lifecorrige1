@@ -1440,6 +1440,8 @@ io.on('connection', (socket) => {
       io.emit('jobs:offers',publicJobOffers());
       const target=[...activePlayers.entries()].find(([,p])=>p.phone===candidatePhone);
       if(target)io.to(target[0]).emit('jobs:contract',candidate.save.employmentContract);
+      const ownerTarget=[...activePlayers.entries()].find(([,p])=>p.phone===socket.phone);
+      if(ownerTarget)io.to(ownerTarget[0]).emit('jobs:company:update',{companyId:offer.company_id,employees:company.employees});
       if(typeof ack==='function')ack({ok:true});
     }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
   });
@@ -1493,7 +1495,7 @@ io.on('connection', (socket) => {
       const target=[...activePlayers.entries()].find(([,p])=>p.phone===tenantPhone);
       if(target)io.to(target[0]).emit('rentals:contract',tenant.save.rentalContract);
       const ownerTarget=[...activePlayers.entries()].find(([,p])=>p.phone===socket.phone);
-      if(ownerTarget)io.to(ownerTarget[0]).emit('rentals:owner:balance',{money:owner.save.money});
+      if(ownerTarget){io.to(ownerTarget[0]).emit('rentals:owner:balance',{money:owner.save.money});io.to(ownerTarget[0]).emit('rentals:property:update',{assetId:offer.asset_id,rentalTenant:owner.save.v19?.properties?.find(p=>'property:'+String(p.id)===offer.asset_id)?.rentalTenant||null});}
       if(typeof ack==='function')ack({ok:true});
     }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
   });
