@@ -14711,5 +14711,66 @@ console.info('ABJ V1.49.1 — inscription renforcée et correctifs de stabilité
 
 </script>
 
+
+<style id="abj-v150-mobile-hud-correction">
+@media (max-width:760px), (pointer:coarse) {
+  /* Retirer uniquement le joystick analogique; garder le pavé directionnel tactile. */
+  #abjMobileStick { display:none !important; visibility:hidden !important; pointer-events:none !important; }
+  #touchControls { display:flex !important; }
+  /* Les informations météo et calendrier du monde restent visibles. */
+  #v12Weather { display:block !important; position:fixed !important; top:calc(env(safe-area-inset-top, 0px) + 62px) !important; right:12px !important; left:auto !important; z-index:30 !important; }
+  #v12Calendar { display:block !important; position:fixed !important; top:calc(env(safe-area-inset-top, 0px) + 104px) !important; right:12px !important; left:auto !important; z-index:30 !important; max-width:min(82vw,360px) !important; text-align:right !important; }
+  #lifeClock { display:block !important; position:fixed !important; top:calc(env(safe-area-inset-top, 0px) + 12px) !important; right:12px !important; z-index:31 !important; }
+  /* Le visage/emoji devient un bouton indépendant de la barre des besoins. */
+  #lifeHud #lifeMood { display:none !important; }
+  #needToggleEmoji { display:grid !important; position:fixed !important; left:16px !important; bottom:calc(env(safe-area-inset-bottom, 0px) + 150px) !important; z-index:45 !important; }
+  /* Le montant reste masqué comme demandé précédemment. */
+  #lifeHud #moneyLabel { display:none !important; }
+}
+#abjTopOnlineBadge {
+  position:fixed; top:calc(env(safe-area-inset-top, 0px) + 12px); left:50%;
+  transform:translateX(-50%); z-index:60; display:none; align-items:center; gap:7px;
+  padding:7px 13px; border:1px solid rgba(240,209,141,.9); border-radius:22px;
+  background:rgba(8,24,39,.94); color:#fff; box-shadow:0 4px 16px #0008;
+  font:800 14px system-ui; pointer-events:auto;
+}
+#abjTopOnlineBadge .abjOnlineIcon { font-size:19px; line-height:1; }
+@media (max-width:760px), (pointer:coarse) {
+  #abjTopOnlineBadge { display:flex !important; }
+  #abjOnlineCount { display:none !important; }
+}
+</style>
+<script id="abj-v150-mobile-hud-runtime">
+(function(){
+  function install(){
+    if(document.getElementById('abjTopOnlineBadge')) return;
+    const badge=document.createElement('div');
+    badge.id='abjTopOnlineBadge';
+    badge.setAttribute('aria-label','Nombre de joueurs connectés');
+    badge.innerHTML='<span class="abjOnlineIcon" aria-hidden="true">👥</span><span id="abjTopOnlineNumber">0</span>';
+    document.body.appendChild(badge);
+    const oldUpdate=window.updateOnlineCount;
+    window.updateOnlineCount=function(n){
+      const value=String(Math.max(0,Number(n)||0));
+      const top=document.getElementById('abjTopOnlineNumber');
+      if(top)top.textContent=value;
+      if(typeof oldUpdate==='function')oldUpdate(n);
+    };
+    const existing=document.getElementById('abjOnlineNumber');
+    if(existing)window.updateOnlineCount(existing.textContent);
+    const refresh=()=>{
+      const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+      if(!api)return;
+      fetch(api+'/api/players',{cache:'no-store'}).then(r=>r.ok?r.json():null)
+        .then(d=>{if(d&&typeof window.updateOnlineCount==='function')window.updateOnlineCount(d.count);})
+        .catch(()=>{});
+    };
+    refresh();setInterval(refresh,30000);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
+  else install();
+})();
+</script>
+
 </body>
 </html>
