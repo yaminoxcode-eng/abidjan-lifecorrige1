@@ -1727,6 +1727,7 @@ function generateCity() {
       else optional('position de départ', () => startPlayerAtHome());
     }
     if (mapOpen) optional('actualisation de la carte', () => drawBigMap());
+    if (window.ABJ_APPLY_SHARED_WORLD_ASSETS) window.ABJ_APPLY_SHARED_WORLD_ASSETS();
   };
 
   // init() crée le personnage juste après generateCity() : la frame suivante
@@ -6132,6 +6133,40 @@ function drawMinimap() {
 // ============================================================
 // BOUCLE
 // ============================================================
+function applySharedWorldAssets(list){
+ if(Array.isArray(list))window.ABJ_SHARED_WORLD_ASSETS=list;
+ if(!scene||!worldReady||!window.THREE)return;
+ const assets=Array.isArray(window.ABJ_SHARED_WORLD_ASSETS)?window.ABJ_SHARED_WORLD_ASSETS:[];
+ const groups=scene.userData.sharedWorldGroups||[];groups.forEach(g=>{try{scene.remove(g);}catch(e){}});scene.userData.sharedWorldGroups=[];
+ scene.userData.sharedWorldObstacleIds=scene.userData.sharedWorldObstacleIds||new Set();
+ for(const asset of assets.slice(0,1200)){
+  const p=asset&&asset.payload||{},x=Number(p.x),z=Number(p.z),type=asset.asset_type||asset.assetType,id=String(asset.asset_id||asset.assetId||'');
+  if(!id||!Number.isFinite(x)||!Number.isFinite(z)||Math.abs(x)>25000||Math.abs(z)>25000)continue;
+  const w=Math.max(8,Math.min(24,Number(p.width)||12)),d=Math.max(7,Math.min(20,Number(p.depth)||10)),g=new THREE.Group();g.name='shared-world-'+id;
+  const groundY=typeof terrainHeight==='function'?terrainHeight(x,z):0;
+  if(type==='plot'){
+   const land=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshBasicMaterial({color:0xf2df91,transparent:true,opacity:.48,side:THREE.DoubleSide,depthWrite:false}));land.rotation.x=-Math.PI/2;land.position.y=.12;g.add(land);
+   const border=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(w,d)),new THREE.LineBasicMaterial({color:0xf0d36e,transparent:true,opacity:.9}));border.rotation.x=-Math.PI/2;border.position.y=.16;g.add(border);
+  }else{
+   const company=type==='company',underConstruction=String(p.status||'').toLowerCase()==='construction',height=company?9:(underConstruction?5.5:7.5);
+   const wall=new THREE.Mesh(new THREE.BoxGeometry(w,height,d),new THREE.MeshStandardMaterial({color:company?0xd8c49e:0xe1d2b7,roughness:.92}));wall.position.y=height/2;wall.castShadow=true;wall.receiveShadow=true;g.add(wall);
+   const roof=new THREE.Mesh(new THREE.ConeGeometry(w*.72,company?2.4:2.8,4),new THREE.MeshStandardMaterial({color:company?0x536c76:0x914d39,roughness:.88}));roof.position.y=height+(company?1.2:1.4);roof.rotation.y=Math.PI/4;roof.castShadow=true;g.add(roof);
+   const door=new THREE.Mesh(new THREE.BoxGeometry(1.25,2.5,.12),new THREE.MeshStandardMaterial({color:0x60452f,roughness:.9}));door.position.set(0,1.25,d/2+.07);g.add(door);
+   const glass=new THREE.MeshStandardMaterial({color:0x83b6c5,roughness:.35,metalness:.08,emissive:0x18313a,emissiveIntensity:.12});
+   for(const side of [-1,1]){const win=new THREE.Mesh(new THREE.BoxGeometry(1.55,1.35,.1),glass);win.position.set(side*w*.27,height*.62,d/2+.07);g.add(win);}
+   if(underConstruction){const scaffoldMat=new THREE.MeshStandardMaterial({color:0xb58b4c,roughness:.9});for(const side of [-1,1]){const pole=new THREE.Mesh(new THREE.BoxGeometry(.12,height+.8,.12),scaffoldMat);pole.position.set(side*w*.48,height/2,d*.48);g.add(pole);}}
+   if(!scene.userData.sharedWorldObstacleIds.has(id)&&typeof addObstacle==='function'){
+    try{addObstacle(x,z,w/2,d/2,height);scene.userData.sharedWorldObstacleIds.add(id);}catch(e){console.warn('Obstacle partagé ignoré',e);}
+   }
+  }
+  g.position.set(x,groundY,z);scene.add(g);scene.userData.sharedWorldGroups.push(g);
+  const known=allBuildings.find(b=>b&&b.sharedAssetId===id);
+  if(known){known.x=x;known.z=z;known.w=w;known.d=d;}
+  else allBuildings.push({sharedAssetId:id,x,z,w,d,shared:true});
+ }
+}
+window.ABJ_APPLY_SHARED_WORLD_ASSETS=applySharedWorldAssets;
+
 function animate() {
   requestAnimationFrame(animate);
   if (!gameStarted || !renderer) return;
@@ -7729,6 +7764,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    socket.on('world:host',v=>{window.ABJ_WORLD_HOST=!!v&&v.id===socket.id;});
    socket.on('creator:report:new',()=>{if(isCreatorAccount(activeGameAccount)){creatorOrbAlert=true;showMessage('⚠️ Nouveau signalement reçu au siège AF_GAMER.');}});
    socket.on('world:state',w=>{if(!w||!lifeState)return;lifeState.hour=Number(w.hour)||0;lifeState.minute=Number(w.minute)||0;if(typeof V12!=='undefined'){V12.weather=w.weather||'ensoleille';V12.temperature=Number(w.temperature)||31;V12.weatherTimer=4;const rain=document.getElementById('v12Rain');if(rain)rain.style.display=V12.weather==='pluie'?'block':'none';}if(typeof updateLifeLighting==='function')updateLifeLighting();});
+   socket.on('world:assets',list=>{window.ABJ_SHARED_WORLD_ASSETS=Array.isArray(list)?list:[];if(window.ABJ_APPLY_SHARED_WORLD_ASSETS)window.ABJ_APPLY_SHARED_WORLD_ASSETS();});
    socket.on('session:replaced',()=>{socket.disconnect();showAccountStatus('Ton compte vient d’être connecté sur un autre appareil.',true);});
    socket.on('update:available',checkUpdate);
    window.ABJ_GAME_SOCKET=socket;
