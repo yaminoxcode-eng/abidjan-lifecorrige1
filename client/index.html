@@ -4709,6 +4709,7 @@ function loadLifeProgress(){
     });
     if(typeof saved.job==='string')lifeState.job=saved.job;
     if(saved.employmentContract&&typeof saved.employmentContract==='object')lifeState.employmentContract=saved.employmentContract;
+    if(saved.rentalContract&&typeof saved.rentalContract==='object'&&typeof saved.rentalContract.assetId==='string')lifeState.rentalContract=saved.rentalContract;
     if(saved.housing&&typeof saved.housing==='object'){const savedRent=Math.max(0,Math.min(50000,Number(saved.housing.lease&&saved.housing.lease.rent)||0));lifeState.housing={ownedDoorId:typeof saved.housing.ownedDoorId==='string'?saved.housing.ownedDoorId:null,lease:saved.housing.lease&&typeof saved.housing.lease.doorId==='string'?{doorId:saved.housing.lease.doorId,rent:savedRent,deposit:Math.max(0,Math.min(100000,Number(saved.housing.lease.deposit)||savedRent*2)),startedDay:Math.max(1,Math.floor(Number(saved.housing.lease.startedDay)||1))}:null,arrears:Math.max(0,Math.min(10000000,Number(saved.housing.arrears)||0)),gameDay:Math.max(1,Math.floor(Number(saved.housing.gameDay)||1)),lastBilledDay:Math.max(1,Math.floor(Number(saved.housing.lastBilledDay)||1))};}
     if(Array.isArray(saved.contacts))lifeState.contacts=saved.contacts.filter(c=>c&&typeof c.id==='string'&&typeof c.name==='string').slice(0,100);
     if(Array.isArray(saved.messages))lifeState.messages=saved.messages.filter(m=>m&&typeof m.contactId==='string'&&typeof m.text==='string').slice(-100);
@@ -4741,7 +4742,7 @@ function saveLifeProgress(show=true){
       schemaVersion:2,
       hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,hygiene:lifeState.hygiene,respect:lifeState.respect,health:lifeState.health,
       money:lifeState.money,bankBalance:lifeState.bankBalance,waveBalance:lifeState.waveBalance||0,gameSettings:lifeState.gameSettings||{},waveDailyWithdrawn:lifeState.waveDailyWithdrawn,waveDayKey:lifeState.waveDayKey,waveNotifs:lifeState.waveNotifs,phoneSkin:lifeState.phoneSkin,hour:lifeState.hour,minute:lifeState.minute,documents:lifeState.documents,education:lifeState.education,cheats:lifeState.cheats,creatorTier:lifeState.creatorTier||'none',playerProfile:lifeState.playerProfile,
-      job:lifeState.job,employmentContract:lifeState.employmentContract||null,workXP:lifeState.workXP,bankTransactions:lifeState.bankTransactions,contacts:lifeState.contacts,messages:lifeState.messages,inventory:lifeState.inventory,homeDecor:lifeState.homeDecor,delivery:lifeState.delivery,creator:lifeState.creator,housing:lifeState.housing,projects:lifeState.projects||[],
+      job:lifeState.job,employmentContract:lifeState.employmentContract||null,rentalContract:lifeState.rentalContract||null,workXP:lifeState.workXP,bankTransactions:lifeState.bankTransactions,contacts:lifeState.contacts,messages:lifeState.messages,inventory:lifeState.inventory,homeDecor:lifeState.homeDecor,delivery:lifeState.delivery,creator:lifeState.creator,housing:lifeState.housing,projects:lifeState.projects||[],
       missions:(typeof window.abjMissionsSnapshot==='function'?window.abjMissionsSnapshot():[]),relations:lifeState.relations||{},exploredCommunes:lifeState.exploredCommunes||{},
       v19:lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{},
       worldPosition:__worldPosition,
