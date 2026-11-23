@@ -14118,7 +14118,7 @@ const POOL=[
 
 function normalize(){
   const old=Array.isArray(lifeState.missions)?lifeState.missions:[];
-  if(old.length===POOL.length&&old.every((m,i)=>m&&m.id===POOL[i].id&&m.label))return;
+  if(old.length===POOL.length&&old.every((m,i)=>m&&m.id===POOL[i].id&&m.label&&m.why===POOL[i].why))return;
   const by={};old.forEach(m=>{if(m&&m.id)by[m.id]=m;});
   lifeState.missions=POOL.map(d=>{
     const o=by[d.id];
