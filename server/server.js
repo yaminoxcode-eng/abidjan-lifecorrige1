@@ -1426,7 +1426,7 @@ io.on('connection', (socket) => {
       const certificates=Array.isArray(candidate.save.education?.certificates)?candidate.save.education.certificates.map(x=>String(x).toLocaleLowerCase('fr')):[];
       if(required!=='aucun'&&!certificates.some(x=>x.includes(required)))throw new Error('Diplôme requis non validé : '+offer.qualification+'.');
       const candidateSave=candidate.save,ownerSave=owner.save;
-      candidate.save=Object.assign({},candidate.save,{employmentContract:{companyId:offer.company_id,companyName:offer.company_name,role:offer.role,salary:offer.salary,qualification:offer.qualification,employerPhone:socket.phone,startedAt:new Date().toISOString()}});
+      candidate.save=Object.assign({},candidate.save,{employmentContract:{companyId:offer.company_id,companyName:offer.company_name,role:offer.role,salary:offer.salary,qualification:offer.qualification,employerPhone:socket.phone,lastPaidDay:Math.max(1,Math.floor(Number(candidate.save.housing?.gameDay)||1)),arrears:0,startedAt:new Date().toISOString()}});
       owner.save=Object.assign({},owner.save,{v19:Object.assign({},owner.save?.v19||{})});
       const ownerV19=owner.save.v19;
       ownerV19.companies=Array.isArray(ownerV19.companies)?ownerV19.companies:[];
@@ -1495,6 +1495,32 @@ io.on('connection', (socket) => {
       const ownerTarget=[...activePlayers.entries()].find(([,p])=>p.phone===socket.phone);
       if(ownerTarget)io.to(ownerTarget[0]).emit('rentals:owner:balance',{money:owner.save.money});
       if(typeof ack==='function')ack({ok:true});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('jobs:pay',async(payload={},ack)=>{
+    try{
+      const employee=accounts.get(socket.phone),contract=employee?.save?.employmentContract,day=Math.max(1,Math.floor(Number(payload.gameDay)||1));
+      if(!contract||!contract.employerPhone||day<(Number(contract.lastPaidDay)||1)+7){if(typeof ack==='function')ack({ok:false,skip:true});return;}
+      const employer=accounts.get(contract.employerPhone);if(!employer?.save)throw new Error('Employeur introuvable.');
+      const weekly=Math.max(1000,Math.min(12500000,Math.floor((Number(contract.salary)||0)/4)));
+      const due=weekly+Math.max(0,Math.min(50000000,Math.floor(Number(contract.arrears)||0)));
+      const employerMoney=Math.max(0,Number(employer.save.money)||0);
+      if(employerMoney<due){
+        employee.save=Object.assign({},employee.save,{employmentContract:Object.assign({},contract,{arrears:due,lastPaidDay:day})});
+        await persistAccount(employee);
+        if(typeof ack==='function')ack({ok:false,arrears:due});
+        return;
+      }
+      const oldEmployee=employee.save,oldEmployer=employer.save;
+      employee.save=Object.assign({},employee.save,{money:Math.max(0,Number(employee.save.money)||0)+due,employmentContract:Object.assign({},contract,{arrears:0,lastPaidDay:day})});
+      employer.save=Object.assign({},employer.save,{money:employerMoney-due});
+      try{await persistAccount(employee);await persistAccount(employer);}
+      catch(error){employee.save=oldEmployee;employer.save=oldEmployer;throw error;}
+      const employeeTarget=[...activePlayers.entries()].find(([,p])=>p.phone===socket.phone);
+      if(employeeTarget)io.to(employeeTarget[0]).emit('jobs:contract',employee.save.employmentContract);
+      const employerTarget=[...activePlayers.entries()].find(([,p])=>p.phone===contract.employerPhone);
+      if(employerTarget)io.to(employerTarget[0]).emit('rentals:owner:balance',{money:employer.save.money});
+      if(typeof ack==='function')ack({ok:true,amount:due});
     }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
   });
   socket.on('rentals:pay',async(payload={},ack)=>{
