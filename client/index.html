@@ -14807,7 +14807,7 @@ body.abj-world-exploring #abjTopOnlineBadge { display:flex !important; }
 (function(){
   let previous=false;
   function syncWorldHud(){
-    const active=!!(window.gameStarted && window.worldReady);
+    const active=!!(typeof gameStarted!=='undefined' && gameStarted && typeof worldReady!=='undefined' && worldReady);
     if(active!==previous){
       previous=active;
       document.body.classList.toggle('abj-world-exploring',active);
