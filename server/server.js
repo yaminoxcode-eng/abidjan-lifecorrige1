@@ -67,6 +67,7 @@ let sharedWorldState = null;
 let worldStateOwner = null;
 let lastWorldPersistAt = 0;
 const sharedWorldAssets = new Map();
+const sharedJobOffers = new Map();
 function publicPlayer(p){return {id:p.id,profile:p.profile,position:p.position,needs:p.needs,vehicle:p.vehicle||null};}
 function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.size});}
 
@@ -169,6 +170,9 @@ async function loadPersistentWorld() {
       catch (assetError) { console.error('Import des biens existants ignoré pour un compte:', assetError.message); }
     }
     console.log(`Monde partagé chargé : ${sharedWorldAssets.size} objet(s) persistant(s).`);
+    const jobs = await supabaseRequest('shared_job_offers?select=id,owner_phone,company_id,company_name,role,salary,qualification,commune,active,applicant_phones,hired_phone,created_at&active=eq.true&limit=500');
+    for (const job of jobs || []) sharedJobOffers.set(job.id, job);
+    console.log(`Offres d’emploi actives chargées : ${sharedJobOffers.size}.`);
   } catch (error) {
     console.error('Chargement du monde partagé impossible :', error.message);
   }
@@ -218,6 +222,21 @@ async function persistSharedWorldAssets(phone, save) {
 }
 
 const clean = (v, max = 80) => String(v ?? '').trim().slice(0, max);
+
+function publicJobOffers() {
+  return [...sharedJobOffers.values()].filter(x => x.active).map(x => ({
+    id:x.id, companyName:x.company_name, role:x.role, salary:x.salary,
+    qualification:x.qualification, commune:x.commune,
+    applicantCount:Array.isArray(x.applicant_phones)?x.applicant_phones.length:0,
+    createdAt:x.created_at
+  }));
+}
+async function saveJobOffer(row) {
+  await supabaseRequest('shared_job_offers?on_conflict=id', {
+    method:'POST', headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify({...row,updated_at:new Date().toISOString()})
+  });
+}
 
 function phoneOf(v) {
   let d = String(v || '').replace(/\D/g, '');
@@ -1170,6 +1189,7 @@ io.on('connection', (socket) => {
   socket.emit('world:host', { id: worldStateOwner });
   if (sharedWorldState) socket.emit('world:state', sharedWorldState);
   socket.emit('world:assets', publicSharedWorldAssets());
+  socket.emit('jobs:offers', publicJobOffers());
   broadcastPlayerCount();
 
   socket.emit(
@@ -1355,6 +1375,57 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('jobs:offers:refresh', () => socket.emit('jobs:offers', publicJobOffers()));
+  socket.on('jobs:offer:create', async (payload={}, ack) => {
+    try {
+      const save=account.save||{}, companies=save.v19&&Array.isArray(save.v19.companies)?save.v19.companies:[];
+      const company=companies.find(c=>c&&(String(c.id||'')===String(payload.companyId||'')||String(c.name||'')===String(payload.companyName||'')));
+      const role=clean(payload.role,60), salary=Math.floor(Number(payload.salary)||0), qualification=clean(payload.qualification||'aucun',40);
+      if(!company||!role||salary<1000||salary>50000000) throw new Error("Entreprise introuvable ou offre invalide.");
+      if(!persistentStorageEnabled) throw new Error("Sauvegarde serveur indisponible.");
+      const id=crypto.randomBytes(12).toString('hex');
+      const row={id,owner_phone:socket.phone,company_id:clean(company.id||company.name,100),company_name:clean(company.name,60),role,salary,qualification,commune:clean(payload.commune||company.location||'',48),active:true,applicant_phones:[],hired_phone:null};
+      await saveJobOffer(row);sharedJobOffers.set(id,row);io.emit('jobs:offers',publicJobOffers());
+      if(typeof ack==='function')ack({ok:true,id});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('jobs:offer:apply', async (payload={}, ack) => {
+    try{
+      const offer=sharedJobOffers.get(clean(payload.offerId,40));
+      if(!offer||!offer.active)throw new Error("Cette offre n’est plus disponible.");
+      if(offer.owner_phone===socket.phone)throw new Error("Tu ne peux pas postuler à ta propre offre.");
+      const applicants=Array.isArray(offer.applicant_phones)?offer.applicant_phones:[];
+      if(applicants.includes(socket.phone))throw new Error("Ta candidature est déjà enregistrée.");
+      applicants.push(socket.phone);offer.applicant_phones=applicants.slice(0,200);
+      await saveJobOffer(offer);io.emit('jobs:offers',publicJobOffers());
+      if(typeof ack==='function')ack({ok:true});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('jobs:offer:hire', async (payload={}, ack) => {
+    try{
+      const offer=sharedJobOffers.get(clean(payload.offerId,40)),candidatePhone=phoneOf(payload.candidatePhone);
+      if(!offer||!offer.active||offer.owner_phone!==socket.phone||!candidatePhone)throw new Error("Action de recrutement non autorisée.");
+      if(!(offer.applicant_phones||[]).includes(candidatePhone))throw new Error("Cette personne n’a pas postulé.");
+      const owner=accounts.get(socket.phone),candidate=accounts.get(candidatePhone);
+      if(!owner||!candidate||!candidate.save)throw new Error("Compte candidat introuvable.");
+      const candidateSave=candidate.save,ownerSave=owner.save;
+      candidate.save=Object.assign({},candidate.save,{employmentContract:{companyId:offer.company_id,companyName:offer.company_name,role:offer.role,salary:offer.salary,qualification:offer.qualification,employerPhone:socket.phone,startedAt:new Date().toISOString()}});
+      owner.save=Object.assign({},owner.save,{v19:Object.assign({},owner.save?.v19||{})});
+      const ownerV19=owner.save.v19;
+      ownerV19.companies=Array.isArray(ownerV19.companies)?ownerV19.companies:[];
+      const company=ownerV19.companies.find(c=>c&&(String(c.id||c.name)===String(offer.company_id)||c.name===offer.company_name));
+      if(!company)throw new Error("L’entreprise n’existe plus dans ta sauvegarde.");
+      company.employees=Array.isArray(company.employees)?company.employees:[];
+      if(!company.employees.some(e=>e.phone===candidatePhone))company.employees.push({phone:candidatePhone,name:clean(candidate.profile?.name||'Employé',24),role:offer.role,salary:offer.salary,qualification:offer.qualification,startedAt:new Date().toISOString()});
+      offer.active=false;offer.hired_phone=candidatePhone;
+      try{await persistAccount(candidate);await persistAccount(owner);await saveJobOffer(offer);}
+      catch(error){candidate.save=candidateSave;owner.save=ownerSave;offer.active=true;offer.hired_phone=null;throw error;}
+      io.emit('jobs:offers',publicJobOffers());
+      const target=[...activePlayers.entries()].find(([,p])=>p.phone===candidatePhone);
+      if(target)io.to(target[0]).emit('jobs:contract',candidate.save.employmentContract);
+      if(typeof ack==='function')ack({ok:true});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
   socket.on('player:save', async (save, ack) => {
     let ok = false;
 
