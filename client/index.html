@@ -14714,6 +14714,11 @@ console.info('ABJ V1.49.1 — inscription renforcée et correctifs de stabilité
 
 <style id="abj-v150-mobile-hud-correction">
 @media (max-width:760px), (pointer:coarse) {
+
+  /* Le menu emoji regroupe déjà tous les besoins : masquer toute la barre compacte. */
+  #lifeHud { display:none !important; visibility:hidden !important; }
+  #needToggleEmoji { display:grid !important; visibility:visible !important; pointer-events:auto !important; }
+
   /* Retirer uniquement le joystick analogique; garder le pavé directionnel tactile. */
   #abjMobileStick { display:none !important; visibility:hidden !important; pointer-events:none !important; }
   #touchControls { display:flex !important; }
