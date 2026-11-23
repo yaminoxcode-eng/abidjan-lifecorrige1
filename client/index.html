@@ -14770,7 +14770,7 @@ console.info('ABJ V1.49.1 — inscription renforcée et correctifs de stabilité
     const badge=document.createElement('div');
     badge.id='abjTopOnlineBadge';
     badge.setAttribute('aria-label','Nombre de joueurs connectés');
-    badge.innerHTML='<span class="abjOnlineIcon" aria-hidden="true">👥</span><span id="abjTopOnlineNumber">0</span>';
+    badge.innerHTML='<span class="abjOnlineIcon" aria-hidden="true">👥</span><span id="abjTopOnlineNumber">0</span><span class="abjWalletDivider">·</span><span class="abjWalletIcon" aria-hidden="true">💰</span><span id="abjTopMoney">0 FCFA</span>';
     document.body.appendChild(badge);
     const oldUpdate=window.updateOnlineCount;
     window.updateOnlineCount=function(n){
@@ -14845,6 +14845,85 @@ body.abj-world-exploring #abjTopOnlineBadge { display:flex !important; }
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
   else start();
+})();
+</script>
+
+
+<style id="abj-v150-map-hud-stability">
+@media (max-width:760px), (pointer:coarse) {
+  #abjTopOnlineBadge {left:50%!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 8px)!important;transform:translateX(-50%)!important;white-space:nowrap!important;min-width:max-content!important;gap:6px!important}
+  #abjTopOnlineBadge .abjWalletDivider {opacity:.55;padding:0 1px}
+  #abjTopOnlineBadge #abjTopMoney {font-size:12px;font-weight:900;color:#a7f0c4}
+  #miniMapWrap {display:block!important;visibility:visible!important;opacity:1!important;z-index:18!important;backface-visibility:hidden;will-change:contents}
+  body.abj-world-exploring #miniMapWrap {display:block!important;visibility:visible!important;opacity:1!important}
+}
+body:not(.abj-world-exploring) #miniMapWrap {visibility:hidden!important;opacity:0!important}
+body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!important;opacity:1!important}
+</style>
+<script id="abj-v150-map-money-stability">
+(function(){
+  function refreshMoney(){
+    const target=document.getElementById('abjTopMoney');
+    if(!target)return;
+    let amount=0;
+    try{amount=Number(lifeState&&lifeState.money)||0;}catch(e){}
+    target.textContent=Math.floor(amount).toLocaleString('fr-FR')+' FCFA';
+  }
+  function drawStableMiniMap(){
+    const c=document.getElementById('miniMapCanvas');
+    if(!c||!player||!scene||!gameStarted||!worldReady)return;
+    const ctx=c.getContext('2d');if(!ctx)return;
+    const W=c.width,H=c.height,cx=W/2,cy=H/2,R=145,range=1150;
+    let pos;try{pos=getPlayerMapPosition();}catch(e){pos={x:player.position.x,z:player.position.z};}
+    const px=Number(pos.x)||0,pz=Number(pos.z)||0,scale=R/range;
+    ctx.clearRect(0,0,W,H);ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();
+    ctx.fillStyle='#b9c8b5';ctx.fillRect(0,0,W,H);
+    const roads=(osmRoadSegments&&osmRoadSegments.length)?osmRoadSegments:(scene.userData.playableUrbanCoreRoads||[]);
+    ctx.lineCap='round';
+    for(const road of roads){
+      if(!road||!road.a||!road.b)continue;
+      const mx=(road.a.x+road.b.x)/2,mz=(road.a.z+road.b.z)/2;
+      if(Math.abs(mx-px)>range*1.6||Math.abs(mz-pz)>range*1.6)continue;
+      const major=['motorway','trunk','primary'].includes(road.type);
+      ctx.strokeStyle=major?'#d39b50':'#fffdf4';
+      ctx.lineWidth=Math.max(1.5,(Number(road.width)||5)*scale*(major?1.3:1));
+      ctx.beginPath();ctx.moveTo(cx+(road.a.x-px)*scale,cy+(road.a.z-pz)*scale);
+      ctx.lineTo(cx+(road.b.x-px)*scale,cy+(road.b.z-pz)*scale);ctx.stroke();
+    }
+    // Les bâtiments sont représentés par leur empreinte réelle, avec une taille minimale lisible.
+    for(const b of (allBuildings||[])){
+      if(!b||!Number.isFinite(b.x)||!Number.isFinite(b.z))continue;
+      const dx=b.x-px,dz=b.z-pz;if(Math.abs(dx)>range||Math.abs(dz)>range)continue;
+      const bw=Math.max(3.2,Math.min(18,Number(b.w)||8)*scale);
+      const bd=Math.max(3.2,Math.min(18,Number(b.d)||8)*scale);
+      ctx.fillStyle=/shop|commerce|urban-shop|mairie|market/i.test(String(b.type||''))?'#d58c3d':'#64776b';
+      ctx.strokeStyle='rgba(35,53,43,.55)';ctx.lineWidth=.65;
+      ctx.fillRect(cx+dx*scale-bw/2,cy+dz*scale-bd/2,bw,bd);
+      ctx.strokeRect(cx+dx*scale-bw/2,cy+dz*scale-bd/2,bw,bd);
+    }
+    for(const v of (vehicles||[])){
+      if(!v||!v.visible||v.userData?.wreck)continue;
+      const dx=v.position.x-px,dz=v.position.z-pz;if(Math.abs(dx)>range||Math.abs(dz)>range)continue;
+      ctx.fillStyle=v.userData?.vType==='gbaka'?'#e58b22':'#e6bd36';
+      ctx.beginPath();ctx.arc(cx+dx*scale,cy+dz*scale,2.4,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='#1769d2';ctx.strokeStyle='#fff';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
+    const label=document.getElementById('miniMapLabel');
+    if(label){let zone=null;try{zone=getCommuneZoneAt(px,pz);}catch(e){}label.textContent=(zone?.name||'Abidjan')+' · '+(currentQuartier||'');}
+  }
+  function install(){
+    const original=window.updateOnlineCount;
+    window.updateOnlineCount=function(n){
+      const el=document.getElementById('abjTopOnlineNumber');
+      if(el)el.textContent=String(Math.max(0,Number(n)||0));
+      if(typeof original==='function')original(n);
+    };
+    setInterval(refreshMoney,700);
+    setInterval(drawStableMiniMap,450);
+    refreshMoney();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
 </script>
 
