@@ -11,7 +11,7 @@
 <meta name="application-name" content="Abidjan Life">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Abidjan Life V1.48 — missions sauvegardées, relations, GPS fiable, soins réels</title>
+<title>Abidjan Life V1.49 — ville plus lisible, déplacements fluides et GPS visible</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
   * { box-sizing: border-box; }
@@ -1374,8 +1374,8 @@ function init() {
   document.body.appendChild(renderer.domElement);
   clock = new THREE.Clock();
 
-  scene.add(new THREE.AmbientLight(0xfff5e6, 0.72));
-  const sun = new THREE.DirectionalLight(0xffe8c8, 0.75);
+  scene.add(new THREE.AmbientLight(0xfff5e6, 0.42));
+  const sun = new THREE.DirectionalLight(0xffe8c8, 0.62);
   sun.position.set(180, 260, 140);
   sun.castShadow = !mobileLite;
   sun.shadow.mapSize.set(mobileLite ? 512 : 2048, mobileLite ? 512 : 2048);
@@ -4208,8 +4208,8 @@ function animateCharacter(char, delta, moving) {
     return;
   }
   if (moving) {
-    d.phase += delta * 9.5;
-    const swing = Math.sin(d.phase) * 0.48;
+    d.phase += delta * (char===player ? (keys['shift'] ? 14.2 : 10.5) : 9.5);
+    const swing = Math.sin(d.phase) * (char===player && keys['shift'] ? 0.58 : 0.46);
     d.legL.rotation.x = swing; d.legR.rotation.x = -swing;
     d.armL.rotation.x = -swing * 0.65; d.armR.rotation.x = swing * 0.65;
   } else {
@@ -4299,7 +4299,7 @@ function enterBuilding(door) {
   if(outdoorGround)outdoorGround.visible=false;if(laguneMesh)laguneMesh.visible=false;
   // Le monde extérieur est à plusieurs dizaines de kilomètres de la scène intérieure.
   scene.background=new THREE.Color(0x8a9aaa);scene.fog=null;
-  if(interiorAmbientLight)interiorAmbientLight.intensity=1.35;
+  if(interiorAmbientLight)interiorAmbientLight.intensity=.58;
   if(renderer)renderer.setClearColor(0x8a9aaa,1);
   document.getElementById('interiorHint').style.display='block';
   document.getElementById('interiorHint').textContent=door.adultOnly?'🌙 Le Talon · Club privé 18+ · Bar, piste de danse et salons VIP · Aucun échange d’argent réel':(interior.style==='resident'?'🏢 Immeuble · E à l’ascenseur pour choisir un étage · E à une porte pour entrer dans un appartement':door.isMunicipality?'🏛️ Mairie de '+door.commune+' · Services administratifs au guichet · E près de la porte : sortir':door.buildingType&&door.buildingType.startsWith('store_')?'🏬 '+door.buildingName+' · F : utiliser / interagir · E près de la porte : sortir':door.buildingName&&door.buildingName!=='Maison d’Abidjan'?'🏢 '+door.buildingName+' · F : interagir · E près de la porte : sortir':"🏠 Maison · F : utiliser / déplacer un meuble · Lit : dormir · Douche : se laver · E près de la porte : sortir");
@@ -4465,7 +4465,7 @@ function updatePlayer(delta) {
     while (diff < -Math.PI) diff += Math.PI * 2;
     player.rotation.y += diff * Math.min(1, delta * 10);
   }
-  let speed = (keys['shift'] ? 15.2 : 6.6) * delta * (lifeState.energy<12?.68:lifeState.energy<28?.84:1);
+  let speed = (keys['shift'] ? 18.5 : 8.2) * delta * (lifeState.energy<12?.68:lifeState.energy<28?.84:1);
   const newPos=player.position.clone();
   if(currentInterior){
     const roomW=currentInterior.roomW, roomD=currentInterior.roomD, gp=currentInterior.group.position;
@@ -4569,6 +4569,36 @@ function updatePlayer(delta) {
   }
 
   document.getElementById('info').textContent = 'ZQSD / WASD · Shift courir · Espace sauter · P carte · Souris caméra';
+}
+
+// Mise à jour centrale des véhicules : trafic cartographié + circulation de secours.
+function updateVehicles(delta) {
+  const dt=Math.max(0,Math.min(.1,Number(delta)||0));
+  if(!Array.isArray(vehicles)||!vehicles.length)return;
+  if(typeof abjBuildTrafficSpatialIndex==='function')abjBuildTrafficSpatialIndex();
+  for(const v of vehicles){
+    if(!v||!v.visible||!v.userData)continue;
+    const d=v.userData;
+    if(d.wreck||d.exploding)continue;
+    if(Array.isArray(d.route)&&d.route.length&&typeof advanceTrafficVehicle==='function'){
+      advanceTrafficVehicle(v,dt);
+      continue;
+    }
+    if(Number.isFinite(d.pos)&&Number.isFinite(d.speed)){
+      d.pos+=d.speed*dt*60*(Number(d.dir)||1);
+      const edge=(typeof CITY_SIZE==='number'?CITY_SIZE:12000)/2+40;
+      if(d.pos>edge)d.pos=-edge;
+      else if(d.pos< -edge)d.pos=edge;
+      if(d.isHorizontal){
+        v.position.x=d.pos;
+        v.position.z=(Number(d.roadLine)||0)+(Number(d.laneOffset)||0);
+      }else{
+        v.position.x=(Number(d.roadLine)||0)-(Number(d.laneOffset)||0);
+        v.position.z=d.pos;
+      }
+      v.position.y=typeof terrainHeight==='function'?terrainHeight(v.position.x,v.position.z)+.03:.03;
+    }
+  }
 }
 
 function updateNPCs(delta) {
@@ -4753,7 +4783,7 @@ function createDynamicSky(){
  const moon=new THREE.Mesh(new THREE.SphereGeometry(32,24,16),new THREE.MeshBasicMaterial({color:0xf0e9d0}));sky.add(moon);
  const sun=new THREE.Mesh(new THREE.SphereGeometry(42,24,16),new THREE.MeshBasicMaterial({color:0xffd18a}));sky.add(sun);
  const clouds=[];
- const cloudMat=new THREE.MeshLambertMaterial({color:0xf3f2e9,transparent:true,opacity:.78,depthWrite:false});
+ const cloudMat=new THREE.MeshLambertMaterial({color:0xe6e9ed,transparent:true,opacity:.62,depthWrite:false});
  for(let i=0;i<18;i++){
   const cloud=new THREE.Group();const count=4+Math.floor(rnd()*4);
   for(let j=0;j<count;j++){const puff=new THREE.Mesh(new THREE.SphereGeometry(1,9,7),cloudMat);const sc=.75+rnd()*1.4;puff.scale.set(34*sc,13*sc,22*sc);puff.position.set((rnd()-.5)*90,(rnd()-.5)*10,(rnd()-.5)*34);cloud.add(puff);}
@@ -4778,10 +4808,10 @@ function updateDynamicSky(delta){
  const sunLight=scene.userData.sun;
  sunLight.position.set((player?player.position.x:0)+sunDir.x*900,(player?player.position.y:0)+Math.max(80,sunDir.y*900),(player?player.position.z:0)+sunDir.z*900);
  const daylight=Math.max(0,Math.sin(angle));
- sunLight.intensity=.08+daylight*.92+dawn*.12+dusk*.1;
+ sunLight.intensity=.025+daylight*.72+dawn*.06+dusk*.06;
  sunLight.color.copy(new THREE.Color(0xffd2a1).lerp(new THREE.Color(0xfff2dc),daylight));
  const ambient=scene.children.find(o=>o.isAmbientLight);
- if(ambient)ambient.intensity=.18+daylight*.58+starAlpha*.04;
+ if(ambient)ambient.intensity=.045+daylight*.34+Math.max(dawn,dusk)*.035+starAlpha*.02;
  scene.background=skyColor;
  if(scene.fog){scene.fog.color.copy(skyColor);scene.fog.near=2600;scene.fog.far=14000;}
  sky.group.position.set(player?player.position.x:0,0,player?player.position.z:0);
@@ -6748,8 +6778,27 @@ function v13NeedDefs(){return [
 ];}
 function v13NeedPanel(){const p=document.getElementById('needPanel'),rows=document.getElementById('needPanelRows');if(!p||!rows)return;rows.innerHTML=v13NeedDefs().map(n=>'<div class="needRow"><span>'+n.emoji+' '+n.label+'</span><div class="needTrack"><div class="needFill" style="width:'+Math.max(0,Math.min(100,n.value))+'%;background:'+(n.value<25?'#e74c3c':n.value<50?'#e6a23c':'#38b77a')+'"></div></div><b>'+Math.round(n.value)+'%</b></div>').join('');}
 function v13ToggleNeeds(){const p=document.getElementById('needPanel');if(!p)return;p.classList.toggle('open');if(p.classList.contains('open'))v13NeedPanel();}
-function v13InitHUD(){const mood=document.getElementById('lifeMood');if(mood&&!mood.dataset.v13){mood.dataset.v13='1';mood.title='Afficher tous les besoins';mood.setAttribute('role','button');mood.setAttribute('tabindex','0');mood.addEventListener('click',v13ToggleNeeds);mood.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();v13ToggleNeeds();}});}const close=document.getElementById('needPanelClose');if(close&&!close.dataset.v13){close.dataset.v13='1';close.onclick=()=>document.getElementById('needPanel').classList.remove('open');}}
-function v13MiniMap(){V13.miniTimer-=.016;if(V13.miniTimer>0)return;V13.miniTimer=.22;const c=document.getElementById('miniMapCanvas');if(!c||!player)return;const ctx=c.getContext('2d'),W=c.width,H=c.height,cx=W/2,cy=H/2,R=145,range=1150;ctx.clearRect(0,0,W,H);ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();ctx.fillStyle='#b9c8b5';ctx.fillRect(0,0,W,H);const __mp=getPlayerMapPosition(),px=__mp.x,pz=__mp.z,sc=R/range;ctx.lineCap='round';for(const road of osmRoadSegments){if(Math.abs((road.a.x+road.b.x)/2-px)>range*1.5||Math.abs((road.a.z+road.b.z)/2-pz)>range*1.5)continue;ctx.strokeStyle=['motorway','trunk','primary'].includes(road.type)?'#d39b50':'#f7f5e9';ctx.lineWidth=Math.max(1,(road.width||5)*sc*.8);ctx.beginPath();ctx.moveTo(cx+(road.a.x-px)*sc,cy+(road.a.z-pz)*sc);ctx.lineTo(cx+(road.b.x-px)*sc,cy+(road.b.z-pz)*sc);ctx.stroke();}for(const b of allBuildings){if(Math.abs(b.x-px)>range||Math.abs(b.z-pz)>range)continue;ctx.fillStyle='#77877b';ctx.fillRect(cx+(b.x-px)*sc-1,cy+(b.z-pz)*sc-1,2,2);}ctx.fillStyle='#e74c3c';ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();const zone=getCommuneZoneAt(px,pz);const label=document.getElementById('miniMapLabel');if(label)label.textContent=(zone?zone.name:'Abidjan')+' · '+(currentQuartier||'');}
+function v13InitHUD(){
+ const mood=document.getElementById('lifeMood');
+ if(mood&&!mood.dataset.v13){mood.dataset.v13='1';mood.title='Afficher tous les besoins';mood.setAttribute('role','button');mood.setAttribute('tabindex','0');mood.addEventListener('click',v13ToggleNeeds);mood.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();v13ToggleNeeds();}});}
+ let needButton=document.getElementById('needToggleEmoji');
+ if(!needButton){needButton=document.createElement('button');needButton.id='needToggleEmoji';needButton.type='button';needButton.textContent='🙂';needButton.setAttribute('aria-label','Afficher les besoins du personnage');needButton.title='Besoins du personnage';needButton.style.cssText='position:fixed;left:18px;bottom:132px;z-index:55;width:52px;height:52px;border:2px solid #f2cf83;border-radius:50%;background:#102a36;color:#fff;font-size:27px;box-shadow:0 5px 18px #0009;cursor:pointer;display:grid;place-items:center';document.body.appendChild(needButton);}
+ if(!needButton.dataset.v149){needButton.dataset.v149='1';needButton.addEventListener('click',v13ToggleNeeds);}
+ const needStyleId='abjNeedToggleStyle';
+ if(!document.getElementById(needStyleId)){const st=document.createElement('style');st.id=needStyleId;st.textContent='body:not(.abj-in-world) #needToggleEmoji{display:none!important} #needToggleEmoji:focus{outline:3px solid #ffe19a;outline-offset:3px} @media(max-width:760px){#needToggleEmoji{left:128px!important;bottom:30px!important;width:46px!important;height:46px!important}}';document.head.appendChild(st);}
+ const close=document.getElementById('needPanelClose');if(close&&!close.dataset.v13){close.dataset.v13='1';close.onclick=()=>document.getElementById('needPanel').classList.remove('open');}
+}
+function v13MiniMap(){V13.miniTimer-=.016;if(V13.miniTimer>0)return;V13.miniTimer=.22;const c=document.getElementById('miniMapCanvas');if(!c||!player)return;const ctx=c.getContext('2d'),W=c.width,H=c.height,cx=W/2,cy=H/2,R=145,range=1150;ctx.clearRect(0,0,W,H);ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();ctx.fillStyle='#b9c8b5';ctx.fillRect(0,0,W,H);const __mp=getPlayerMapPosition(),px=__mp.x,pz=__mp.z,sc=R/range;ctx.lineCap='round';for(const road of osmRoadSegments){if(Math.abs((road.a.x+road.b.x)/2-px)>range*1.5||Math.abs((road.a.z+road.b.z)/2-pz)>range*1.5)continue;ctx.strokeStyle=['motorway','trunk','primary'].includes(road.type)?'#d39b50':'#f7f5e9';ctx.lineWidth=Math.max(1,(road.width||5)*sc*.8);ctx.beginPath();ctx.moveTo(cx+(road.a.x-px)*sc,cy+(road.a.z-pz)*sc);ctx.lineTo(cx+(road.b.x-px)*sc,cy+(road.b.z-pz)*sc);ctx.stroke();}for(const b of allBuildings){if(Math.abs(b.x-px)>range||Math.abs(b.z-pz)>range)continue;ctx.fillStyle='#77877b';ctx.fillRect(cx+(b.x-px)*sc-1,cy+(b.z-pz)*sc-1,2,2);}const gpsTarget=window.__abjGpsTarget;
+if(gpsTarget&&Number.isFinite(gpsTarget.x)&&Number.isFinite(gpsTarget.z)){
+ const dx=gpsTarget.x-px,dz=gpsTarget.z-pz,dist=Math.hypot(dx,dz),angle=Math.atan2(dz,dx),markDist=Math.min(R-18,dist*sc),mx=cx+Math.cos(angle)*markDist,my=cy+Math.sin(angle)*markDist;
+ ctx.save();ctx.strokeStyle='#f3c34e';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(mx,my);ctx.stroke();
+ if(dist*sc>R-18){ctx.translate(mx,my);ctx.rotate(angle);ctx.fillStyle='#f3c34e';ctx.strokeStyle='#17232b';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(11,0);ctx.lineTo(-7,-7);ctx.lineTo(-5,0);ctx.lineTo(-7,7);ctx.closePath();ctx.fill();ctx.stroke();}
+ else{ctx.fillStyle='#f3c34e';ctx.strokeStyle='#17232b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(mx,my,6,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.fillStyle='#17232b';ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.fillText('D',mx,my+3);}
+ ctx.restore();
+}
+ctx.fillStyle='#e74c3c';ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
+const zone=getCommuneZoneAt(px,pz);const label=document.getElementById('miniMapLabel');
+if(label)label.textContent=window.__abjGpsTarget?'GPS · '+String(window.__abjGpsTarget.label||'DESTINATION').toUpperCase().slice(0,18)+' · '+(zone?zone.name:'Abidjan'):(zone?zone.name:'Abidjan')+' · '+(currentQuartier||'');}
 function v13Speech(text){const el=document.getElementById('playerSpeech');if(!el||!player||!camera)return;el.textContent=text;el.style.display='block';V13.speechTimer=3;}
 function v13UpdateSpeech(dt){const el=document.getElementById('playerSpeech');if(!el||el.style.display==='none'||!player||!camera)return;V13.speechTimer-=dt;if(V13.speechTimer<=0){el.style.display='none';return;}const v=new THREE.Vector3();player.getWorldPosition(v);v.y+=2.15;v.project(camera);el.style.left=((v.x*.5+.5)*innerWidth)+'px';el.style.top=((-v.y*.5+.5)*innerHeight)+'px';}
 function v13Faint(reason){if(V13.fainting||!player||!worldReady)return;V13.fainting=true;const ov=document.getElementById('faintOverlay');if(ov){ov.style.display='flex';ov.classList.add('show');ov.innerHTML='Tu as perdu connaissance…<br><small>Les secours te conduisent à l’hôpital.</small>';}if(renderer&&renderer.domElement&&document.pointerLockElement)document.exitPointerLock();setTimeout(()=>{try{let hosp=poi.find(p=>/hopital|hôpital|chu|clinique/i.test(p.nom||''));let dest=hosp?{x:hosp.x,z:hosp.z}:geoToWorld(5.348,-4.024);player.position.set(dest.x,terrainHeight(dest.x,dest.z)+.08,dest.z);player.rotation.set(0,0,0);lifeState.health=Math.max(45,lifeState.health);lifeState.hunger=Math.max(32,lifeState.hunger);lifeState.energy=Math.max(42,lifeState.energy);V13.needs.bladder=Math.max(45,V13.needs.bladder);V13.needTimers.hunger=0;V13.needTimers.energy=0;showMessage('🏥 Tu reprends connaissance à l’hôpital. Prends soin de toi.');saveLifeProgress(false);}catch(e){console.warn('Transport hôpital non terminé',e);}setTimeout(()=>{if(ov){ov.classList.remove('show');ov.style.display='none';}V13.fainting=false;},1800);},2600);}
@@ -9166,46 +9215,20 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
 </script>
 
 <script>
-/* ABIDJAN LIFE — installation PWA (Android, ordinateur et iOS) */
+/* ABIDJAN LIFE — le bouton d'installation est volontairement retiré de cette version. */
 (function(){
-  if(window.__ABJ_PWA_INIT__) return;
-  window.__ABJ_PWA_INIT__=true;
-  var deferredPrompt=null;
-  var isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-  var isStandalone=window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
-  function makeButton(){
-    if(isStandalone || document.getElementById('abjInstallApp')) return;
-    var b=document.createElement('button');
-    b.id='abjInstallApp'; b.type='button'; b.textContent='⬇ Installer';
-    b.setAttribute('aria-label','Installer Abidjan Life sur cet appareil');
-    b.style.cssText='position:fixed;right:12px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:99999;padding:11px 15px;border:1px solid #ffe19a;border-radius:24px;background:linear-gradient(135deg,#f4d18a,#c58c39);color:#172630;font:800 13px system-ui;box-shadow:0 4px 18px #0008;cursor:pointer';
-    b.addEventListener('click',async function(){
-      if(deferredPrompt){
-        deferredPrompt.prompt();
-        try { await deferredPrompt.userChoice; } catch(e) {}
-        deferredPrompt=null; b.remove(); return;
-      }
-      var msg=isIOS
-        ? 'Pour installer Abidjan Life sur ton iPhone : touche Partager (le carré avec la flèche vers le haut), puis « Sur l’écran d’accueil », et confirme avec Ajouter.'
-        : 'Dans le menu de ton navigateur, choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».';
-      if(typeof window.showMessage==='function') window.showMessage(msg); else alert(msg);
-    });
-    document.body.appendChild(b);
-  }
-  window.addEventListener('beforeinstallprompt',function(e){
-    e.preventDefault(); deferredPrompt=e; makeButton();
-    var b=document.getElementById('abjInstallApp'); if(b) b.textContent='⬇ Installer le jeu';
-  });
-  window.addEventListener('appinstalled',function(){
-    var b=document.getElementById('abjInstallApp'); if(b) b.remove();
-    deferredPrompt=null;
-  });
-  if(!isStandalone){ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',makeButton,{once:true}); else makeButton(); }
-  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
-    window.addEventListener('load',function(){
-      navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(function(err){console.warn('Abidjan Life : service worker non activé',err);});
-    },{once:true});
-  }
+ if(window.__ABJ_PWA_INIT__)return;
+ window.__ABJ_PWA_INIT__=true;
+ const removeInstallButton=()=>{const button=document.getElementById('abjInstallApp');if(button)button.remove();};
+ removeInstallButton();
+ document.addEventListener('DOMContentLoaded',removeInstallButton,{once:true});
+ window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();removeInstallButton();});
+ window.addEventListener('appinstalled',removeInstallButton);
+ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener('load',function(){
+   navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(function(err){console.warn('Abidjan Life : service worker non activé',err);});
+  },{once:true});
+ }
 })();
 </script>
 
@@ -9236,7 +9259,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
 (function(){
  'use strict';
  const st=document.createElement('style');
- st.textContent='body:not(.abj-in-world) #abjAudioButton,body:not(.abj-in-world) #abjOnlineCount,body:not(.abj-in-world) #abjOnlinePanel{display:none!important}';
+ st.textContent='body:not(.abj-in-world) #abjAudioButton,#abjOnlineCount,#abjOnlinePanel,#abjInstallApp{display:none!important}';
  document.head.appendChild(st);
  const blockers=['startScreen','accountOverlay','accountIntro','afGamerIntro','creatorOverlay','statusStartOverlay','loadingScreen'];
  const shown=id=>{const e=document.getElementById(id);if(!e)return false;const c=getComputedStyle(e);return c.display!=='none'&&c.visibility!=='hidden'&&!e.classList.contains('done')&&e.getBoundingClientRect().width>0;};
@@ -11489,7 +11512,7 @@ function applyGraphicsTier(tier){
   if(scene&&scene.fog){scene.fog.near=c.fogNear;scene.fog.far=c.fogFar;}
   // Tone mapping semi-réaliste
   if(renderer.outputColorSpace!==undefined&&THREE.SRGBColorSpace)renderer.outputColorSpace=THREE.SRGBColorSpace;
-  if(renderer.toneMapping!==undefined){renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=GFX.tier==='low'?1.0:1.12;}
+  if(renderer.toneMapping!==undefined){renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=GFX.tier==='low'?.90:.90;}
   console.info('V1.39 graphismes:',GFX.tier);
 }
 window.ABJ_SET_GFX_TIER=function(t){applyGraphicsTier(t);};
@@ -12485,7 +12508,7 @@ if(_eb){
     try{
       if(currentInterior){
         currentInterior.group.visible=true;
-        if(interiorAmbientLight)interiorAmbientLight.intensity=1.2;
+        if(interiorAmbientLight)interiorAmbientLight.intensity=.58;
         scene.background=new THREE.Color(0x7a8a96);
         // Lumières ponctuelles pour éviter l'écran sombre/blanc vide
         if(!currentInterior.userData.fillLights){
@@ -13693,7 +13716,7 @@ console.info('ABJ V1.45 — intérieurs business, SOTRA OSM, jams carrefours');
 (function(){
 'use strict';
 if(window.__ABJ_V146)return;window.__ABJ_V146=true;
-window.ABJ_BUILD_VERSION='1.46';
+window.ABJ_BUILD_VERSION='1.49';
 
 /* ---------- Anti écran blanc / intérieur illisible ---------- */
 function hardenInteriorView(interior){
@@ -13707,13 +13730,13 @@ function hardenInteriorView(interior){
   scene.background=new THREE.Color(0x91a0ae);
   scene.fog=null;
   if(renderer)renderer.setClearColor(0x91a0ae,1);
-  if(interiorAmbientLight)interiorAmbientLight.intensity=1.4;
+  if(interiorAmbientLight)interiorAmbientLight.intensity=.58;
   // Fill lights
   if(!interior.userData)interior.userData={};
   if(!interior.userData.v146Lights){
-    const a=new THREE.AmbientLight(0xfff5e8,0.55);
-    const p=new THREE.PointLight(0xffe8c8,1.0,30,2);p.position.set(0,2.8,0);
-    const p2=new THREE.PointLight(0xd0e8ff,0.4,18,2);p2.position.set(-2,2.2,2);
+    const a=new THREE.AmbientLight(0xfff5e8,0.34);
+    const p=new THREE.PointLight(0xffe8c8,0.58,30,2);p.position.set(0,2.8,0);
+    const p2=new THREE.PointLight(0xd0e8ff,0.22,18,2);p2.position.set(-2,2.2,2);
     interior.group.add(a);interior.group.add(p);interior.group.add(p2);
     interior.userData.v146Lights=true;
   }
@@ -13998,7 +14021,7 @@ setInterval(()=>{
   if(currentInterior&&player){
     try{
       currentInterior.group.visible=true;
-      if(interiorAmbientLight&&interiorAmbientLight.intensity<1)interiorAmbientLight.intensity=1.3;
+      if(interiorAmbientLight&&interiorAmbientLight.intensity<1)interiorAmbientLight.intensity=.58;
     }catch(e){window.__abjErr&&window.__abjErr(e)}
   }
 },4000);
@@ -14028,8 +14051,8 @@ console.info('ABJ V1.46 — SOTRA board, AF Gamer, intérieur, tél, GPS');
    - réveil du serveur en ligne au chargement. */
 (function(){
 'use strict';
-if(window.__ABJ_V148)return;window.__ABJ_V148=true;
-window.ABJ_BUILD_VERSION='1.48.0';
+if(window.__ABJ_V149)return;window.__ABJ_V149=true;
+window.ABJ_BUILD_VERSION='1.49.0';
 
 const E=e=>{try{window.__abjErr&&window.__abjErr(e);}catch(_){}};
 const $=id=>document.getElementById(id);
@@ -14546,7 +14569,7 @@ setInterval(()=>{
 setInterval(()=>{if(ready()){try{gpsTick();}catch(e){E(e);}}},250);
 requestAnimationFrame(arrowLoop);
 
-console.info('ABJ V1.48 — missions unifiées et sauvegardées, relations, GPS, collisions, soins');
+console.info('ABJ V1.49 — corrections visuelles, déplacements, véhicules, GPS, besoins et comptes');
 })();
 
 </script>
