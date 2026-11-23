@@ -1495,6 +1495,30 @@ io.on('connection', (socket) => {
       if(typeof ack==='function')ack({ok:true});
     }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
   });
+  socket.on('rentals:pay',async(payload={},ack)=>{
+    try{
+      const tenant=accounts.get(socket.phone),contract=tenant?.save?.rentalContract,day=Math.max(1,Math.floor(Number(payload.gameDay)||1));
+      if(!contract||!contract.landlordPhone||day<(Number(contract.lastPaidDay)||1)+7){if(typeof ack==='function')ack({ok:false,skip:true});return;}
+      const owner=accounts.get(contract.landlordPhone);if(!owner?.save)throw new Error('Propriétaire introuvable.');
+      const rent=Math.max(0,Math.min(50000000,Math.floor(Number(contract.rentWeekly)||0)));
+      const arrears=Math.max(0,Math.min(200000000,Math.floor(Number(contract.arrears)||0)));
+      const due=rent+arrears,tenantMoney=Math.max(0,Number(tenant.save.money)||0);
+      if(tenantMoney<due){
+        tenant.save=Object.assign({},tenant.save,{rentalContract:Object.assign({},contract,{arrears:due,lastPaidDay:day})});
+        await persistAccount(tenant);
+        if(typeof ack==='function')ack({ok:false,arrears:due});
+        return;
+      }
+      const oldTenant=tenant.save,oldOwner=owner.save;
+      tenant.save=Object.assign({},tenant.save,{money:tenantMoney-due,rentalContract:Object.assign({},contract,{arrears:0,lastPaidDay:day})});
+      owner.save=Object.assign({},owner.save,{money:Math.max(0,Number(owner.save.money)||0)+due});
+      try{await persistAccount(tenant);await persistAccount(owner);}
+      catch(error){tenant.save=oldTenant;owner.save=oldOwner;throw error;}
+      const target=[...activePlayers.entries()].find(([,p])=>p.phone===socket.phone);
+      if(target)io.to(target[0]).emit('rentals:contract',tenant.save.rentalContract);
+      if(typeof ack==='function')ack({ok:true,amount:due});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
   socket.on('player:save', async (save, ack) => {
     let ok = false;
 
