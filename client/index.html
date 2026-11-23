@@ -7797,6 +7797,8 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    socket.on('rentals:contract',contract=>{if(contract&&typeof contract.assetId==='string'){lifeState.rentalContract=contract;saveLifeProgress(false);showMessage('🔑 Ton bail chez '+(contract.landlordName||'un propriétaire')+' est actif.');if(typeof window.ABJ_RENDER_RENTAL_MARKET==='function')window.ABJ_RENDER_RENTAL_MARKET();}});
    socket.on('rentals:owner:balance',data=>{if(data&&Number.isFinite(Number(data.money))){lifeState.money=Math.max(0,Number(data.money));saveLifeProgress(false);}});
    socket.on('jobs:contract',contract=>{if(contract&&typeof contract==='object'){lifeState.employmentContract=contract;saveLifeProgress(false);showMessage('💼 Tu as été recruté(e) chez '+(contract.companyName||'une entreprise')+' !');if(typeof renderEmploymentApp==='function'&&document.getElementById('phoneAppContent')?.innerHTML.includes('Emploi'))renderEmploymentApp();}});
+   socket.on('jobs:company:update',data=>{if(data&&data.companyId){const co=(lifeState.v19?.companies||[]).find(c=>String(c.id||c.name)===String(data.companyId));if(co){co.employees=Array.isArray(data.employees)?data.employees:[];saveLifeProgress(false);}}});
+   socket.on('rentals:property:update',data=>{if(data&&data.assetId){const id=String(data.assetId).replace(/^property:/,'');const p=(lifeState.v19?.properties||[]).find(x=>String(x.id)===id);if(p){p.rentalTenant=data.rentalTenant||null;saveLifeProgress(false);}}});
    socket.on('session:replaced',()=>{socket.disconnect();showAccountStatus('Ton compte vient d’être connecté sur un autre appareil.',true);});
    socket.on('update:available',checkUpdate);
    window.ABJ_GAME_SOCKET=socket;
