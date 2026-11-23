@@ -582,7 +582,7 @@ function terrainHeight(x,z){
   return 0.85*Math.sin(x/2100)*Math.cos(z/2600) + 0.62*Math.sin((x+z)/1450) + 0.28*Math.cos((x-z)/720);
 }
 function createAbidjanTerrain(){
-  const segments=210, half=CITY_SIZE/2, positions=[],uvs=[],indices=[];
+  const segments=160, half=CITY_SIZE/2, positions=[],uvs=[],indices=[];
   for(let iz=0;iz<=segments;iz++){const z=-half+CITY_SIZE*iz/segments;for(let ix=0;ix<=segments;ix++){const x=-half+CITY_SIZE*ix/segments;positions.push(x,terrainHeight(x,z)-.08,z);uvs.push(ix/segments,iz/segments);}}
   for(let iz=0;iz<segments;iz++)for(let ix=0;ix<segments;ix++){const a=iz*(segments+1)+ix,b=a+1,c=a+segments+1,d=c+1;indices.push(a,c,b,b,c,d);}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geo.setIndex(indices);geo.computeVertexNormals();
@@ -592,12 +592,12 @@ function createAbidjanTerrain(){
   // Texture urbaine discrète : le sol ne doit plus dominer les routes, trottoirs et bâtiments.
   let seed=481516;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
   for(let i=0;i<1800;i++){const x=rand()*512,y=rand()*512,w=2+rand()*18,h=2+rand()*12;ctx.fillStyle=rand()>.5?'rgba(205,198,177,.055)':'rgba(28,37,38,.045)';ctx.fillRect(x,y,w,h);}
-  for(let i=0;i<24000;i++){
+  for(let i=0;i<6000;i++){
     const x=rand()*512,y=rand()*512,r=.35+rand()*1.25;
     ctx.fillStyle=rand()>.92?'rgba(91,119,76,.09)':'rgba(32,40,39,.07)';
     ctx.beginPath();ctx.ellipse(x,y,r*1.8,r*.65,rand()*Math.PI,0,Math.PI*2);ctx.fill();
   }
-  for(let i=0;i<1800;i++){
+  for(let i=0;i<500;i++){
     const x=rand()*512,y=rand()*512;ctx.strokeStyle='rgba(76,91,55,.12)';ctx.lineWidth=.65;
     ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+(rand()-.5)*3,y-1-rand()*3);ctx.stroke();
   }
@@ -1683,15 +1683,30 @@ function generateCity() {
       return null;
     }
   };
+  // Le joueur peut entrer dès que le terrain et son personnage sont prêts.
+  // Les routes, bâtiments et lieux OSM se construisent ensuite sans bloquer l'écran de départ.
+  let firstSpawnPosition = null;
   const openWorld = (statusText) => {
-    // Le monde devient jouable dès que le terrain et le joueur existent.
-    // Les enrichissements (trafic, éclairage, etc.) continuent ensuite sans bloquer l'entrée.
     worldReady = true;
     const status = document.getElementById('mapStatus');
     if (status && statusText) status.textContent = statusText;
-    optional('position de départ', () => startPlayerAtHome());
+    if (player && !initialHomeEntered && doors.length) {
+      const movedAway = firstSpawnPosition &&
+        Math.hypot(player.position.x - firstSpawnPosition.x, player.position.z - firstSpawnPosition.z) > 8;
+      if (movedAway) initialHomeEntered = true;
+      else optional('position de départ', () => startPlayerAtHome());
+    }
     if (mapOpen) optional('actualisation de la carte', () => drawBigMap());
   };
+
+  // init() crée le personnage juste après generateCity() : la frame suivante
+  // ouvre le monde pendant que les données cartographiques continuent de charger.
+  requestAnimationFrame(() => {
+    if (player && !worldReady) {
+      firstSpawnPosition = { x: player.position.x, z: player.position.z };
+      openWorld('Terrain prêt · chargement des routes, bâtiments et lieux en arrière-plan…');
+    }
+  });
 
   loadAbidjanOSM().then(() => {
     const status = document.getElementById('mapStatus');
@@ -7648,21 +7663,12 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
     try{
      if(m.clientUrl){
       const target=new URL(m.clientUrl,location.href);target.searchParams.set('abjVersion',m.version);
-      const response=await fetch(target.toString(),{cache:'no-store'});
-      if(!response.ok)throw new Error('Téléchargement impossible (HTTP '+response.status+').');
-      const total=Number(response.headers.get('content-length'))||0;
-      if(response.body&&response.body.getReader){
-       const reader=response.body.getReader();let loaded=0;
-       while(true){const part=await reader.read();if(part.done)break;loaded+=part.value?.length||0;
-        const p=total?Math.min(99,Math.round(loaded/total*100)):Math.min(95,Math.round(loaded/(loaded+500000)*100));
-        bar.style.width=p+'%';percent.textContent=p+' %';
-        status.textContent=total?'Téléchargement de la mise à jour…':'Réception des fichiers…';
-       }
-      }else{bar.style.width='95%';percent.textContent='95 %';}
-      status.textContent='Mise à jour téléchargée. Redémarrage du jeu…';
+      // Ne pas télécharger le fichier une première fois avec fetch puis une seconde
+      // fois lors de la navigation : le navigateur charge la page directement.
+      status.textContent='Ouverture de la nouvelle version…';
       bar.style.width='100%';percent.textContent='100 %';
       sessionStorage.setItem(key,'1');
-      setTimeout(()=>location.replace(target.toString()),350);
+      location.replace(target.toString());
      }else{
       status.textContent='Redémarrage du jeu pour appliquer la mise à jour…';
       bar.style.width='100%';percent.textContent='100 %';sessionStorage.setItem(key,'1');
