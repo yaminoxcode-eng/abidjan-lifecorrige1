@@ -481,26 +481,25 @@ app.post('/api/auth/register', async (req,res) => {
   if (!rateLimit(req.ip + ':register', 5, 60000)) return res.status(429).json({error:'Trop de créations de compte. Réessaie dans une minute.'});
   const phone=phoneOf(req.body.phone), password=String(req.body.password||'');
   const email=clean(req.body.email,120).toLowerCase();
-  const code=String(req.body.emailCode||'').replace(/\D/g,'').slice(0,6);
-  const identity=normalizeIdentity({birthDate:req.body.birthDate,birthPlace:req.body.birthPlace});
   if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
   if(password.length<8||password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
-  if(!/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
-  if(!identity) return res.status(400).json({error:'Date de naissance ou commune de naissance invalide.'});
+  if(!/^\\S+@\\S+\\.\\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
   if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
-  const ticket=emailVerificationTickets.get(phone);
-  if(!ticket || ticket.email!==email || ticket.expires<Date.now()) return res.status(400).json({error:'Demande un nouveau code de vérification e-mail.'});
-  if(++ticket.attempts>5){emailVerificationTickets.delete(phone);return res.status(429).json({error:'Trop de codes incorrects. Demande un nouveau code.'});}
-  const actual=crypto.createHash('sha256').update(phone+':'+email+':'+code+':'+JWT_SECRET).digest('hex');
-  if(!code || !crypto.timingSafeEqual(Buffer.from(ticket.codeHash),Buffer.from(actual))) return res.status(400).json({error:'Code e-mail incorrect.'});
-  const account={phone,email,passwordHash:await bcrypt.hash(password,12),
-    security:{identity,emailVerifiedAt:Date.now()},
+  if(isCreatorPhone(phone)) return res.status(403).json({error:'Le compte créateur officiel ne peut pas être créé depuis l’inscription publique.'});
+  const account={
+    phone,
+    email,
+    passwordHash:await bcrypt.hash(password,12),
+    security:{},
     profile:{name:safePlayerName(phone,clean(req.body.name,24)||'Mon personnage'),gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50},
-    position:{x:0,z:0,yaw:0},needs:null,save:null,createdAt:Date.now()};
+    position:{x:0,z:0,yaw:0},
+    needs:null,
+    save:null,
+    createdAt:Date.now()
+  };
   try { await persistAccount(account); }
   catch(error){console.error('Échec enregistrement nouveau compte:',error.message);return res.status(503).json({error:'Impossible de sauvegarder le compte. Réessaie.'});}
   accounts.set(phone,account);
-  emailVerificationTickets.delete(phone);
   res.set('Cache-Control','no-store').status(201).json({token:issueToken(phone),player:{id:phone,profile:account.profile,position:account.position,save:null}});
 });
 
