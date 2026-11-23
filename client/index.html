@@ -130,7 +130,7 @@
 
   /* Interface de vie quotidienne — HUD léger, lisible sur PC et mobile */
   #lifeHud{position:absolute;top:12px;left:190px;transform:none;z-index:11;display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(8,16,28,.88);border:1px solid rgba(255,209,102,.75);border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.25);pointer-events:none;max-width:calc(100vw - 300px)}
-  #lifeMood{font-size:30px;line-height:1;pointer-events:auto;cursor:pointer}.lifeNeed{display:none!important}
+  #lifeMood{font-size:30px;line-height:1;pointer-events:auto;cursor:pointer}.lifeNeed{display:flex!important}
   .lifeNeed{width:76px;min-width:60px;display:flex;flex-direction:column;gap:3px}
   .lifeNeed label{font-size:10px;color:#f4ead2;text-shadow:1px 1px 2px #000}
   .lifeTrack{height:7px;border-radius:8px;background:rgba(255,255,255,.18);overflow:hidden}
@@ -157,6 +157,7 @@
   .phoneApp[data-app="camera"],.phoneApp[data-app="gallery"]{background:linear-gradient(145deg,#8a596d,#50384f)}
   .phoneApp[data-app="jumia"],.phoneApp[data-app="boutique"]{background:linear-gradient(145deg,#a45c36,#613b32)}
   .phoneApp[data-app="google"],.phoneApp[data-app="youtube"],.phoneApp[data-app="tiktok"]{background:linear-gradient(145deg,#435d79,#26384e)}
+  .phoneApp b{display:block;position:relative;z-index:1;font-size:11px;line-height:1.15;max-width:100%;overflow-wrap:anywhere}
   .phoneApp:active{filter:brightness(1.2)}
   #phoneHome{width:86px;height:5px;border-radius:5px;background:#dce7ed;margin:12px auto 0}
   #phoneAppContent{display:none}#phoneAppContent button{border:1px solid #f4d28b;background:#243e52;color:white;border-radius:9px;padding:9px 12px;margin:5px 3px}
@@ -329,6 +330,14 @@ button,input,select{font:inherit}
 </style>
 
 <style id="abj-v148-touch">html,body{touch-action:manipulation}canvas{touch-action:none}</style>
+
+<style id="abj-v150-hud-fixes">
+#lifeHud{left:50%!important;transform:translateX(-50%)!important;max-width:calc(100vw - 340px)!important}
+#lifeHud .lifeNeed{display:flex!important}
+#lifeHud #moneyLabel{white-space:nowrap!important}
+.phoneApp b{display:block!important;position:relative;z-index:1;font-size:11px;line-height:1.15;max-width:100%;overflow-wrap:anywhere}
+@media(max-width:760px){#lifeHud{left:8px!important;right:8px!important;bottom:205px!important;top:auto!important;transform:none!important;max-width:none!important;gap:4px!important;padding:6px!important}.lifeNeed{width:11.5%!important;min-width:0!important}.lifeNeed label{font-size:8px!important}#moneyLabel{font-size:9px!important}#lifeMood{font-size:20px!important}#needToggleEmoji{bottom:48px!important}}
+</style>
 </head>
 <body>
 
@@ -703,7 +712,9 @@ function applyPhoneSkin(skin){
   const phone=document.getElementById('phone');
   if(phone){
     phone.style.borderColor=skin.color||'#171d24';
-    phone.style.background='linear-gradient(155deg,'+(skin.accent||'#293541')+',#090f17 68%)';
+    const base='linear-gradient(155deg,'+(skin.accent||'#293541')+',#090f17 68%)';
+    phone.style.background=skin.wallpaper?'linear-gradient(155deg,rgba(12,25,36,.70),rgba(5,12,20,.84)),url("'+skin.wallpaper+'")':base;
+    phone.style.backgroundSize='cover';phone.style.backgroundPosition='center';
     phone.dataset.phoneModel=(skin.id||'default').startsWith('phone-iphone')?'iphone':(skin.id||'').startsWith('phone-galaxy')?'galaxy':'android';
   }
   const top=document.querySelector('#phoneTop span');
@@ -2568,7 +2579,7 @@ function createCreatorOrb(){
  const core=new THREE.Mesh(new THREE.SphereGeometry(.24,20,16),new THREE.MeshStandardMaterial({color:0x6eeaff,emissive:0x27c9ff,emissiveIntensity:2.2,roughness:.2,metalness:.25}));
  const halo=new THREE.Mesh(new THREE.TorusGeometry(.36,.025,8,32),new THREE.MeshBasicMaterial({color:0x8df5ff,transparent:true,opacity:.9}));halo.rotation.x=Math.PI/2;
  const light=new THREE.PointLight(0x38dfff,2.2,10);creatorOrb.add(core,halo,light);creatorOrb.userData.core=core;creatorOrb.userData.halo=halo;creatorOrb.visible=false;scene.add(creatorOrb);
- const btn=document.createElement('button');btn.id='creatorOrbAssistant';btn.textContent='✦ IA';btn.style.cssText='position:fixed;right:18px;top:110px;z-index:28;border:1px solid #8eeeff;border-radius:24px;padding:9px 14px;background:#092c3be8;color:#9cf5ff;font-weight:900;box-shadow:0 0 20px #32dfff88;display:none';btn.onclick=openCreatorAssistantPanel;document.body.appendChild(btn);
+ const btn=document.createElement('button');btn.id='creatorOrbAssistant';btn.textContent='✦ IA';btn.style.cssText='position:fixed;right:18px;top:92px;z-index:28;border:1px solid #8eeeff;border-radius:24px;padding:9px 14px;background:#092c3be8;color:#9cf5ff;font-weight:900;box-shadow:0 0 20px #32dfff88;display:none';btn.onclick=openCreatorAssistantPanel;document.body.appendChild(btn);
 }
 function updateCreatorOrb(delta){
  if(!scene||!player)return;
@@ -5673,8 +5684,10 @@ function renderAccountSettingsApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
  const apps=document.getElementById('phoneApps');if(apps)apps.style.display='none';content.style.display='block';
  const phone=activeGameAccount||'Aucun compte';
- content.innerHTML='<button id="phoneBack">← Applications</button><h3>⚙️ Paramètres du jeu</h3><p style="font-size:12px;color:#c6d8e5">Réglages liés à ton compte et à ton expérience Abidjan Life.</p><div style="padding:12px;background:#ffffff12;border-radius:12px"><div style="font-size:11px;color:#b9d6e7">Compte connecté</div><b>'+escapeHTML(phone)+'</b><p style="font-size:11px;color:#c6d8e5">Progression, personnage et préférences sont associés à ce compte.</p></div><h4>Compte et sécurité</h4><button id="accountSignOut">Se déconnecter</button><div style="margin-top:12px;padding:12px;border:1px solid #c94b4b88;border-radius:12px;background:#501c2533"><b style="color:#ffaaaa">Demander la suppression du compte</b><p style="font-size:11px;color:#f0cccc">Ta demande sera envoyée à AF GAMER. Le compte et ses données ne seront supprimés qu’après validation par le créateur.</p><button id="accountDelete" style="background:#9b2929;border-color:#ff8c8c">Envoyer ma demande</button></div><p id="accountSettingStatus" style="font-size:11px;color:#ffe0a0;min-height:34px"></p>';
+ content.innerHTML='<button id="phoneBack">← Applications</button><h3>⚙️ Paramètres du jeu</h3><p style="font-size:12px;color:#c6d8e5">Réglages liés à ton compte et à ton expérience Abidjan Life.</p><div style="padding:12px;background:#ffffff12;border-radius:12px"><div style="font-size:11px;color:#b9d6e7">Compte connecté</div><b>'+escapeHTML(phone)+'</b><p style="font-size:11px;color:#c6d8e5">Progression, personnage et préférences sont associés à ce compte.</p></div><h4>Personnaliser le téléphone</h4><p style="font-size:11px;color:#c6d8e5">Importe une image de ton appareil pour l’utiliser comme fond d’écran du téléphone en jeu.</p><label style="display:block;padding:10px;border:1px solid #e9c77b;border-radius:9px;background:#ffffff10">🖼️ Choisir une image<input id="phoneWallpaperInput" type="file" accept="image/*" style="display:block;width:100%;margin-top:8px;color:white"></label><button id="phoneWallpaperReset">Retirer le fond personnalisé</button><h4>Compte et sécurité</h4><button id="accountSignOut">Se déconnecter</button><div style="margin-top:12px;padding:12px;border:1px solid #c94b4b88;border-radius:12px;background:#501c2533"><b style="color:#ffaaaa">Demander la suppression du compte</b><p style="font-size:11px;color:#f0cccc">Ta demande sera envoyée à AF GAMER. Le compte et ses données ne seront supprimés qu’après validation par le créateur.</p><button id="accountDelete" style="background:#9b2929;border-color:#ff8c8c">Envoyer ma demande</button></div><p id="accountSettingStatus" style="font-size:11px;color:#ffe0a0;min-height:34px"></p>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
+ const wallpaperInput=document.getElementById('phoneWallpaperInput');if(wallpaperInput)wallpaperInput.onchange=()=>{const file=wallpaperInput.files&&wallpaperInput.files[0];if(!file)return;abjReadCompressedImage(file,1100,.76,data=>{applyPhoneSkin({...lifeState.phoneSkin,wallpaper:data});saveLifeProgress(false);const st=document.getElementById('accountSettingStatus');if(st)st.textContent='Fond d’écran appliqué et sauvegardé sur ce compte.';});};
+ const wallpaperReset=document.getElementById('phoneWallpaperReset');if(wallpaperReset)wallpaperReset.onclick=()=>{const skin={...(lifeState.phoneSkin||{})};delete skin.wallpaper;applyPhoneSkin(skin);saveLifeProgress(false);const st=document.getElementById('accountSettingStatus');if(st)st.textContent='Fond d’écran personnalisé retiré.';};
  document.getElementById('accountSignOut').onclick=()=>{closePhone();activeGameAccount=null;openAccountGate();};
  document.getElementById('accountDelete').onclick=async()=>{
   const status=document.getElementById('accountSettingStatus'),account=activeGameAccount,btn=document.getElementById('accountDelete');
@@ -5808,7 +5821,21 @@ function saveGameGallery(){try{safeSet('abj-life-gallery-v1',JSON.stringify(game
 function takeGamePhoto(){if(!renderer)return;const src=renderer.domElement,c=document.createElement('canvas'),scale=Math.min(1,1280/src.width);c.width=Math.round(src.width*scale);c.height=Math.round(src.height*scale);c.getContext('2d').drawImage(src,0,0,c.width,c.height);const data=c.toDataURL('image/jpeg',.78);gameGallery.push({id:Date.now(),data,name:'Abidjan-Life-'+Date.now()+'.jpg',at:Date.now()});gameGallery=gameGallery.slice(-40);saveGameGallery();document.getElementById('cameraStatus').textContent='Photo enregistrée dans la galerie';showMessage('📸 Photo prise ! Partage-la depuis Galerie ou Réseaux.');if(typeof abjPhoneSound==='function')abjPhoneSound('shutter');}
 function toggleGameVideo(){const status=document.getElementById('cameraStatus'),btn=document.getElementById('recordVideo');if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();btn.textContent='◉ Vidéo';return;}if(!renderer.domElement.captureStream||typeof MediaRecorder==='undefined'){status.textContent='Vidéo non prise en charge par ce navigateur.';return;}try{recordedChunks=[];const stream=renderer.domElement.captureStream(30);mediaRecorder=new MediaRecorder(stream);mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size)recordedChunks.push(e.data);};mediaRecorder.onstop=()=>{const blob=new Blob(recordedChunks,{type:recordedChunks[0]?.type||'video/webm'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Abidjan-Life-video-'+Date.now()+'.webm';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);status.textContent='Vidéo téléchargée sur ton appareil.';btn.textContent='◉ Vidéo';};mediaRecorder.start();btn.textContent='■ Arrêter';status.textContent='Enregistrement vidéo en cours…';}catch(e){status.textContent='Impossible de démarrer la vidéo.';}}
 function renderGameGallery(){loadGameGallery();drawGalleryItems();}
-function drawGalleryItems(){const grid=document.getElementById('galleryGrid');if(!grid)return;loadGameGallery();grid.innerHTML='';if(!gameGallery.length){grid.innerHTML='<p>Aucune photo pour le moment. Ouvre Caméra pour en prendre.</p>';return;}gameGallery.slice().reverse().forEach(item=>{const card=document.createElement('div'),img=document.createElement('img'),a=document.createElement('a'),del=document.createElement('button');img.src=item.data;img.alt='Photo du jeu';a.href=item.data;a.download=item.name;a.textContent='Télécharger';del.textContent='Supprimer';del.onclick=()=>{gameGallery=gameGallery.filter(x=>x.id!==item.id);saveGameGallery();drawGalleryItems();};card.append(img,a,del);grid.appendChild(card);});}
+function abjReadCompressedImage(file,maxSide,quality,done){
+ if(!file||!/^image\//i.test(file.type||'')){showMessage('Choisis un fichier image.');return;}
+ const reader=new FileReader();reader.onerror=()=>showMessage('Impossible de lire cette image.');
+ reader.onload=()=>{const img=new Image();img.onerror=()=>showMessage('Image illisible.');img.onload=()=>{const scale=Math.min(1,maxSide/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext('2d').drawImage(img,0,0,c.width,c.height);try{done(c.toDataURL('image/jpeg',quality));}catch(e){showMessage('Image trop volumineuse.');}};img.src=String(reader.result||'');};reader.readAsDataURL(file);
+}
+function drawGalleryItems(){
+ const grid=document.getElementById('galleryGrid');if(!grid)return;loadGameGallery();grid.innerHTML='';
+ const tools=document.createElement('div');tools.style.cssText='grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center';
+ const importLabel=document.createElement('label');importLabel.textContent='＋ Importer une photo';importLabel.style.cssText='display:inline-block;padding:9px 12px;border-radius:9px;background:#29495d;border:1px solid #f4d28b;color:white;font-weight:800;cursor:pointer';
+ const input=document.createElement('input');input.type='file';input.accept='image/*';input.style.display='none';
+ input.onchange=()=>{const file=input.files&&input.files[0];if(!file)return;abjReadCompressedImage(file,1100,.78,data=>{gameGallery.push({id:Date.now(),data,name:String(file.name||'Photo importée').slice(0,90),at:Date.now(),imported:true});gameGallery=gameGallery.slice(-40);saveGameGallery();drawGalleryItems();showMessage('Photo importée dans ta galerie.');});};
+ importLabel.appendChild(input);tools.appendChild(importLabel);grid.appendChild(tools);
+ if(!gameGallery.length){const empty=document.createElement('p');empty.textContent='Aucune photo pour le moment. Ouvre Caméra ou importe une image depuis ton appareil.';grid.appendChild(empty);return;}
+ gameGallery.slice().reverse().forEach(item=>{const card=document.createElement('div'),img=document.createElement('img'),a=document.createElement('a'),del=document.createElement('button');img.src=item.data;img.alt='Photo de la galerie';a.href=item.data;a.download=item.name||'Abidjan-Life-photo.jpg';a.textContent='Télécharger';del.textContent='Supprimer';del.onclick=()=>{gameGallery=gameGallery.filter(x=>x.id!==item.id);saveGameGallery();drawGalleryItems();};card.append(img,a,del);grid.appendChild(card);});
+}
 
 function updateTrafficLights(delta){
   const durations=[7,2,7],groups=new Map();
@@ -7810,7 +7837,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
   const phoneNav=document.getElementById('phonePageDots')?.parentElement;if(phoneNav)phoneNav.style.display='none';
  }
  window.__ABJ_ORIGINAL_OPEN_PHONE_APP=openPhoneApp;
- const coreApps=new Set(['localisation','yango','jeux','appstore','parametres']);
+ const coreApps=new Set(['localisation','yango','jeux','appstore','parametres','gallery']);
  const isDownloadedApp=(id)=>{
   const saved=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];
   let legacy={};try{legacy=JSON.parse(safeGet('abj-installed-apps:'+normalizeIvorianMobile(activeGameAccount))||'{}')||{};}catch(e){window.__abjErr&&window.__abjErr(e)}
@@ -7820,10 +7847,10 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
   if(!coreApps.has(app)&&!isDownloadedApp(app)){showMessage('Télécharge d’abord cette application dans Apps Jeux.');return;}
   return window.__ABJ_ORIGINAL_OPEN_PHONE_APP(app==='appstore'?'jeux':app);
  };
- const downloadedAppMeta={contacts:{name:'Contacts',emoji:'👥'},messages:{name:'Messages',emoji:'💬'},appels:{name:'Appels',emoji:'📞'},offrescreateur:{name:'Offres spéciales',emoji:'🎁'},cheats:{name:'Codes',emoji:'⌨️'},recompenses:{name:'Récompenses',emoji:'🏆'},helicoptere:{name:'Hélicoptère',emoji:'🚁'},yango:{name:'Yango',emoji:'🚕'},achats:{name:'Achats & livraisons',emoji:'🛍️'},finances:{name:'Finances',emoji:'💳'},communication:{name:'Communication',emoji:'💬'},medias:{name:'Médias',emoji:'📸'},viepratique:{name:'Vie pratique',emoji:'🏙️'},monsuccess:{name:'Mon Success',emoji:'🏆'},immoabj:{name:'Immo ABJ',emoji:'🏘️'},proemploi:{name:'Pro Emploi',emoji:'🧰'},inventaire:{name:'Inventaire',emoji:'🎒'},afgamer:{name:'AF GAMER CI',emoji:'🎮'},google:{name:'Recherche',emoji:'🔎'}};
- function restoreDownloadedPhoneApps(){const host=document.getElementById('phoneApps');if(!host)return;const ids=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];ids.forEach(id=>{const a=downloadedAppMeta[id];if(!a||host.querySelector('[data-app="'+id+'"]'))return;let target=host.querySelector('.phoneAppsPage:last-child');if(!target||target.querySelectorAll('.phoneApp').length>=9){target=document.createElement('div');target.className='phoneAppsPage';host.appendChild(target);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+a.emoji+'</span>'+a.name;b.addEventListener('click',()=>openPhoneApp(id));target.appendChild(b);});}
+ const downloadedAppMeta={gallery:{name:'Galerie',emoji:'🖼️'},contacts:{name:'Contacts',emoji:'👥'},messages:{name:'Messages',emoji:'💬'},appels:{name:'Appels',emoji:'📞'},offrescreateur:{name:'Offres spéciales',emoji:'🎁'},cheats:{name:'Codes',emoji:'⌨️'},recompenses:{name:'Récompenses',emoji:'🏆'},helicoptere:{name:'Hélicoptère',emoji:'🚁'},yango:{name:'Yango',emoji:'🚕'},achats:{name:'Achats & livraisons',emoji:'🛍️'},finances:{name:'Finances',emoji:'💳'},communication:{name:'Communication',emoji:'💬'},medias:{name:'Médias',emoji:'📸'},viepratique:{name:'Vie pratique',emoji:'🏙️'},monsuccess:{name:'Mon Success',emoji:'🏆'},immoabj:{name:'Immo ABJ',emoji:'🏘️'},proemploi:{name:'Pro Emploi',emoji:'🧰'},inventaire:{name:'Inventaire',emoji:'🎒'},afgamer:{name:'AF GAMER CI',emoji:'🎮'},google:{name:'Recherche',emoji:'🔎'}};
+ function restoreDownloadedPhoneApps(){const host=document.getElementById('phoneApps');if(!host)return;const ids=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];ids.forEach(id=>{const a=downloadedAppMeta[id];if(!a||host.querySelector('[data-app="'+id+'"]'))return;let target=host.querySelector('.phoneAppsPage:last-child');if(!target||target.querySelectorAll('.phoneApp').length>=9){target=document.createElement('div');target.className='phoneAppsPage';host.appendChild(target);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+a.emoji+'</span><b>'+a.name+'</b>';b.addEventListener('click',()=>openPhoneApp(id));target.appendChild(b);});}
  const activateBeforePhoneRestore=activateGameAccount;
- activateGameAccount=async function(phone){await activateBeforePhoneRestore(phone);if(lifeState){lifeState.v19=lifeState.v19||{};lifeState.v19.installedApps=Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];['contacts','messages','appels','offrescreateur','cheats','recompenses'].forEach(id=>{if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);});if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('recompenses'))lifeState.v19.installedApps.push('recompenses');if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('helicoptere'))lifeState.v19.installedApps.push('helicoptere');saveLifeProgress(false);}setTimeout(()=>{restoreDownloadedPhoneApps();window.ABJ_CONNECT_ONLINE&&window.ABJ_CONNECT_ONLINE();},350);};
+ activateGameAccount=async function(phone){await activateBeforePhoneRestore(phone);if(lifeState){lifeState.v19=lifeState.v19||{};lifeState.v19.installedApps=Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];['gallery','contacts','messages','appels','offrescreateur','cheats','recompenses'].forEach(id=>{if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);});if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('recompenses'))lifeState.v19.installedApps.push('recompenses');if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('helicoptere'))lifeState.v19.installedApps.push('helicoptere');saveLifeProgress(false);}setTimeout(()=>{restoreDownloadedPhoneApps();window.ABJ_CONNECT_ONLINE&&window.ABJ_CONNECT_ONLINE();},350);};
  window.ABJ_RESTORE_PHONE_APPS=restoreDownloadedPhoneApps;
  const countBtn=document.createElement('button');countBtn.id='abjOnlineCount';countBtn.type='button';countBtn.innerHTML='👥 <b id="abjOnlineNumber">0</b>';
  countBtn.style.cssText='display:none;position:relative;z-index:2;margin-left:auto;padding:6px 9px;border:1px solid #f0d18d;border-radius:18px;background:#081827;color:#fff;font:700 12px system-ui;cursor:pointer;box-shadow:0 2px 8px #0008';
@@ -12895,6 +12922,7 @@ function layoutHUD(){
   // Respect label
   const rl=document.getElementById('respectLabel');
   if(rl) rl.textContent='⭐ '+(Math.round(lifeState.respect||0));
+  const creatorBadge=document.getElementById('creatorTitleBadge');if(creatorBadge) creatorBadge.style.display=(typeof isCreatorAccount==='function'&&isCreatorAccount(activeGameAccount))?'inline-flex':'none';
 }
 
 /* ---------- Joystick mobile ---------- */
