@@ -1401,6 +1401,12 @@ io.on('connection', (socket) => {
       if(typeof ack==='function')ack({ok:true});
     }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
   });
+  socket.on('jobs:applicants:list', (payload={}, ack) => {
+    const offer=sharedJobOffers.get(clean(payload.offerId,40));
+    if(!offer||offer.owner_phone!==socket.phone){if(typeof ack==='function')ack({ok:false,error:'Accès refusé.'});return;}
+    const applicants=(offer.applicant_phones||[]).map(phone=>({phone,name:clean(accounts.get(phone)?.profile?.name||'Citoyen',24)}));
+    if(typeof ack==='function')ack({ok:true,applicants});
+  });
   socket.on('jobs:offer:hire', async (payload={}, ack) => {
     try{
       const offer=sharedJobOffers.get(clean(payload.offerId,40)),candidatePhone=phoneOf(payload.candidatePhone);
@@ -1408,6 +1414,9 @@ io.on('connection', (socket) => {
       if(!(offer.applicant_phones||[]).includes(candidatePhone))throw new Error("Cette personne n’a pas postulé.");
       const owner=accounts.get(socket.phone),candidate=accounts.get(candidatePhone);
       if(!owner||!candidate||!candidate.save)throw new Error("Compte candidat introuvable.");
+      const required=String(offer.qualification||'aucun').toLocaleLowerCase('fr');
+      const certificates=Array.isArray(candidate.save.education?.certificates)?candidate.save.education.certificates.map(x=>String(x).toLocaleLowerCase('fr')):[];
+      if(required!=='aucun'&&!certificates.some(x=>x.includes(required)))throw new Error('Diplôme requis non validé : '+offer.qualification+'.');
       const candidateSave=candidate.save,ownerSave=owner.save;
       candidate.save=Object.assign({},candidate.save,{employmentContract:{companyId:offer.company_id,companyName:offer.company_name,role:offer.role,salary:offer.salary,qualification:offer.qualification,employerPhone:socket.phone,startedAt:new Date().toISOString()}});
       owner.save=Object.assign({},owner.save,{v19:Object.assign({},owner.save?.v19||{})});
