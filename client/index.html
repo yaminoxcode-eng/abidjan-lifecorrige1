@@ -338,6 +338,19 @@ button,input,select{font:inherit}
 .phoneApp b{display:block!important;position:relative;z-index:1;font-size:11px;line-height:1.15;max-width:100%;overflow-wrap:anywhere}
 @media(max-width:760px){#lifeHud{left:8px!important;right:8px!important;bottom:205px!important;top:auto!important;transform:none!important;max-width:none!important;gap:4px!important;padding:6px!important}.lifeNeed{width:11.5%!important;min-width:0!important}.lifeNeed label{font-size:8px!important}#moneyLabel{font-size:9px!important}#lifeMood{font-size:20px!important}#needToggleEmoji{bottom:48px!important}}
 </style>
+
+<style id="abj-v150-mobile-clean-hud">
+/* Mobile: retirer les compteurs et panneaux supérieurs marqués, sans toucher aux commandes. */
+@media (max-width:760px), (pointer:coarse) {
+  #onlinePlayerCount,
+  #v12Weather,
+  #v12Calendar,
+  #lifeClock,
+  #moneyLabel { display:none !important; }
+  #touchControls { display:flex !important; }
+}
+</style>
+
 </head>
 <body>
 
