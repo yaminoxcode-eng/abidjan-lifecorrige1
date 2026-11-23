@@ -483,7 +483,7 @@ app.post('/api/auth/register', async (req,res) => {
   const email=clean(req.body.email,120).toLowerCase();
   if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
   if(password.length<8||password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
-  if(!/^\\S+@\\S+\\.\\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
+  if(!/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
   if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
   if(isCreatorPhone(phone)) return res.status(403).json({error:'Le compte créateur officiel ne peut pas être créé depuis l’inscription publique.'});
   const account={
