@@ -1743,14 +1743,10 @@ function generateCity() {
     if (window.ABJ_APPLY_SHARED_WORLD_ASSETS) window.ABJ_APPLY_SHARED_WORLD_ASSETS();
   };
 
-  // init() crée le personnage juste après generateCity() : la frame suivante
-  // ouvre le monde pendant que les données cartographiques continuent de charger.
-  requestAnimationFrame(() => {
-    if (player && !worldReady) {
-      firstSpawnPosition = { x: player.position.x, z: player.position.z };
-      openWorld('Terrain prêt · chargement des routes, bâtiments et lieux en arrière-plan…');
-    }
-  });
+  // Ne pas laisser entrer le joueur dans un terrain vide :
+  // le monde s'ouvre après la carte OSM ou après construction du quartier de secours.
+  const mapStatusEl=document.getElementById('mapStatus');
+  if(mapStatusEl)mapStatusEl.textContent='Préparation de la ville et de la carte…';
 
   loadAbidjanOSM().then(() => {
     const status = document.getElementById('mapStatus');
@@ -2045,7 +2041,8 @@ async function loadAbidjanOSM() {
     let timeout = null;
     try {
       const controller = new AbortController();
-      timeout = setTimeout(() => controller.abort(), 90000);
+      const mapRequestTimeout = mobilePerformanceMode ? 22000 : 90000;
+      timeout = setTimeout(() => controller.abort(), mapRequestTimeout);
       const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, body: 'data=' + encodeURIComponent(query), signal: controller.signal });
       if (!response.ok) throw new Error('Overpass HTTP ' + response.status);
       data = await response.json(); break;
@@ -6156,6 +6153,26 @@ function drawMinimap() {
   ctx.strokeStyle='#343a3c';ctx.lineCap='round';
   if(osmRoadSegments.length){const range=2550;osmRoadSegments.forEach(r=>{if(Math.max(Math.abs(r.a.x-player.position.x),Math.abs(r.a.z-player.position.z),Math.abs(r.b.x-player.position.x),Math.abs(r.b.z-player.position.z))>range)return;ctx.lineWidth=Math.max(.65,r.width*scale);ctx.beginPath();ctx.moveTo(r.a.x*scale,r.a.z*scale);ctx.lineTo(r.b.x*scale,r.b.z*scale);ctx.stroke();});}
   else {ctx.fillStyle='rgba(105,120,92,.22)';ctx.beginPath();ctx.ellipse(95,95,62,43,-.25,0,Math.PI*2);ctx.fill();}
+  // Bâtiments et lieux : la mini-carte ne doit pas être un disque vide quand les données existent.
+  if(allBuildings&&allBuildings.length){
+    const step=Math.max(1,Math.ceil(allBuildings.length/1400));
+    ctx.fillStyle='rgba(55,67,61,.78)';
+    for(let i=0;i<allBuildings.length;i+=step){
+      const b=allBuildings[i];if(!b)continue;
+      if(Math.abs(b.x-player.position.x)>2500||Math.abs(b.z-player.position.z)>2500)continue;
+      const w=Math.max(1.1,(Number(b.w)||8)*scale),h=Math.max(1.1,(Number(b.d)||8)*scale);
+      ctx.fillRect(b.x*scale-w/2,b.z*scale-h/2,w,h);
+    }
+  }
+  if(typeof poi!=='undefined'&&poi.length){
+    const step=Math.max(1,Math.ceil(poi.length/500));
+    ctx.fillStyle='#d89a35';
+    for(let i=0;i<poi.length;i+=step){
+      const p=poi[i];if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.z))continue;
+      if(Math.abs(p.x-player.position.x)>2300||Math.abs(p.z-player.position.z)>2300)continue;
+      ctx.beginPath();ctx.arc(p.x*scale,p.z*scale,1.5,0,Math.PI*2);ctx.fill();
+    }
+  }
   ctx.restore();ctx.fillStyle='#ff5b50';ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f3c45b';ctx.lineWidth=2;ctx.strokeRect(1,1,188,188);
 }
 
@@ -14774,6 +14791,36 @@ console.info('ABJ V1.49.1 — inscription renforcée et correctifs de stabilité
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
   else install();
+})();
+</script>
+
+
+<style id="abj-v150-world-only-hud">
+/* Les indicateurs de simulation n'existent que dans le monde jouable. */
+#lifeClock,#v12Weather,#v12Calendar,#abjTopOnlineBadge { display:none !important; }
+body.abj-world-exploring #lifeClock,
+body.abj-world-exploring #v12Weather,
+body.abj-world-exploring #v12Calendar { display:block !important; }
+body.abj-world-exploring #abjTopOnlineBadge { display:flex !important; }
+</style>
+<script id="abj-v150-world-only-hud-runtime">
+(function(){
+  let previous=false;
+  function syncWorldHud(){
+    const active=!!(window.gameStarted && window.worldReady);
+    if(active!==previous){
+      previous=active;
+      document.body.classList.toggle('abj-world-exploring',active);
+    }
+  }
+  function start(){
+    syncWorldHud();
+    window.addEventListener('pageshow',syncWorldHud);
+    window.addEventListener('focus',syncWorldHud);
+    setInterval(syncWorldHud,300);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
 })();
 </script>
 
