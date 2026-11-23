@@ -162,6 +162,12 @@ async function loadPersistentWorld() {
     if (worldRows && worldRows[0] && worldRows[0].payload) sharedWorldState = worldRows[0].payload;
     const rows = await supabaseRequest('shared_world_assets?select=owner_phone,asset_id,asset_type,commune,payload&limit=5000');
     for (const row of rows || []) sharedWorldAssets.set(row.owner_phone + ':' + row.asset_id, row);
+    // Reconstituer le monde à partir des sauvegardes déjà enregistrées, sans toucher aux comptes.
+    for (const account of accounts.values()) {
+      if (!account.save) continue;
+      try { await persistSharedWorldAssets(account.phone, account.save); }
+      catch (assetError) { console.error('Import des biens existants ignoré pour un compte:', assetError.message); }
+    }
     console.log(`Monde partagé chargé : ${sharedWorldAssets.size} objet(s) persistant(s).`);
   } catch (error) {
     console.error('Chargement du monde partagé impossible :', error.message);
