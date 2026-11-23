@@ -241,7 +241,7 @@ async function saveJobOffer(row) {
     body:JSON.stringify({...row,updated_at:new Date().toISOString()})
   });
 }
-function publicRentalOffers(){return [...sharedRentalOffers.values()].filter(x=>x.active).map(x=>({id:x.id,propertyName:x.property_name,rentWeekly:x.rent_weekly,deposit:x.deposit,commune:x.commune,applicantCount:Array.isArray(x.applicant_phones)?x.applicant_phones.length:0}));}
+function publicRentalOffers(){return [...sharedRentalOffers.values()].filter(x=>x.active).map(x=>({id:x.id,assetId:x.asset_id,propertyName:x.property_name,rentWeekly:x.rent_weekly,deposit:x.deposit,commune:x.commune,applicantCount:Array.isArray(x.applicant_phones)?x.applicant_phones.length:0}));}
 async function saveRentalOffer(row){await supabaseRequest('shared_rental_offers?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({...row,updated_at:new Date().toISOString()})});}
 
 function phoneOf(v) {
