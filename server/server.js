@@ -68,6 +68,7 @@ let worldStateOwner = null;
 let lastWorldPersistAt = 0;
 const sharedWorldAssets = new Map();
 const sharedJobOffers = new Map();
+const sharedRentalOffers = new Map();
 function publicPlayer(p){return {id:p.id,profile:p.profile,position:p.position,needs:p.needs,vehicle:p.vehicle||null};}
 function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.size});}
 
@@ -173,6 +174,9 @@ async function loadPersistentWorld() {
     const jobs = await supabaseRequest('shared_job_offers?select=id,owner_phone,company_id,company_name,role,salary,qualification,commune,active,applicant_phones,hired_phone,created_at&active=eq.true&limit=500');
     for (const job of jobs || []) sharedJobOffers.set(job.id, job);
     console.log(`Offres d’emploi actives chargées : ${sharedJobOffers.size}.`);
+    const rentals = await supabaseRequest('shared_rental_offers?select=id,owner_phone,asset_id,property_name,rent_weekly,deposit,commune,active,applicant_phones,tenant_phone,created_at&active=eq.true&limit=500');
+    for (const rental of rentals || []) sharedRentalOffers.set(rental.id, rental);
+    console.log(`Offres de location actives chargées : ${sharedRentalOffers.size}.`);
   } catch (error) {
     console.error('Chargement du monde partagé impossible :', error.message);
   }
@@ -237,6 +241,8 @@ async function saveJobOffer(row) {
     body:JSON.stringify({...row,updated_at:new Date().toISOString()})
   });
 }
+function publicRentalOffers(){return [...sharedRentalOffers.values()].filter(x=>x.active).map(x=>({id:x.id,propertyName:x.property_name,rentWeekly:x.rent_weekly,deposit:x.deposit,commune:x.commune,applicantCount:Array.isArray(x.applicant_phones)?x.applicant_phones.length:0}));}
+async function saveRentalOffer(row){await supabaseRequest('shared_rental_offers?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({...row,updated_at:new Date().toISOString()})});}
 
 function phoneOf(v) {
   let d = String(v || '').replace(/\D/g, '');
@@ -1190,6 +1196,7 @@ io.on('connection', (socket) => {
   if (sharedWorldState) socket.emit('world:state', sharedWorldState);
   socket.emit('world:assets', publicSharedWorldAssets());
   socket.emit('jobs:offers', publicJobOffers());
+  socket.emit('rentals:offers', publicRentalOffers());
   broadcastPlayerCount();
 
   socket.emit(
@@ -1376,6 +1383,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('jobs:offers:refresh', () => socket.emit('jobs:offers', publicJobOffers()));
+  socket.on('rentals:offers:refresh', () => socket.emit('rentals:offers', publicRentalOffers()));
   socket.on('jobs:offer:create', async (payload={}, ack) => {
     try {
       const save=account.save||{}, companies=save.v19&&Array.isArray(save.v19.companies)?save.v19.companies:[];
@@ -1432,6 +1440,58 @@ io.on('connection', (socket) => {
       io.emit('jobs:offers',publicJobOffers());
       const target=[...activePlayers.entries()].find(([,p])=>p.phone===candidatePhone);
       if(target)io.to(target[0]).emit('jobs:contract',candidate.save.employmentContract);
+      if(typeof ack==='function')ack({ok:true});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('rentals:offer:create', async (payload={}, ack) => {
+    try{
+      const assetId=clean(payload.assetId,120),asset=sharedWorldAssets.get(socket.phone+':'+assetId);
+      const rent=Math.floor(Number(payload.rentWeekly)||0),deposit=Math.floor(Number(payload.deposit)||0);
+      if(!asset||asset.asset_type!=='house'||!asset.payload||!asset.payload.building||String(asset.payload.building.status||asset.payload.status)!=='complete')throw new Error("Seule une maison terminée que tu possèdes peut être mise en location.");
+      if(rent<1000||rent>50000000||deposit<0||deposit>200000000)throw new Error("Montant du loyer ou dépôt invalide.");
+      const id=crypto.randomBytes(12).toString('hex');
+      const row={id,owner_phone:socket.phone,asset_id:assetId,property_name:clean(asset.payload.name||'Logement',80),rent_weekly:rent,deposit,commune:clean(asset.commune||'',48),active:true,applicant_phones:[],tenant_phone:null};
+      await saveRentalOffer(row);sharedRentalOffers.set(id,row);io.emit('rentals:offers',publicRentalOffers());
+      if(typeof ack==='function')ack({ok:true,id});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('rentals:offer:apply', async (payload={}, ack) => {
+    try{
+      const offer=sharedRentalOffers.get(clean(payload.offerId,40));
+      if(!offer||!offer.active)throw new Error("Cette annonce n’est plus disponible.");
+      if(offer.owner_phone===socket.phone)throw new Error("Tu ne peux pas postuler à ton propre logement.");
+      if(offer.applicant_phones.includes(socket.phone))throw new Error("Ta demande est déjà enregistrée.");
+      offer.applicant_phones.push(socket.phone);offer.applicant_phones=offer.applicant_phones.slice(0,200);
+      await saveRentalOffer(offer);io.emit('rentals:offers',publicRentalOffers());
+      if(typeof ack==='function')ack({ok:true});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('rentals:applicants:list',(payload={},ack)=>{
+    const offer=sharedRentalOffers.get(clean(payload.offerId,40));
+    if(!offer||offer.owner_phone!==socket.phone){if(typeof ack==='function')ack({ok:false,error:'Accès refusé.'});return;}
+    const applicants=offer.applicant_phones.map(phone=>({phone,name:clean(accounts.get(phone)?.profile?.name||'Citoyen',24)}));
+    if(typeof ack==='function')ack({ok:true,applicants});
+  });
+  socket.on('rentals:offer:accept',async(payload={},ack)=>{
+    try{
+      const offer=sharedRentalOffers.get(clean(payload.offerId,40)),tenantPhone=phoneOf(payload.tenantPhone);
+      if(!offer||!offer.active||offer.owner_phone!==socket.phone||!tenantPhone||!offer.applicant_phones.includes(tenantPhone))throw new Error("Acceptation non autorisée.");
+      const owner=accounts.get(socket.phone),tenant=accounts.get(tenantPhone),asset=sharedWorldAssets.get(socket.phone+':'+offer.asset_id);
+      if(!owner?.save||!tenant?.save||!asset)throw new Error("Compte ou logement introuvable.");
+      if(tenant.save.rentalContract)throw new Error("Ce joueur possède déjà un bail actif.");
+      const tenantMoney=Math.max(0,Number(tenant.save.money)||0),ownerMoney=Math.max(0,Number(owner.save.money)||0);
+      if(tenantMoney<offer.deposit)throw new Error("Le candidat n’a pas assez d’argent pour le dépôt de garantie.");
+      const oldOwner=owner.save,oldTenant=tenant.save;
+      tenant.save=Object.assign({},tenant.save,{money:tenantMoney-offer.deposit,rentalContract:{assetId:offer.asset_id,propertyName:offer.property_name,rentWeekly:offer.rent_weekly,deposit:offer.deposit,landlordPhone:socket.phone,landlordName:clean(owner.profile?.name||'Propriétaire',24),commune:offer.commune,x:Number(asset.payload.x)||0,z:Number(asset.payload.z)||0,width:Number(asset.payload.width)||12,depth:Number(asset.payload.depth)||10,lastPaidDay:1,startedAt:new Date().toISOString()}});
+      owner.save=Object.assign({},owner.save,{money:ownerMoney+offer.deposit,v19:Object.assign({},owner.save.v19||{})});
+      const propertyId=offer.asset_id.startsWith('property:')?offer.asset_id.slice(9):'';
+      if(propertyId){owner.save.v19.properties=Array.isArray(owner.save.v19.properties)?owner.save.v19.properties:[];const property=owner.save.v19.properties.find(p=>String(p.id)===propertyId);if(property)property.rentalTenant={phone:tenantPhone,name:clean(tenant.profile?.name||'Locataire',24),rentWeekly:offer.rent_weekly};}
+      offer.active=false;offer.tenant_phone=tenantPhone;
+      try{await persistAccount(tenant);await persistAccount(owner);await saveRentalOffer(offer);}
+      catch(error){owner.save=oldOwner;tenant.save=oldTenant;offer.active=true;offer.tenant_phone=null;throw error;}
+      io.emit('rentals:offers',publicRentalOffers());
+      const target=[...activePlayers.entries()].find(([,p])=>p.phone===tenantPhone);
+      if(target)io.to(target[0]).emit('rentals:contract',tenant.save.rentalContract);
       if(typeof ack==='function')ack({ok:true});
     }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
   });
