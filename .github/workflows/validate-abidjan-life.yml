@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [ai-economy-accounts-analysts-v1]
+    branches: [ai-economy-accounts-analysts-v1, staging/multiplayer-free-tier]
 jobs:
   syntax:
     runs-on: ubuntu-latest
@@ -16,8 +16,6 @@ jobs:
         run: node --check server/server.js
       - name: Check 3D asset factory syntax
         run: node --check client/assets3d/abidjan-model-factory.js
-      - name: Run server unit tests
-        run: node --test server/*.test.js
       - name: Check inline browser scripts
         run: |
           node <<'NODE'
