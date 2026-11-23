@@ -206,7 +206,7 @@ async function persistSharedWorldAssets(phone, save) {
       building: building ? { name: clean(building.name, 80), status: clean(building.status, 24) } : null,
       activity: clean(company?.activity || '', 60), size: clean(company?.size || '', 16)
     };
-    rows.push({ owner_phone: phone, asset_id: assetId, asset_type: assetType, commune: payload.commune, payload });
+    rows.push({ owner_phone: phone, asset_id: assetId, asset_type: assetType, commune: payload.commune, payload, updated_at: new Date().toISOString() });
   }
   if (!rows.length) return true;
   await supabaseRequest('shared_world_assets?on_conflict=owner_phone,asset_id', {
