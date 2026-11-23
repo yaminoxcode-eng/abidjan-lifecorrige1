@@ -14752,12 +14752,19 @@ console.info('ABJ V1.49.1 — inscription renforcée et correctifs de stabilité
 }
 #abjTopOnlineBadge {
   position:fixed; top:calc(env(safe-area-inset-top, 0px) + 12px); left:50%;
-  transform:translateX(-50%); z-index:60; display:none; align-items:center; gap:7px;
-  padding:7px 13px; border:1px solid rgba(240,209,141,.9); border-radius:22px;
-  background:rgba(8,24,39,.94); color:#fff; box-shadow:0 4px 16px #0008;
-  font:800 14px system-ui; pointer-events:auto;
+  transform:translateX(-50%); z-index:60; display:none; align-items:center; justify-content:center; gap:12px;
+  padding:0; border:0; border-radius:0; background:transparent; box-shadow:none;
+  color:#fff; font:800 14px system-ui; pointer-events:none;
+}
+#abjTopOnlineBadge .abjTopStat {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  min-height:36px; padding:7px 13px; border:1px solid rgba(240,209,141,.9);
+  border-radius:22px; background:rgba(8,24,39,.96); box-shadow:0 4px 16px #0008;
+  white-space:nowrap;
 }
 #abjTopOnlineBadge .abjOnlineIcon { font-size:19px; line-height:1; }
+#abjTopOnlineBadge .abjWalletStat { border-color:rgba(167,240,196,.75); }
+#abjTopOnlineBadge .abjWalletIcon { font-size:18px; line-height:1; }
 @media (max-width:760px), (pointer:coarse) {
   #abjTopOnlineBadge { display:flex !important; }
   #abjOnlineCount { display:none !important; }
@@ -14770,7 +14777,7 @@ console.info('ABJ V1.49.1 — inscription renforcée et correctifs de stabilité
     const badge=document.createElement('div');
     badge.id='abjTopOnlineBadge';
     badge.setAttribute('aria-label','Nombre de joueurs connectés');
-    badge.innerHTML='<span class="abjOnlineIcon" aria-hidden="true">👥</span><span id="abjTopOnlineNumber">0</span><span class="abjWalletDivider">·</span><span class="abjWalletIcon" aria-hidden="true">💰</span><span id="abjTopMoney">0 FCFA</span>';
+    badge.innerHTML='<span class="abjTopStat abjPlayersStat"><span class="abjOnlineIcon" aria-hidden="true">👥</span><span id="abjTopOnlineNumber">0</span></span><span class="abjTopStat abjWalletStat"><span class="abjWalletIcon" aria-hidden="true">💰</span><span id="abjTopMoney">0 FCFA</span></span>';
     document.body.appendChild(badge);
     const oldUpdate=window.updateOnlineCount;
     window.updateOnlineCount=function(n){
@@ -14852,7 +14859,8 @@ body.abj-world-exploring #abjTopOnlineBadge { display:flex !important; }
 <style id="abj-v150-map-hud-stability">
 @media (max-width:760px), (pointer:coarse) {
   #abjTopOnlineBadge {left:50%!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 8px)!important;transform:translateX(-50%)!important;white-space:nowrap!important;min-width:max-content!important;gap:6px!important}
-  #abjTopOnlineBadge .abjWalletDivider {opacity:.55;padding:0 1px}
+  #abjTopOnlineBadge {gap:10px!important}
+  #abjTopOnlineBadge .abjTopStat {min-height:35px;padding:7px 11px}
   #abjTopOnlineBadge #abjTopMoney {font-size:12px;font-weight:900;color:#a7f0c4}
   #miniMapWrap {display:block!important;visibility:visible!important;opacity:1!important;z-index:18!important;backface-visibility:hidden;will-change:contents}
   body.abj-world-exploring #miniMapWrap {display:block!important;visibility:visible!important;opacity:1!important}
