@@ -11,7 +11,7 @@
 <meta name="application-name" content="Abidjan Life">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Abidjan Life V1.49 — ville plus lisible, déplacements fluides et GPS visible</title>
+<title>Abidjan Life V1.49.1 — inscription plus fiable</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
   * { box-sizing: border-box; }
@@ -1004,16 +1004,35 @@ async function accountContinue(){
     const confirm=document.getElementById('accountPasswordConfirm').value;
     if(pass!==confirm){showAccountStatus('Les deux mots de passe ne correspondent pas.',true);return;}
     const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
-    let response,data;
-    try{
-      response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass,email})});
-      data=await response.json().catch(()=>({}));
-    }catch(registrationError){
-      console.warn('Réponse de création de compte interrompue, vérification de la session…',registrationError);
-      try{response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});data=await response.json().catch(()=>({}));}
-      catch(verificationError){console.error('Connexion après création interrompue:',verificationError);showAccountStatus('Connexion interrompue. Réessaie de te connecter avec les mêmes identifiants.',true);return;}
+    let response,data,registrationError=null;
+    const registerBody=JSON.stringify({phone,password:pass,email});
+    // Render peut mettre quelques secondes à réveiller son serveur gratuit.
+    // On retente les erreurs réseau et 502/503/504 avant d'abandonner l'inscription.
+    for(let attempt=0;attempt<3;attempt++){
+      try{
+        response=await fetch(api+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:registerBody,cache:'no-store'});
+        data=await response.json().catch(()=>({}));
+        registrationError=null;
+        if([502,503,504].includes(response.status)&&attempt<2){
+          await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));
+          continue;
+        }
+        break;
+      }catch(error){
+        registrationError=error;
+        if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1200*(attempt+1)));
+      }
     }
-    if(!response.ok){showAccountStatus(data.error||'Création du compte impossible sur le serveur.',true);return;}
+    if(registrationError){
+      console.warn('Réponse de création de compte interrompue après plusieurs tentatives, vérification de la session…',registrationError);
+      try{response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass}),cache:'no-store'});data=await response.json().catch(()=>({}));}
+      catch(verificationError){console.error('Connexion après création interrompue:',verificationError);showAccountStatus('Le serveur ne répond pas encore. Attends quelques secondes puis réessaie avec les mêmes identifiants.',true);return;}
+    }else if(response&&response.status===409){
+      // La première réponse a pu se perdre après la création : on tente la connexion.
+      try{const loginResponse=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass}),cache:'no-store'});const loginData=await loginResponse.json().catch(()=>({}));if(loginResponse.ok&&loginData.token){response=loginResponse;data=loginData;}}
+      catch(loginError){console.warn('Vérification du compte déjà créé indisponible:',loginError);}
+    }
+    if(!response||!response.ok){showAccountStatus(data&&data.error||'Création du compte impossible sur le serveur.',true);return;}
     if(!data||!data.token){showAccountStatus('Le serveur n’a pas confirmé la session. Essaie de te connecter avec les mêmes identifiants.',true);return;}
     accounts[phone]={email:email||'',passwordHash:await passwordDigest(pass),createdAt:new Date().toISOString(),isCreator:false,security:{}};
     writeGameAccounts(accounts);safeSet('abj-online-token:'+phone,data.token);await activateGameAccount(phone);return;
@@ -13716,7 +13735,7 @@ console.info('ABJ V1.45 — intérieurs business, SOTRA OSM, jams carrefours');
 (function(){
 'use strict';
 if(window.__ABJ_V146)return;window.__ABJ_V146=true;
-window.ABJ_BUILD_VERSION='1.49';
+window.ABJ_BUILD_VERSION='1.49.1';
 
 /* ---------- Anti écran blanc / intérieur illisible ---------- */
 function hardenInteriorView(interior){
@@ -14051,8 +14070,8 @@ console.info('ABJ V1.46 — SOTRA board, AF Gamer, intérieur, tél, GPS');
    - réveil du serveur en ligne au chargement. */
 (function(){
 'use strict';
-if(window.__ABJ_V149)return;window.__ABJ_V149=true;
-window.ABJ_BUILD_VERSION='1.49.0';
+if(window.__ABJ_V1491)return;window.__ABJ_V1491=true;
+window.ABJ_BUILD_VERSION='1.49.1';
 
 const E=e=>{try{window.__abjErr&&window.__abjErr(e);}catch(_){}};
 const $=id=>document.getElementById(id);
@@ -14569,7 +14588,7 @@ setInterval(()=>{
 setInterval(()=>{if(ready()){try{gpsTick();}catch(e){E(e);}}},250);
 requestAnimationFrame(arrowLoop);
 
-console.info('ABJ V1.49 — corrections visuelles, déplacements, véhicules, GPS, besoins et comptes');
+console.info('ABJ V1.49.1 — inscription renforcée et correctifs de stabilité');
 })();
 
 </script>
