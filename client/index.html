@@ -4656,15 +4656,26 @@ function updateNPCs(delta) {
     const __cx=Math.floor(x/__vehicleCellSize),__cz=Math.floor(z/__vehicleCellSize);
     for(let __ox=-1;__ox<=1;__ox++)for(let __oz=-1;__oz<=1;__oz++){
       const __bucket=__vehicleGrid.get((__cx+__ox)+','+(__cz+__oz));if(!__bucket)continue;
-      for(const __v of __bucket)if(Math.hypot(__v.position.x-x,__v.position.z-z)<4.1)return true;
+      for(const __v of __bucket)if(Math.hypot(__v.position.x-x,__v.position.z-z)<4.8)return __v;
     }
-    return false;
+    return null;
   };
   npcs.forEach(npc=>{
     const d=npc.userData; if(d.dead||!npc.visible)return;
     d.vehicleCheckTimer=(d.vehicleCheckTimer||0)-delta;
     if(d.vehicleCheckTimer<=0){d.vehicleCheckTimer=.22;d.nearVehicle=__npcNearVehicle(npc.position.x,npc.position.z);}
-    if(d.nearVehicle){d.pauseTimer=Math.max(d.pauseTimer||0,.3);animateCharacter(npc,delta,false);return;}
+    if(d.nearVehicle){
+      // Un piéton ne doit jamais rester planté au milieu de la chaussée devant un véhicule.
+      const v=d.nearVehicle,dx=npc.position.x-v.position.x,dz=npc.position.z-v.position.z;
+      let sx=dx,sz=dz,sl=Math.hypot(sx,sz);
+      if(sl<.05){sx=-Math.cos(v.rotation.y||0);sz=Math.sin(v.rotation.y||0);sl=1;}
+      sx/=sl;sz/=sl;
+      const sideStep=Math.min(1.6*delta,Math.max(0,5.2-Math.hypot(dx,dz)));
+      const next=npc.position.clone();next.x+=sx*sideStep;next.z+=sz*sideStep;resolveCollisions(next,.34);
+      npc.position.x=next.x;npc.position.z=next.z;npc.position.y=terrainHeight(next.x,next.z)+.02;
+      d.targetX=next.x+sx*3.5;d.targetZ=next.z+sz*3.5;d.pauseTimer=0;
+      animateCharacter(npc,delta,sideStep>.01);return;
+    }
     if(d.transitWaiting){animateCharacter(npc,delta,false);return;}
     if(d.pauseTimer>0){d.pauseTimer-=delta;animateCharacter(npc,delta,false);return;}
     d.changeTimer-=delta;
@@ -4710,7 +4721,14 @@ function updateNPCs(delta) {
 // ============================================================
 function loadLifeProgress(){
   try{
-    const raw=safeGet(LIFE_SAVE_KEY); if(!raw)return;
+    // Les sauvegardes sont propres à chaque compte : lire la même clé que celle utilisée par saveLifeProgress.
+    const __accountKey=activeGameAccount?LIFE_SAVE_KEY+':'+normalizeIvorianMobile(activeGameAccount):LIFE_SAVE_KEY;
+    let raw=safeGet(__accountKey);
+    if(!raw&&activeGameAccount){
+      raw=safeGet(__accountKey+':backup:1')||safeGet(__accountKey+':backup:2')||safeGet(LIFE_SAVE_KEY);
+      if(raw)safeSet(__accountKey,raw); // migration douce, sans effacer l'ancienne sauvegarde
+    }
+    if(!raw)return;
     const saved=JSON.parse(raw);
     if(saved.v19&&typeof saved.v19==='object'&&!Array.isArray(saved.v19)){lifeState.v19={...(lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{}),...saved.v19,installedApps:Array.isArray(saved.v19.installedApps)?[...new Set(saved.v19.installedApps.filter(x=>typeof x==='string'&&x.length<=48))].slice(0,80):[]};}
     if(saved.gameSettings&&typeof saved.gameSettings==='object')lifeState.gameSettings={graphics:['auto','performance','quality'].includes(saved.gameSettings.graphics)?saved.gameSettings.graphics:'auto',cameraSensitivity:Math.max(.5,Math.min(1.8,Number(saved.gameSettings.cameraSensitivity)||1)),showHints:saved.gameSettings.showHints!==false,controlMode:['auto','pc','touch'].includes(saved.gameSettings.controlMode)?saved.gameSettings.controlMode:'auto'};
@@ -4774,6 +4792,18 @@ function saveLifeProgress(show=true){
     if(show)showMessage('💾 Progression sauvegardée.');
   }catch(e){showMessage('Impossible de sauvegarder dans ce navigateur.');}
 }
+// Sécurise la progression avant fermeture, changement d'onglet ou mise en arrière-plan.
+(function installLifeSaveLifecycle(){
+  let lastLifecycleSave=0;
+  const persist=()=>{
+    if(!gameStarted||!activeGameAccount||!worldReady)return;
+    const now=Date.now();if(now-lastLifecycleSave<1200)return;lastLifecycleSave=now;
+    try{saveLifeProgress(false);}catch(e){console.warn('Sauvegarde de sortie impossible',e);}
+  };
+  window.addEventListener('pagehide',persist);
+  window.addEventListener('beforeunload',persist);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persist();});
+})();
 function hasPlayerTrait(id){const p=lifeState.playerProfile||{};return Array.isArray(p.traits)&&p.traits.includes(id);}
 function addPlayerRespect(amount){lifeState.respect=Math.max(0,Math.min(10000000,(Number(lifeState.respect)||0)+Math.max(0,Number(amount)||0)));}
 function updateLifeSimulation(delta){
@@ -4799,7 +4829,7 @@ function updateLifeSimulation(delta){
   if(lifeState.cheats&&lifeState.cheats.social)lifeState.social=100;
   if(lifeState.cheats&&lifeState.cheats.health)lifeState.health=100;
   clampMoney();
-  lifeState.minute+=delta*1.5; // 16 minutes réelles par journée de 24 h (8 min jour, 8 min nuit)
+  lifeState.minute+=delta*0.5; // Journée de jeu ralentie : environ 48 minutes réelles pour 24 h de jeu.
   updateAirportFlights();
   while(lifeState.minute>=60){lifeState.minute-=60;const previousHour=lifeState.hour;lifeState.hour=(lifeState.hour+1)%24;if(previousHour===23){lifeState.housing=lifeState.housing||{ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1};lifeState.housing.gameDay=(lifeState.housing.gameDay||1)+1;processHousingBilling();}}
   const pct=(v)=>Math.round(Math.max(0,Math.min(100,v)))+'%';
@@ -8499,7 +8529,7 @@ function enterOwnedVehicle(mesh){
  if(!recVehiclePapersReady(mesh.userData.ownedId)){showMessage('Dossier incomplet : carte grise, assurance automobile et visite technique sont obligatoires dans MY V.');return;}
  const rec=abjV19().ownedVehicles.find(v=>v.id===mesh.userData.ownedId);
  if(!rec||rec.key!==mesh.userData.vehicleKey||abjV19().activeVehicleKey!==rec.key){showMessage('Cette clé ne correspond pas à ce véhicule.');return;}
- drivingVehicle=mesh;player.visible=false;if(rec.type==='moto'){if(mesh.userData.rider)mesh.remove(mesh.userData.rider);const profile=lifeState.playerProfile||{},rider=createCharacter({gender:profile.gender,skin:profile.skin,hair:profile.hair,shirt:profile.shirt,pants:profile.pants,bodyType:profile.bodyType,hairstyle:profile.hairstyle,outfit:profile.outfit});rider.scale.set(.72,.72,.72);rider.position.set(0,.66,-.12);const rd=rider.userData||{};if(rd.bodyGroup)rd.bodyGroup.rotation.x=-.12;for(const k of ['legL','legR'])if(rd[k]){rd[k].rotation.x=-1.02;rd[k].rotation.z=k==='legL'?.10:-.10;}for(const k of ['armL','armR'])if(rd[k]){rd[k].rotation.x=-1.05;rd[k].rotation.z=k==='armL'?.16:-.16;}if(rd.headGroup)rd.headGroup.rotation.x=-.04;const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,14,12),new THREE.MeshStandardMaterial({color:0x263f58,roughness:.35,metalness:.18}));helmet.scale.set(1,.88,1.05);helmet.position.set(0,2.05,.02);rider.add(helmet);const visor=new THREE.Mesh(new THREE.SphereGeometry(.17,12,8),new THREE.MeshStandardMaterial({color:0x8db8c8,transparent:true,opacity:.72,metalness:.3,roughness:.2}));visor.scale.set(1,.46,.34);visor.position.set(0,2.08,.22);rider.add(visor);mesh.add(rider);mesh.userData.rider=rider;}showMessage(rec.type==='moto'?'Tu es assis sur ta moto. ZQSD pour rouler · E pour descendre.':'Tu conduis '+rec.brand+' '+rec.model+' · ZQSD pour conduire · E pour descendre.');
+ drivingVehicle=mesh;player.visible=false;if(rec.type==='moto'){if(mesh.userData.rider)mesh.remove(mesh.userData.rider);const profile=lifeState.playerProfile||{},rider=createCharacter({gender:profile.gender,skin:profile.skin,hair:profile.hair,shirt:profile.shirt,pants:profile.pants,bodyType:profile.bodyType,hairstyle:profile.hairstyle,outfit:profile.outfit});rider.scale.set(.72,.72,.72);rider.position.set(0,.66,-.12);const rd=rider.userData||{};rider.rotation.x=-.09; if(rd.torso)rd.torso.rotation.x=-.10; if(rd.hips)rd.hips.rotation.x=-.12; for(const k of ['legL','legR'])if(rd[k]){rd[k].rotation.x=-1.12;rd[k].rotation.z=k==='legL'?.12:-.12;} for(const k of ['armL','armR'])if(rd[k]){rd[k].rotation.x=-1.22;rd[k].rotation.z=k==='armL'?.12:-.12;} if(rd.headGroup)rd.headGroup.rotation.x=-.06;const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,14,12),new THREE.MeshStandardMaterial({color:0x263f58,roughness:.35,metalness:.18}));helmet.scale.set(1,.88,1.05);helmet.position.set(0,2.05,.02);rider.add(helmet);const visor=new THREE.Mesh(new THREE.SphereGeometry(.17,12,8),new THREE.MeshStandardMaterial({color:0x8db8c8,transparent:true,opacity:.72,metalness:.3,roughness:.2}));visor.scale.set(1,.46,.34);visor.position.set(0,2.08,.22);rider.add(visor);mesh.add(rider);mesh.userData.rider=rider;}showMessage(rec.type==='moto'?'Tu es assis sur ta moto. ZQSD pour rouler · E pour descendre.':'Tu conduis '+rec.brand+' '+rec.model+' · ZQSD pour conduire · E pour descendre.');
 }
 function exitOwnedVehicle(){
  if(!drivingVehicle)return;
