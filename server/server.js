@@ -65,6 +65,8 @@ const accounts = new Map();
 const activePlayers = new Map();
 let sharedWorldState = null;
 let worldStateOwner = null;
+let lastWorldPersistAt = 0;
+const sharedWorldAssets = new Map();
 function publicPlayer(p){return {id:p.id,profile:p.profile,position:p.position,needs:p.needs,vehicle:p.vehicle||null};}
 function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.size});}
 
@@ -148,6 +150,65 @@ async function loadPersistentAccounts() {
   const reports = await supabaseRequest('creator_reports?select=id,created_at,player_name,player_phone,kind,message,version,district,status&order=created_at.desc&limit=500');
   creatorReports.splice(0, creatorReports.length, ...(reports || []).map(r => ({id:r.id,createdAt:r.created_at,player:r.player_name,phone:r.player_phone,kind:r.kind,message:r.message,version:r.version,district:r.district,status:r.status})));
   console.log(`Supabase connecté : ${accounts.size} compte(s) et ${creatorReports.length} signalement(s) chargés.`);
+}
+
+function publicSharedWorldAssets() {
+  return [...sharedWorldAssets.values()].map(({owner_phone, ...asset}) => asset);
+}
+async function loadPersistentWorld() {
+  if (!persistentStorageEnabled) return;
+  try {
+    const worldRows = await supabaseRequest('shared_world_state?id=eq.1&select=payload');
+    if (worldRows && worldRows[0] && worldRows[0].payload) sharedWorldState = worldRows[0].payload;
+    const rows = await supabaseRequest('shared_world_assets?select=owner_phone,asset_id,asset_type,commune,payload&limit=5000');
+    for (const row of rows || []) sharedWorldAssets.set(row.owner_phone + ':' + row.asset_id, row);
+    console.log(`Monde partagé chargé : ${sharedWorldAssets.size} objet(s) persistant(s).`);
+  } catch (error) {
+    console.error('Chargement du monde partagé impossible :', error.message);
+  }
+}
+async function persistSharedWorldState(world) {
+  if (!persistentStorageEnabled || !world) return false;
+  await supabaseRequest('shared_world_state?id=eq.1', {
+    method: 'PATCH', headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ payload: world, updated_at: new Date().toISOString() })
+  });
+  return true;
+}
+async function persistSharedWorldAssets(phone, save) {
+  if (!persistentStorageEnabled || !phone || !save || typeof save !== 'object') return false;
+  const v19 = save.v19 && typeof save.v19 === 'object' ? save.v19 : {};
+  const properties = Array.isArray(v19.properties) ? v19.properties.slice(0, 300) : [];
+  const companies = Array.isArray(v19.companies) ? v19.companies.slice(0, 300) : [];
+  const rows = [];
+  for (const property of properties) {
+    if (!property || !['land','rental'].includes(property.kind)) continue;
+    const x = Number(property.x), z = Number(property.z);
+    if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) > 25000 || Math.abs(z) > 25000) continue;
+    const company = companies.find(c => c && String(c.propertyId || '') === String(property.id || ''));
+    const building = property.building && typeof property.building === 'object' ? property.building : null;
+    const assetType = company ? 'company' : (building ? 'house' : 'plot');
+    const assetId = company ? 'company:' + clean(company.id || company.name, 100) : 'property:' + clean(property.id, 100);
+    if (!assetId || assetId.endsWith(':')) continue;
+    const profileName = clean(save.playerProfile?.name || accounts.get(phone)?.profile?.name || 'Citoyen', 24);
+    const payload = {
+      name: clean(company?.name || building?.name || property.name || 'Terrain', 80),
+      ownerName: clean(company?.owner || profileName, 24),
+      x, z, width: assetType === 'company' ? 18 : 12, depth: assetType === 'company' ? 14 : 10,
+      status: clean(company?.status || building?.status || property.status || 'owned', 24),
+      commune: clean(property.commune || company?.commune || '', 48),
+      building: building ? { name: clean(building.name, 80), status: clean(building.status, 24) } : null,
+      activity: clean(company?.activity || '', 60), size: clean(company?.size || '', 16)
+    };
+    rows.push({ owner_phone: phone, asset_id: assetId, asset_type: assetType, commune: payload.commune, payload });
+  }
+  if (!rows.length) return true;
+  await supabaseRequest('shared_world_assets?on_conflict=owner_phone,asset_id', {
+    method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(rows)
+  });
+  for (const row of rows) sharedWorldAssets.set(row.owner_phone + ':' + row.asset_id, { ...row });
+  return true;
 }
 
 const clean = (v, max = 80) => String(v ?? '').trim().slice(0, max);
@@ -1102,6 +1163,7 @@ io.on('connection', (socket) => {
   if (!worldStateOwner) worldStateOwner = socket.id;
   socket.emit('world:host', { id: worldStateOwner });
   if (sharedWorldState) socket.emit('world:state', sharedWorldState);
+  socket.emit('world:assets', publicSharedWorldAssets());
   broadcastPlayerCount();
 
   socket.emit(
@@ -1253,6 +1315,10 @@ io.on('connection', (socket) => {
         };
         state.lastWorldSync = nowWorld;
         socket.broadcast.emit('world:state', sharedWorldState);
+        if (nowWorld - lastWorldPersistAt > 5000) {
+          lastWorldPersistAt = nowWorld;
+          persistSharedWorldState(sharedWorldState).catch(error => console.error('Sauvegarde horloge monde:', error.message));
+        }
       }
     }
 
@@ -1325,6 +1391,12 @@ io.on('connection', (socket) => {
       try {
         await persistAccount(account);
         ok = true;
+        try {
+          await persistSharedWorldAssets(socket.phone, save);
+          io.emit('world:assets', publicSharedWorldAssets());
+        } catch (worldError) {
+          console.error('Échec synchronisation des constructions partagées:', worldError.message);
+        }
       } catch (error) {
         account.save = previousSave;
         account.position = state.position = previousPosition;
@@ -1359,6 +1431,7 @@ function clamp(v, min = 0, max = 100) {
 }
 
 loadPersistentAccounts()
+  .then(() => loadPersistentWorld())
   .then(() => {
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`Abidjan Life Online listening on ${PORT}`);
