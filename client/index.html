@@ -4831,6 +4831,16 @@ function updateDynamicSky(delta){
  sunLight.color.copy(new THREE.Color(0xffd2a1).lerp(new THREE.Color(0xfff2dc),daylight));
  const ambient=scene.children.find(o=>o.isAmbientLight);
  if(ambient)ambient.intensity=.045+daylight*.34+Math.max(dawn,dusk)*.035+starAlpha*.02;
+ // La lumière d'ambiance supplémentaire doit suivre le soleil : fixe, elle
+ // éclairait les bâtiments presque autant la nuit que le jour.
+ const hemi=scene.userData.abjHemisphere;
+ if(hemi){
+  hemi.intensity=.015+daylight*.27+Math.max(dawn,dusk)*.035;
+  hemi.color.copy(new THREE.Color(0x52617e).lerp(new THREE.Color(0xfff1d6),daylight));
+  hemi.groundColor.copy(new THREE.Color(0x101a2b).lerp(new THREE.Color(0x3d5c4a),daylight));
+ }
+ const cloudMaterial=sky.clouds[0]&&sky.clouds[0].children[0]&&sky.clouds[0].children[0].material;
+ if(cloudMaterial)cloudMaterial.opacity=.12+daylight*.50+Math.max(dawn,dusk)*.15;
  scene.background=skyColor;
  if(scene.fog){scene.fog.color.copy(skyColor);scene.fog.near=2600;scene.fog.far=14000;}
  sky.group.position.set(player?player.position.x:0,0,player?player.position.z:0);
@@ -9243,11 +9253,6 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  document.addEventListener('DOMContentLoaded',removeInstallButton,{once:true});
  window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();removeInstallButton();});
  window.addEventListener('appinstalled',removeInstallButton);
- if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
-  window.addEventListener('load',function(){
-   navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(function(err){console.warn('Abidjan Life : service worker non activé',err);});
-  },{once:true});
- }
 })();
 </script>
 
@@ -11531,7 +11536,7 @@ function applyGraphicsTier(tier){
   if(scene&&scene.fog){scene.fog.near=c.fogNear;scene.fog.far=c.fogFar;}
   // Tone mapping semi-réaliste
   if(renderer.outputColorSpace!==undefined&&THREE.SRGBColorSpace)renderer.outputColorSpace=THREE.SRGBColorSpace;
-  if(renderer.toneMapping!==undefined){renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=GFX.tier==='low'?.90:.90;}
+  if(renderer.toneMapping!==undefined){renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=GFX.tier==='low'?.86:.86;}
   console.info('V1.39 graphismes:',GFX.tier);
 }
 window.ABJ_SET_GFX_TIER=function(t){applyGraphicsTier(t);};
@@ -13735,7 +13740,7 @@ console.info('ABJ V1.45 — intérieurs business, SOTRA OSM, jams carrefours');
 (function(){
 'use strict';
 if(window.__ABJ_V146)return;window.__ABJ_V146=true;
-window.ABJ_BUILD_VERSION='1.49.1';
+window.ABJ_BUILD_VERSION='1.49.2';
 
 /* ---------- Anti écran blanc / intérieur illisible ---------- */
 function hardenInteriorView(interior){
@@ -14071,7 +14076,7 @@ console.info('ABJ V1.46 — SOTRA board, AF Gamer, intérieur, tél, GPS');
 (function(){
 'use strict';
 if(window.__ABJ_V1491)return;window.__ABJ_V1491=true;
-window.ABJ_BUILD_VERSION='1.49.1';
+window.ABJ_BUILD_VERSION='1.49.2';
 
 const E=e=>{try{window.__abjErr&&window.__abjErr(e);}catch(_){}};
 const $=id=>document.getElementById(id);
@@ -14095,25 +14100,25 @@ try{
    MISSIONS — système unique (remplace V1.43 et V1.47)
    ===================================================================== */
 const POOL=[
-  {id:'visit_market',label:'Visiter un marché',target:1,money:4000,respect:3},
-  {id:'visit_mairie',label:'Se rendre à la mairie',target:1,money:3500,respect:4},
-  {id:'visit_hopital',label:'Passer à l’hôpital ou à la clinique',target:1,money:3500,respect:3},
-  {id:'meet_people',label:'Rencontrer 8 habitants différents',target:8,money:5000,respect:6},
-  {id:'yango_trip',label:'Terminer 2 courses Yango',target:2,money:6000,respect:4},
-  {id:'sotra_ride',label:'Prendre le SOTRA',target:1,money:3000,respect:3},
-  {id:'work_day',label:'Travailler une fois',target:1,money:5000,respect:3},
-  {id:'explore_5',label:'Explorer 5 communes',target:5,money:8000,respect:10},
-  {id:'wealth_100k',label:'Atteindre 100 000 FCFA de patrimoine (poche + banque)',target:100000,money:0,respect:8},
-  {id:'respect_20',label:'Atteindre 20 de respect',target:20,money:7000,respect:0},
-  {id:'friend_1',label:'Devenir ami avec un habitant',target:1,money:4000,respect:5},
-  {id:'daily_talk',label:'Discuter avec 3 habitants',target:3,money:1500,respect:1,daily:true},
-  {id:'daily_ride',label:'Faire un trajet (Yango ou SOTRA)',target:1,money:2000,respect:1,daily:true},
-  {id:'daily_work',label:'Faire une session de travail',target:1,money:2500,respect:1,daily:true}
+  {id:'visit_market',label:'Visiter un marché',why:'Pour acheter à manger et découvrir les commerces de ton quartier.',target:1,money:4000,respect:3},
+  {id:'visit_mairie',label:'Se rendre à la mairie',why:'Pour découvrir les démarches administratives et les services municipaux.',target:1,money:3500,respect:4},
+  {id:'visit_hopital',label:'Passer à l’hôpital ou à la clinique',why:'Pour connaître les lieux où tu peux recevoir des soins et restaurer ta santé.',target:1,money:3500,respect:3},
+  {id:'meet_people',label:'Rencontrer 8 habitants différents',why:'Pour développer ton réseau et faire connaissance avec les habitants.',target:8,money:5000,respect:6},
+  {id:'yango_trip',label:'Terminer 2 courses Yango',why:'Pour apprendre à utiliser le transport à la demande et te déplacer dans la ville.',target:2,money:6000,respect:4},
+  {id:'sotra_ride',label:'Prendre le SOTRA',why:'Pour découvrir les transports publics et leurs lignes dans Abidjan.',target:1,money:3000,respect:3},
+  {id:'work_day',label:'Travailler une fois',why:'Pour gagner de l’argent et faire progresser ton parcours professionnel.',target:1,money:5000,respect:3},
+  {id:'explore_5',label:'Explorer 5 communes',why:'Pour découvrir les différents quartiers et les services de la ville.',target:5,money:8000,respect:10},
+  {id:'wealth_100k',label:'Atteindre 100 000 FCFA de patrimoine (poche + banque)',why:'Pour apprendre à gérer ton argent et développer ton épargne.',target:100000,money:0,respect:8},
+  {id:'respect_20',label:'Atteindre 20 de respect',why:'Pour construire une bonne réputation grâce à tes activités.',target:20,money:7000,respect:0},
+  {id:'friend_1',label:'Devenir ami avec un habitant',why:'Pour créer une relation durable en discutant régulièrement avec une personne.',target:1,money:4000,respect:5},
+  {id:'daily_talk',label:'Discuter avec 3 habitants',why:'Pour entretenir tes relations et ta vie sociale au quotidien.',target:3,money:1500,respect:1,daily:true},
+  {id:'daily_ride',label:'Faire un trajet (Yango ou SOTRA)',why:'Pour effectuer un déplacement et découvrir les moyens de transport.',target:1,money:2000,respect:1,daily:true},
+  {id:'daily_work',label:'Faire une session de travail',why:'Pour gagner des revenus et entretenir ton activité professionnelle.',target:1,money:2500,respect:1,daily:true}
 ];
 
 function normalize(){
   const old=Array.isArray(lifeState.missions)?lifeState.missions:[];
-  if(old.length===POOL.length&&old.every((m,i)=>m&&m.id===POOL[i].id&&m.label))return;
+  if(old.length===POOL.length&&old.every((m,i)=>m&&m.id===POOL[i].id&&m.label&&m.why===POOL[i].why))return;
   const by={};old.forEach(m=>{if(m&&m.id)by[m.id]=m;});
   lifeState.missions=POOL.map(d=>{
     const o=by[d.id];
@@ -14272,6 +14277,7 @@ function missionRow(m){
   const pct=Math.min(100,Math.round(100*(Number(m.progress)||0)/Math.max(1,m.target)));
   return '<div style="padding:10px;margin:8px 0;border-radius:12px;background:var(--abj-soft,#e8efed)">'
     +'<b>'+(m.done?'✅ ':'🔄 ')+esc(m.label)+'</b>'
+    +(m.why?'<div style="font-size:12px;margin-top:4px;line-height:1.4;opacity:.82"><b>Pourquoi ?</b> '+esc(m.why)+'</div>':'')
     +'<div style="font-size:12px;margin-top:4px;opacity:.85">'+fmt(m.progress)+' / '+fmt(m.target)+' · '+rewardText(m)+'</div>'
     +'<div style="height:6px;border-radius:6px;background:var(--abj-line,#cbd9d5);margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:var(--abj-orange,#ed760d)"></div></div></div>';
 }
