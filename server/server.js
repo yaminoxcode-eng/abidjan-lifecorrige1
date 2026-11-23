@@ -1492,6 +1492,8 @@ io.on('connection', (socket) => {
       io.emit('rentals:offers',publicRentalOffers());
       const target=[...activePlayers.entries()].find(([,p])=>p.phone===tenantPhone);
       if(target)io.to(target[0]).emit('rentals:contract',tenant.save.rentalContract);
+      const ownerTarget=[...activePlayers.entries()].find(([,p])=>p.phone===socket.phone);
+      if(ownerTarget)io.to(ownerTarget[0]).emit('rentals:owner:balance',{money:owner.save.money});
       if(typeof ack==='function')ack({ok:true});
     }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
   });
@@ -1516,6 +1518,8 @@ io.on('connection', (socket) => {
       catch(error){tenant.save=oldTenant;owner.save=oldOwner;throw error;}
       const target=[...activePlayers.entries()].find(([,p])=>p.phone===socket.phone);
       if(target)io.to(target[0]).emit('rentals:contract',tenant.save.rentalContract);
+      const ownerTarget=[...activePlayers.entries()].find(([,p])=>p.phone===contract.landlordPhone);
+      if(ownerTarget)io.to(ownerTarget[0]).emit('rentals:owner:balance',{money:owner.save.money});
       if(typeof ack==='function')ack({ok:true,amount:due});
     }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
   });
