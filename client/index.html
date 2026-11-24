@@ -4703,7 +4703,9 @@ function updateNPCs(delta) {
   // les véhicules pour chaque PNJ lors de chaque contrôle de proximité.
   const __vehicleCellSize=16, __vehicleGrid=new Map();
   for(const __vehicle of vehicles){
-    if(!__vehicle||!__vehicle.position||(__vehicle.userData&&__vehicle.userData.wreck))continue;
+    // Les véhicules hors du rayon de simulation sont déjà masqués par cullCrowd :
+    // ne pas les indexer pour les collisions piétons à chaque tick.
+    if(!__vehicle||!__vehicle.visible||!__vehicle.position||(__vehicle.userData&&__vehicle.userData.wreck))continue;
     const __cx=Math.floor(__vehicle.position.x/__vehicleCellSize),__cz=Math.floor(__vehicle.position.z/__vehicleCellSize);
     const __key=__cx+','+__cz;let __bucket=__vehicleGrid.get(__key);if(!__bucket){__bucket=[];__vehicleGrid.set(__key,__bucket);}__bucket.push(__vehicle);
   }
