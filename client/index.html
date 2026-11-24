@@ -2152,7 +2152,7 @@ function buildOSMRoads(ways, nodes) {
   const vertices=[],indices=[],walkVertices=[],walkIndices=[],curbVertices=[],curbIndices=[],markVertices=[],markIndices=[];
   function addQuad(a,b,w,y){
     const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<.4)return;
-    const extend=Math.min(.7,len*.06),ux=dx/len,uz=dz/len;
+    const extend=Math.min(1.8,len*.08),ux=dx/len,uz=dz/len;
     const aa={x:a.x-ux*extend,z:a.z-uz*extend},bb={x:b.x+ux*extend,z:b.z+uz*extend};
     const nx=-dz/len*w/2,nz=dx/len*w/2,k=vertices.length/3;
     const p1={x:aa.x+nx,z:aa.z+nz},p2={x:aa.x-nx,z:aa.z-nz},p3={x:bb.x-nx,z:bb.z-nz},p4={x:bb.x+nx,z:bb.z+nz};
@@ -2779,6 +2779,15 @@ function findNearbyResidentialDoor() {
   return best;
 }
 
+function abjGetLagoonMaterial(){
+  if(window.__abjLagoonMaterial)return window.__abjLagoonMaterial;
+  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;const ctx=canvas.getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,256,256);grad.addColorStop(0,'#247c98');grad.addColorStop(.55,'#3b9eb0');grad.addColorStop(1,'#15566f');ctx.fillStyle=grad;ctx.fillRect(0,0,256,256);
+  for(let y=12;y<256;y+=24){ctx.beginPath();ctx.strokeStyle='rgba(202,239,231,.22)';ctx.lineWidth=2;for(let x=0;x<=256;x+=4){const yy=y+Math.sin(x*.055+y*.03)*3;if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy);}ctx.stroke();}
+  const texture=new THREE.CanvasTexture(canvas);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(4,4);texture.anisotropy=2;window.__abjLagoonTexture=texture;
+  window.__abjLagoonMaterial=new THREE.MeshPhongMaterial({color:0x9bd5dc,map:texture,transparent:true,opacity:.94,shininess:72,specular:0x6ebacb,side:THREE.DoubleSide});
+  return window.__abjLagoonMaterial;
+}
 function buildOSMWaterAndParks(ways,nodes) {
   ways.forEach(w=>{
     const pts=w.nodes.map(id=>nodes.get(id)).filter(Boolean);if(pts.length<4)return;
@@ -2793,7 +2802,7 @@ function buildOSMWaterAndParks(ways,nodes) {
     const isLagoon=isWater&&String(w.tags.water||w.tags.name||'').toLowerCase().match(/lagune|ebri|lagoon/);
     const waterColor=isLagoon?0x318da6:0x267caa;
     const surfaceColor=isWater?waterColor:(isBeach?0xd8c18d:0x71865b);
-    const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:surfaceColor,side:THREE.DoubleSide,transparent:isWater,opacity:isWater?.94:1}));
+    const mesh=new THREE.Mesh(geo,isWater?abjGetLagoonMaterial():new THREE.MeshLambertMaterial({color:surfaceColor,side:THREE.DoubleSide}));
     mesh.renderOrder=-1;mesh.receiveShadow=true;mesh.name=isWater?(isLagoon?'lagune-ebrie':'abidjan-water'):(isBeach?'abidjan-beach':'osm-park-ground');scene.add(mesh);if(isWater){window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));const cx=pts.reduce((v,p)=>v+p.x,0)/pts.length,cz=pts.reduce((v,p)=>v+p.z,0)/pts.length;const label=String(w.tags.name||'').toLowerCase().includes('ebri')?'LAGUNE ÉBRIÉ':(w.tags.name||'PLAN D’EAU');if(typeof makeStreetLabel==='function'&&w.tags.name)makeStreetLabel(cx,cz,label);}else if(isBeach&&w.tags.name){const cx=pts.reduce((v,p)=>v+p.x,0)/pts.length,cz=pts.reduce((v,p)=>v+p.z,0)/pts.length;makeStreetLabel(cx,cz,'PLAGE · '+w.tags.name);}if(isWater){window.ABJ_WATER_POLYGONS=window.ABJ_WATER_POLYGONS||[];window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));}
   });
 }
@@ -4148,6 +4157,7 @@ function createCharacter(opts) {
   } else if(hairstyle==='degrade'||hairstyle==='court'){
     const sideHair=part(new THREE.SphereGeometry(.235,12,8,0,Math.PI*2,0,Math.PI*.38),hairMat,0,.015,-.01,headGroup);sideHair.scale.set(1,.8,1);
   }
+  if(hairstyle==='afro'){for(let i=0;i<5;i++){const a=i*Math.PI*2/5;part(new THREE.SphereGeometry(.075,8,7),hairMat,Math.cos(a)*.17,.17,Math.sin(a)*.15,headGroup);}}
   if(outfit==='chic'){
     const collar=part(new THREE.CylinderGeometry(.105,.15,.12,8),mat(0xf4ead8),0,1.78,.012);collar.userData.clothingPart='detail';
     const trim=part(new THREE.BoxGeometry(.025,.55,.012),mat(0xe8d29a),0,1.42,.214);trim.userData.clothingPart='detail';
@@ -4157,21 +4167,23 @@ function createCharacter(opts) {
   function makeArm(side){
     const pivot=new THREE.Group();pivot.position.set(side*.315,1.62,0);g.add(pivot);
     const upper=part(new THREE.CylinderGeometry(.075,.068,.46,9),shirtMat,0,-.22,0,pivot);upper.userData.clothingPart='shirt';
-    const elbow=part(new THREE.SphereGeometry(.067,8,7),skinMat,0,-.43,0,pivot);
-    const fore=part(new THREE.CylinderGeometry(.057,.052,.43,9),skinMat,0,-.65,0,pivot);
-    const hand=part(new THREE.SphereGeometry(.065,9,8),skinMat,0,-.88,.012,pivot);hand.scale.set(.82,1.15,.72);
-    return pivot;
+    const elbowPivot=new THREE.Group();elbowPivot.position.set(0,-.43,0);pivot.add(elbowPivot);
+    part(new THREE.SphereGeometry(.067,8,7),skinMat,0,0,0,elbowPivot);
+    const fore=part(new THREE.CylinderGeometry(.057,.052,.43,9),skinMat,0,-.21,0,elbowPivot);
+    const hand=part(new THREE.SphereGeometry(.065,9,8),skinMat,0,-.43,.012,elbowPivot);hand.scale.set(.82,1.15,.72);
+    pivot.userData.elbow=elbowPivot;return pivot;
   }
   function makeLeg(side){
     const pivot=new THREE.Group();pivot.position.set(side*.125,.82,0);g.add(pivot);
     const upper=part(new THREE.CylinderGeometry(.092,.078,.46,9),pantsMat,0,-.22,0,pivot);upper.userData.clothingPart='pants';
     part(new THREE.SphereGeometry(.083,8,7),pantsMat,0,-.43,0,pivot);
-    const lower=part(new THREE.CylinderGeometry(.068,.06,.45,9),pantsMat,0,-.65,0,pivot);lower.userData.clothingPart='pants';
-    const foot=part(new THREE.BoxGeometry(.15,.11,.27),shoeMat,0,-.91,.065,pivot);foot.castShadow=true;
-    return pivot;
+    const kneePivot=new THREE.Group();kneePivot.position.set(0,-.43,0);pivot.add(kneePivot);
+    const lower=part(new THREE.CylinderGeometry(.068,.06,.45,9),pantsMat,0,-.22,0,kneePivot);lower.userData.clothingPart='pants';
+    const foot=part(new THREE.BoxGeometry(.15,.11,.27),shoeMat,0,-.45,.065,kneePivot);foot.castShadow=true;
+    pivot.userData.knee=kneePivot;return pivot;
   }
   const armL=makeArm(-1),armR=makeArm(1),legL=makeLeg(-1),legR=makeLeg(1);
-  g.userData={armL,armR,legL,legR,phase:0,headGroup,torso,hips,anatomyVersion:4,bodyType,hairstyle,outfit};
+  g.userData={armL,armR,legL,legR,kneeL:legL.userData.knee,kneeR:legR.userData.knee,elbowL:armL.userData.elbow,elbowR:armR.userData.elbow,phase:0,headGroup,torso,hips,anatomyVersion:5,bodyType,hairstyle,outfit};
   return g;
 }
 function applyPlayerClothing(){if(!player||!lifeState.playerProfile)return;const shirt=lifeState.playerProfile.shirt||0xe74c3c,pants=lifeState.playerProfile.pants||0x2c3e50;player.traverse(o=>{if(!o.isMesh||!o.userData.clothingPart)return;o.material.color.setHex(o.userData.clothingPart==='shirt'?shirt:pants);});}
@@ -4243,8 +4255,10 @@ function animateCharacter(char, delta, moving) {
     const isSleep=!!(player.userData&&player.userData.sleeping);
     d.legL.rotation.x=-1.05+(isSleep?0.08:0);
     d.legR.rotation.x=-1.05-(isSleep?0.06:0);
+    if(d.kneeL)d.kneeL.rotation.x=1.05;if(d.kneeR)d.kneeR.rotation.x=1.05;
     d.armL.rotation.x=-.55+breathe+(isSleep?-0.35:0);
     d.armR.rotation.x=-.55-breathe+(isSleep?-0.25:0);
+    if(d.elbowL)d.elbowL.rotation.x=-.25;if(d.elbowR)d.elbowR.rotation.x=-.25;
     if(d.headGroup) d.headGroup.rotation.x=isSleep?0.35:(-0.05+breathe*0.5);
     if(player.userData.bodyGroup) player.userData.bodyGroup.rotation.x=isSleep?-1.05:0.05+breathe;
     return;
@@ -4253,10 +4267,13 @@ function animateCharacter(char, delta, moving) {
     d.phase += delta * (char===player ? (keys['shift'] ? 14.2 : 10.5) : 9.5);
     const swing = Math.sin(d.phase) * (char===player && keys['shift'] ? 0.58 : 0.46);
     d.legL.rotation.x = swing; d.legR.rotation.x = -swing;
+    if(d.kneeL)d.kneeL.rotation.x=.25+Math.max(0,-swing)*.75;if(d.kneeR)d.kneeR.rotation.x=.25+Math.max(0,swing)*.75;
     d.armL.rotation.x = -swing * 0.65; d.armR.rotation.x = swing * 0.65;
+    if(d.elbowL)d.elbowL.rotation.x=.12+Math.max(0,swing)*.2;if(d.elbowR)d.elbowR.rotation.x=.12+Math.max(0,-swing)*.2;
   } else {
     d.legL.rotation.x *= 0.82; d.legR.rotation.x *= 0.82;
     d.armL.rotation.x *= 0.82; d.armR.rotation.x *= 0.82;
+    if(d.kneeL)d.kneeL.rotation.x*=.82;if(d.kneeR)d.kneeR.rotation.x*=.82;if(d.elbowL)d.elbowL.rotation.x*=.82;if(d.elbowR)d.elbowR.rotation.x*=.82;
   }
 }
 
@@ -4656,7 +4673,7 @@ function updateNPCs(delta) {
     const __cx=Math.floor(x/__vehicleCellSize),__cz=Math.floor(z/__vehicleCellSize);
     for(let __ox=-1;__ox<=1;__ox++)for(let __oz=-1;__oz<=1;__oz++){
       const __bucket=__vehicleGrid.get((__cx+__ox)+','+(__cz+__oz));if(!__bucket)continue;
-      for(const __v of __bucket)if(Math.hypot(__v.position.x-x,__v.position.z-z)<4.8)return __v;
+      for(const __v of __bucket)if(Math.hypot(__v.position.x-x,__v.position.z-z)<8.5)return __v;
     }
     return null;
   };
@@ -4670,10 +4687,10 @@ function updateNPCs(delta) {
       let sx=dx,sz=dz,sl=Math.hypot(sx,sz);
       if(sl<.05){sx=-Math.cos(v.rotation.y||0);sz=Math.sin(v.rotation.y||0);sl=1;}
       sx/=sl;sz/=sl;
-      const sideStep=Math.min(1.6*delta,Math.max(0,5.2-Math.hypot(dx,dz)));
+      const sideStep=Math.min(3.2*delta,Math.max(0,8.8-Math.hypot(dx,dz)));
       const next=npc.position.clone();next.x+=sx*sideStep;next.z+=sz*sideStep;resolveCollisions(next,.34);
       npc.position.x=next.x;npc.position.z=next.z;npc.position.y=terrainHeight(next.x,next.z)+.02;
-      d.targetX=next.x+sx*3.5;d.targetZ=next.z+sz*3.5;d.pauseTimer=0;
+      d.targetX=next.x+sx*7.5;d.targetZ=next.z+sz*7.5;d.pauseTimer=0;d.changeTimer=1.2;
       animateCharacter(npc,delta,sideStep>.01);return;
     }
     if(d.transitWaiting){animateCharacter(npc,delta,false);return;}
@@ -4829,7 +4846,7 @@ function updateLifeSimulation(delta){
   if(lifeState.cheats&&lifeState.cheats.social)lifeState.social=100;
   if(lifeState.cheats&&lifeState.cheats.health)lifeState.health=100;
   clampMoney();
-  lifeState.minute+=delta*0.5; // Journée de jeu ralentie : environ 48 minutes réelles pour 24 h de jeu.
+  lifeState.minute+=delta*0.25; // Journée de jeu plus lente : environ 96 minutes réelles pour 24 h de jeu.
   updateAirportFlights();
   while(lifeState.minute>=60){lifeState.minute-=60;const previousHour=lifeState.hour;lifeState.hour=(lifeState.hour+1)%24;if(previousHour===23){lifeState.housing=lifeState.housing||{ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1};lifeState.housing.gameDay=(lifeState.housing.gameDay||1)+1;processHousingBilling();}}
   const pct=(v)=>Math.round(Math.max(0,Math.min(100,v)))+'%';
@@ -4842,7 +4859,7 @@ function updateLifeSimulation(delta){
   const clockEl=document.getElementById('lifeClock');if(clockEl)clockEl.textContent=String(lifeState.hour).padStart(2,'0')+':'+String(Math.floor(lifeState.minute)).padStart(2,'0');
   updateLifeLighting();
   lifeState.lastSave+=delta;
-  if(lifeState.lastSave>45){lifeState.lastSave=0;saveLifeProgress(false);}
+  if(lifeState.lastSave>12){lifeState.lastSave=0;saveLifeProgress(false);}
 }
 
 /* Ciel dynamique : soleil, lune, étoiles et nuages suivent l'horloge de la simulation. */
@@ -6255,6 +6272,7 @@ function animate() {
   try {
     updateLifeSimulation(delta);
     updateDynamicSky(delta);
+    if(window.__abjLagoonTexture){window.__abjLagoonTexture.offset.x=(window.__abjLagoonTexture.offset.x+delta*.003)%1;window.__abjLagoonTexture.offset.y=(window.__abjLagoonTexture.offset.y+delta*.0015)%1;}
     updateCreatorOrb(delta);
     updateCourseGoRide(delta);
     updateCourseGoCamera(delta);
@@ -6267,7 +6285,7 @@ function animate() {
     if(vehicleUpdateAccumulator>=1/20){const vehicleDelta=Math.min(vehicleUpdateAccumulator,.12);vehicleUpdateAccumulator=0;updateVehicles(vehicleDelta);}
     updateTrafficLights(delta);
     updateParticles(delta);
-    updateDistanceManagedBuildings(delta);
+    if(!window.__abjLastBuildingCull||performance.now()-window.__abjLastBuildingCull>250){window.__abjLastBuildingCull=performance.now();updateDistanceManagedBuildings(delta);}
     if(playerShowering){showerTimer+=delta;const drops=currentInterior&&currentInterior.interactables.find(i=>i.type==='douche'&&i.floor===currentFloor);if(drops&&drops.object){drops.object.children.forEach((d,i)=>{d.position.y=1.85-((showerTimer*2.2+i*.19)%1.35);d.visible=true;});}}
     districtCheckTimer+=delta;if(districtCheckTimer>.45){districtCheckTimer=0;updateDistrictHUD();}
     const phoneClock=document.getElementById('phoneClock');if(phoneClock)phoneClock.textContent=String(lifeState.hour).padStart(2,'0')+':'+String(lifeState.minute).padStart(2,'0');
@@ -13156,12 +13174,17 @@ function ensureAfGamerAccess(){
 
 /* ---------- Moto : posture assise (jambes visibles) ---------- */
 function fixMotoRiderPose(){
-  if(!player||!player.userData)return;
-  if(!window.__abjOnMoto)return;
-  // Légère position haute sur la selle
-  if(player.userData.legL) player.userData.legL.rotation.x = 0.85;
-  if(player.userData.legR) player.userData.legR.rotation.x = 0.85;
-  if(player.userData.spine) player.userData.spine.rotation.x = 0.12;
+  const bike=typeof drivingVehicle!=='undefined'?drivingVehicle:null;
+  const rider=bike&&bike.userData?bike.userData.rider:null;
+  if(!rider||!rider.userData)return;
+  const d=rider.userData;
+  rider.position.set(0,.66,-.12);rider.rotation.x=-.04;
+  if(d.torso)d.torso.rotation.x=-.24;if(d.hips)d.hips.rotation.x=-.16;
+  if(d.legL)d.legL.rotation.set(-.62,0,.42);if(d.legR)d.legR.rotation.set(-.62,0,-.42);
+  if(d.kneeL)d.kneeL.rotation.x=1.12;if(d.kneeR)d.kneeR.rotation.x=1.12;
+  if(d.armL)d.armL.rotation.set(-1.18,0,.12);if(d.armR)d.armR.rotation.set(-1.18,0,-.12);
+  if(d.elbowL)d.elbowL.rotation.x=-.48;if(d.elbowR)d.elbowR.rotation.x=-.48;
+  if(d.headGroup)d.headGroup.rotation.x=-.08;
 }
 // Détecter montée moto (owned vehicle)
 setInterval(()=>{
@@ -14962,6 +14985,12 @@ body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!
     refreshMoney();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
+</script>
+
+<script id="abj-v151-save-pulse">
+(function(){
+  setInterval(function(){try{if(gameStarted&&worldReady&&activeGameAccount)saveLifeProgress(false);}catch(e){console.warn('Auto-save sécurité:',e);}},12000);
 })();
 </script>
 
