@@ -2218,8 +2218,38 @@ function buildOSMRoads(ways, nodes) {
       }
     }
   });
+  // Fermer les petits vides aux vrais carrefours OSM : une surface d'asphalte
+  // commune relie les branches au lieu de laisser apparaître des pointes de terrain.
+  const junctionSurfaceMap=new Map();
+  for(const road of trafficRoadSegments){
+    for(const p of [road.a,road.b]){
+      const key=trafficNodeKey(p);
+      let node=junctionSurfaceMap.get(key);
+      if(!node){node={x:p.x,z:p.z,degree:0,radius:0};junctionSurfaceMap.set(key,node);}
+      node.degree++;
+      node.radius=Math.max(node.radius,Math.min(14,(Number(road.width)||4)*.5+1.15));
+    }
+  }
+  let junctionSurfaceCount=0;
+  const junctionSurfaceLimit=mobilePerformanceMode?900:2200;
+  for(const node of junctionSurfaceMap.values()){
+    if(node.degree<3||junctionSurfaceCount>=junctionSurfaceLimit)continue;
+    const slices=12,center=vertices.length/3,radius=Math.max(3.2,node.radius);
+    const lift=.034;
+    vertices.push(node.x,terrainHeight(node.x,node.z)+lift,node.z);
+    for(let k=0;k<slices;k++){
+      const a=k/slices*Math.PI*2,x=node.x+Math.cos(a)*radius,z=node.z+Math.sin(a)*radius;
+      vertices.push(x,terrainHeight(x,z)+lift,z);
+    }
+    for(let k=0;k<slices;k++){
+      const current=center+1+k,next=center+1+((k+1)%slices);
+      // Ordre inversé pour orienter les faces vers le haut.
+      indices.push(center,next,current);
+    }
+    junctionSurfaceCount++;
+  }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();
-  const mesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0x252b2e}));mesh.receiveShadow=!mobilePerformanceMode;mesh.name='osm-road-network';scene.add(mesh);
+  const mesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0x252b2e,side:THREE.DoubleSide}));mesh.receiveShadow=!mobilePerformanceMode;mesh.name='osm-road-network';scene.add(mesh);
   if(walkVertices.length){const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(walkVertices,3));wg.setIndex(walkIndices);wg.computeVertexNormals();const wm=new THREE.Mesh(wg,new THREE.MeshLambertMaterial({color:0xc9c4b9,side:THREE.DoubleSide}));wm.receiveShadow=!mobilePerformanceMode;wm.name='osm-sidewalks-distinct';scene.add(wm);}
   if(curbVertices.length){const cg=new THREE.BufferGeometry();cg.setAttribute('position',new THREE.Float32BufferAttribute(curbVertices,3));cg.setIndex(curbIndices);cg.computeVertexNormals();const cm=new THREE.Mesh(cg,new THREE.MeshLambertMaterial({color:0x8b8c87,side:THREE.DoubleSide}));cm.name='osm-raised-curbs';scene.add(cm);}
   if(markVertices.length){const mg=new THREE.BufferGeometry();mg.setAttribute('position',new THREE.Float32BufferAttribute(markVertices,3));mg.setIndex(markIndices);mg.computeVertexNormals();const mm=new THREE.Mesh(mg,new THREE.MeshBasicMaterial({color:0xe9dfb5,side:THREE.DoubleSide}));mm.name='osm-lane-dashes';scene.add(mm);}
