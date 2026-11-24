@@ -4255,7 +4255,7 @@ function animateCharacter(char, delta, moving) {
     const isSleep=!!(player.userData&&player.userData.sleeping);
     d.legL.rotation.x=-1.05+(isSleep?0.08:0);
     d.legR.rotation.x=-1.05-(isSleep?0.06:0);
-    if(d.kneeL)d.kneeL.rotation.x=1.05;if(d.kneeR)d.kneeR.rotation.x=1.05;
+    if(d.kneeL)d.kneeL.rotation.x=-1.05;if(d.kneeR)d.kneeR.rotation.x=-1.05;
     d.armL.rotation.x=-.55+breathe+(isSleep?-0.35:0);
     d.armR.rotation.x=-.55-breathe+(isSleep?-0.25:0);
     if(d.elbowL)d.elbowL.rotation.x=-.25;if(d.elbowR)d.elbowR.rotation.x=-.25;
@@ -4267,7 +4267,7 @@ function animateCharacter(char, delta, moving) {
     d.phase += delta * (char===player ? (keys['shift'] ? 14.2 : 10.5) : 9.5);
     const swing = Math.sin(d.phase) * (char===player && keys['shift'] ? 0.58 : 0.46);
     d.legL.rotation.x = swing; d.legR.rotation.x = -swing;
-    if(d.kneeL)d.kneeL.rotation.x=.25+Math.max(0,-swing)*.75;if(d.kneeR)d.kneeR.rotation.x=.25+Math.max(0,swing)*.75;
+    if(d.kneeL)d.kneeL.rotation.x=-(.25+Math.max(0,-swing)*.75);if(d.kneeR)d.kneeR.rotation.x=-(.25+Math.max(0,swing)*.75);
     d.armL.rotation.x = -swing * 0.65; d.armR.rotation.x = swing * 0.65;
     if(d.elbowL)d.elbowL.rotation.x=.12+Math.max(0,swing)*.2;if(d.elbowR)d.elbowR.rotation.x=.12+Math.max(0,-swing)*.2;
   } else {
@@ -13181,7 +13181,7 @@ function fixMotoRiderPose(){
   rider.position.set(0,.66,-.12);rider.rotation.x=-.04;
   if(d.torso)d.torso.rotation.x=-.24;if(d.hips)d.hips.rotation.x=-.16;
   if(d.legL)d.legL.rotation.set(-.62,0,.42);if(d.legR)d.legR.rotation.set(-.62,0,-.42);
-  if(d.kneeL)d.kneeL.rotation.x=1.12;if(d.kneeR)d.kneeR.rotation.x=1.12;
+  if(d.kneeL)d.kneeL.rotation.x=-1.12;if(d.kneeR)d.kneeR.rotation.x=-1.12;
   if(d.armL)d.armL.rotation.set(-1.18,0,.12);if(d.armR)d.armR.rotation.set(-1.18,0,-.12);
   if(d.elbowL)d.elbowL.rotation.x=-.48;if(d.elbowR)d.elbowR.rotation.x=-.48;
   if(d.headGroup)d.headGroup.rotation.x=-.08;
