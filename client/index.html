@@ -992,14 +992,22 @@ async function accountContinue(){
     if(!response.ok){showAccountStatus(data.error||'Connexion au serveur impossible. Vérifie le numéro et le mot de passe.',true);return;}
     safeSet('abj-online-token:'+phone,data.token);
     const __accountSaveKey='abidjan-life-life-v1:'+phone;
-    if(data.player?.save){
-      safeSet(__accountSaveKey,JSON.stringify(data.player.save));
-    }else if(data.player?.position && (Math.abs(Number(data.player.position.x)||0)>0.01 || Math.abs(Number(data.player.position.z)||0)>0.01)){
-      try{
-        const __localRaw=safeGet(__accountSaveKey),__local=__localRaw?JSON.parse(__localRaw):{};
-        if(!__local.worldPosition)__local.worldPosition=data.player.position;
-        safeSet(__accountSaveKey,JSON.stringify(__local));
-      }catch(e){window.__abjErr&&window.__abjErr(e)}
+    // Réconcilier la sauvegarde serveur et la copie de cet appareil :
+    // conserver systématiquement la plus récente pour éviter un retour en arrière.
+    let __localSave=null;
+    try{const __raw=safeGet(__accountSaveKey);if(__raw)__localSave=JSON.parse(__raw);}catch(e){window.__abjErr&&window.__abjErr(e);}
+    const __remoteSave=data.player?.save&&typeof data.player.save==='object'?data.player.save:null;
+    const __localTime=__localSave&&Date.parse(__localSave.savedAt);
+    const __remoteTime=__remoteSave&&Date.parse(__remoteSave.savedAt);
+    const __localHasTime=Number.isFinite(__localTime);
+    const __remoteHasTime=Number.isFinite(__remoteTime);
+    if(__remoteSave&&(!__localSave||(__remoteHasTime&&(!__localHasTime||__remoteTime>=__localTime))||(!__remoteHasTime&&!__localHasTime))){
+      safeSet(__accountSaveKey,JSON.stringify(__remoteSave));
+      window.ABJ_PENDING_REMOTE_SAVE=null;
+    }else if(__localSave){
+      window.ABJ_PENDING_REMOTE_SAVE={phone,save:__localSave};
+    }else if(data.player?.position&&(Math.abs(Number(data.player.position.x)||0)>0.01||Math.abs(Number(data.player.position.z)||0)>0.01)){
+      safeSet(__accountSaveKey,JSON.stringify({worldPosition:data.player.position}));
     }
     activateGameAccount(phone);
     return;
@@ -4739,7 +4747,7 @@ function updateNPCs(delta) {
 function loadLifeProgress(){
   try{
     // Les sauvegardes sont propres à chaque compte : lire la même clé que celle utilisée par saveLifeProgress.
-    const __accountKey=activeGameAccount?LIFE_SAVE_KEY+':'+normalizeIvorianMobile(activeGameAccount):LIFE_SAVE_KEY;
+    const __accountKey=activeGameAccount?'abidjan-life-life-v1:'+normalizeIvorianMobile(activeGameAccount):LIFE_SAVE_KEY;
     let raw=safeGet(__accountKey);
     if(!raw&&activeGameAccount){
       raw=safeGet(__accountKey+':backup:1')||safeGet(__accountKey+':backup:2')||safeGet(LIFE_SAVE_KEY);
