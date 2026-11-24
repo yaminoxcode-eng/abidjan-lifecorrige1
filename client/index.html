@@ -994,14 +994,19 @@ async function accountContinue(){
     const __accountSaveKey='abidjan-life-life-v1:'+phone;
     // Réconcilier la sauvegarde serveur et la copie de cet appareil :
     // conserver systématiquement la plus récente pour éviter un retour en arrière.
-    let __localSave=null;
-    try{const __raw=safeGet(__accountSaveKey);if(__raw)__localSave=JSON.parse(__raw);}catch(e){window.__abjErr&&window.__abjErr(e);}
+    let __localSave=null,__localRaw=null;
+    try{__localRaw=safeGet(__accountSaveKey);if(__localRaw)__localSave=JSON.parse(__localRaw);}catch(e){window.__abjErr&&window.__abjErr(e);}
     const __remoteSave=data.player?.save&&typeof data.player.save==='object'?data.player.save:null;
     const __localTime=__localSave&&Date.parse(__localSave.savedAt);
     const __remoteTime=__remoteSave&&Date.parse(__remoteSave.savedAt);
     const __localHasTime=Number.isFinite(__localTime);
     const __remoteHasTime=Number.isFinite(__remoteTime);
     if(__remoteSave&&(!__localSave||(__remoteHasTime&&(!__localHasTime||__remoteTime>=__localTime))||(!__remoteHasTime&&!__localHasTime))){
+      if(__localRaw){
+        const __backup1=safeGet(__accountSaveKey+':backup:1');
+        if(__backup1)safeSet(__accountSaveKey+':backup:2',__backup1);
+        safeSet(__accountSaveKey+':backup:1',__localRaw);
+      }
       safeSet(__accountSaveKey,JSON.stringify(__remoteSave));
       window.ABJ_PENDING_REMOTE_SAVE=null;
     }else if(__localSave){
