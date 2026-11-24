@@ -977,8 +977,15 @@ async function accountContinue(){
     if(!pass){showAccountStatus('Entre ton mot de passe.', true);return;}
     const localAccount=findGameAccount(accounts,phone);
     const api=window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
-    let response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});
-    let data=await response.json().catch(()=>({}));
+    let response=null,data={},loginNetworkError=null;
+    for(let attempt=0;attempt<3;attempt++){
+      try{
+        response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass}),cache:'no-store'});
+        data=await response.json().catch(()=>({}));loginNetworkError=null;break;
+      }catch(error){loginNetworkError=error;if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));}
+    }
+    if(loginNetworkError){showAccountStatus('Le serveur de connexion est momentanément injoignable. Ton compte et ta sauvegarde ne sont pas modifiés. Réessaie dans quelques instants.',true);return;}
+
     if(!response.ok && response.status===401 && localAccount){
       const legacyHash=await passwordDigest(pass);
       if(!/^[a-f0-9]{64}$/i.test(legacyHash)){
@@ -2181,6 +2188,9 @@ function buildOSMRoads(ways, nodes) {
     walkIndices.push(k,k+1,k+2,k,k+2,k+3);
   }
   function addStripTo(a,b,w,y,verts,inds){const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<1)return;const nx=-dz/len*w/2,nz=dx/len*w/2,ext=0,ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext},k=verts.length/3;const p=[{x:aa.x+nx,z:aa.z+nz},{x:aa.x-nx,z:aa.z-nz},{x:bb.x-nx,z:bb.z-nz},{x:bb.x+nx,z:bb.z+nz}];const lift=Math.max(Number(y)||0,.06);p.forEach(q=>verts.push(q.x,terrainHeight(q.x,q.z)+lift,q.z));inds.push(k,k+1,k+2,k,k+2,k+3);}
+  const roadWaysAtNode=new Map();
+  ways.forEach(way=>{const highway=way.tags&&way.tags.highway;if(!highway||ignored.has(highway)||pedestrianOnly.has(highway))return;for(const nodeId of way.nodes||[]){let set=roadWaysAtNode.get(nodeId);if(!set){set=new Set();roadWaysAtNode.set(nodeId,set);}set.add(way.id);}});
+  const junctionNodeIds=new Set([...roadWaysAtNode].filter(([,set])=>set.size>=2).map(([id])=>id));
   ways.forEach(w=>{
     const tag=w.tags.highway;if(ignored.has(tag))return;
     const raw=w.nodes.map(id=>nodes.get(id)).filter(Boolean);if(raw.length<2)return;
@@ -2208,11 +2218,15 @@ function buildOSMRoads(ways, nodes) {
       addQuad(a,b,width,.025);
       if(['primary','secondary','tertiary','residential','living_street','unclassified'].includes(tag)){
         const nx=-(b.z-a.z)/len,nz=(b.x-a.x)/len,sidewalkWidth=(tag==='primary'||tag==='secondary')?3.1:2.55,side=width/2+sidewalkWidth/2+.12;
-        const l1={x:a.x+nx*side,z:a.z+nz*side},l2={x:b.x+nx*side,z:b.z+nz*side};
-        const r1={x:a.x-nx*side,z:a.z-nz*side},r2={x:b.x-nx*side,z:b.z-nz*side};
+        const setback=Math.min(len*.42,Math.max(2.8,width/2+sidewalkWidth*.72));
+        const trimStart=junctionNodeIds.has(w.nodes[i-1])?setback:0,trimEnd=junctionNodeIds.has(w.nodes[i])?setback:0;
+        const ux=(b.x-a.x)/len,uz=(b.z-a.z)/len;
+        const wa={x:a.x+ux*trimStart,z:a.z+uz*trimStart},wb={x:b.x-ux*trimEnd,z:b.z-uz*trimEnd};
+        const l1={x:wa.x+nx*side,z:wa.z+nz*side},l2={x:wb.x+nx*side,z:wb.z+nz*side};
+        const r1={x:wa.x-nx*side,z:wa.z-nz*side},r2={x:wb.x-nx*side,z:wb.z-nz*side};
         addWalkQuad(l1,l2,sidewalkWidth,.025);addWalkQuad(r1,r2,sidewalkWidth,.025);
-        addStripTo({x:a.x+nx*(width/2+.13),z:a.z+nz*(width/2+.13)},{x:b.x+nx*(width/2+.13),z:b.z+nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
-        addStripTo({x:a.x-nx*(width/2+.13),z:a.z-nz*(width/2+.13)},{x:b.x-nx*(width/2+.13),z:b.z-nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
+        addStripTo({x:wa.x+nx*(width/2+.13),z:wa.z+nz*(width/2+.13)},{x:wb.x+nx*(width/2+.13),z:wb.z+nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
+        addStripTo({x:wa.x-nx*(width/2+.13),z:wa.z-nz*(width/2+.13)},{x:wb.x-nx*(width/2+.13),z:wb.z-nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
         if(['primary','secondary','tertiary'].includes(tag)&&len>24){const dash=5,space=13,ux=(b.x-a.x)/len,uz=(b.z-a.z)/len;for(let at=8;at<len-3;at+=space){const p0={x:a.x+ux*at,z:a.z+uz*at},p1={x:a.x+ux*Math.min(len,at+dash),z:a.z+uz*Math.min(len,at+dash)};addStripTo(p0,p1,.16,.035,markVertices,markIndices);}}
         pedestrianNodes.push(l1,l2,r1,r2);
       }
@@ -2254,9 +2268,9 @@ function buildOSMRoads(ways, nodes) {
     junctionSurfaceCount++;
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();
-  const mesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x24282b,side:THREE.DoubleSide}));mesh.receiveShadow=!mobilePerformanceMode;mesh.name='osm-road-network';scene.add(mesh);
-  if(walkVertices.length){const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(walkVertices,3));wg.setIndex(walkIndices);wg.computeVertexNormals();const wm=new THREE.Mesh(wg,new THREE.MeshLambertMaterial({color:0xc9c4b9,side:THREE.DoubleSide}));wm.receiveShadow=!mobilePerformanceMode;wm.name='osm-sidewalks-distinct';scene.add(wm);}
-  if(curbVertices.length){const cg=new THREE.BufferGeometry();cg.setAttribute('position',new THREE.Float32BufferAttribute(curbVertices,3));cg.setIndex(curbIndices);cg.computeVertexNormals();const cm=new THREE.Mesh(cg,new THREE.MeshLambertMaterial({color:0x8b8c87,side:THREE.DoubleSide}));cm.name='osm-raised-curbs';scene.add(cm);}
+  const mesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x171a1d,side:THREE.DoubleSide}));mesh.receiveShadow=!mobilePerformanceMode;mesh.name='osm-road-network';scene.add(mesh);
+  if(walkVertices.length){const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(walkVertices,3));wg.setIndex(walkIndices);wg.computeVertexNormals();const wm=new THREE.Mesh(wg,new THREE.MeshLambertMaterial({color:0xa9a59b,side:THREE.DoubleSide}));wm.receiveShadow=!mobilePerformanceMode;wm.name='osm-sidewalks-distinct';scene.add(wm);}
+  if(curbVertices.length){const cg=new THREE.BufferGeometry();cg.setAttribute('position',new THREE.Float32BufferAttribute(curbVertices,3));cg.setIndex(curbIndices);cg.computeVertexNormals();const cm=new THREE.Mesh(cg,new THREE.MeshLambertMaterial({color:0x70736f,side:THREE.DoubleSide}));cm.name='osm-raised-curbs';scene.add(cm);}
   if(markVertices.length){const mg=new THREE.BufferGeometry();mg.setAttribute('position',new THREE.Float32BufferAttribute(markVertices,3));mg.setIndex(markIndices);mg.computeVertexNormals();const mm=new THREE.Mesh(mg,new THREE.MeshBasicMaterial({color:0xe9dfb5,side:THREE.DoubleSide}));mm.name='osm-lane-dashes';scene.add(mm);}
   rebuildPedestrianGrid();
   decorateOSMStreets();
@@ -8584,7 +8598,7 @@ function enterOwnedVehicle(mesh){
  if(!recVehiclePapersReady(mesh.userData.ownedId)){showMessage('Dossier incomplet : carte grise, assurance automobile et visite technique sont obligatoires dans MY V.');return;}
  const rec=abjV19().ownedVehicles.find(v=>v.id===mesh.userData.ownedId);
  if(!rec||rec.key!==mesh.userData.vehicleKey||abjV19().activeVehicleKey!==rec.key){showMessage('Cette clé ne correspond pas à ce véhicule.');return;}
- drivingVehicle=mesh;player.visible=false;if(rec.type==='moto'){if(mesh.userData.rider)mesh.remove(mesh.userData.rider);const profile=lifeState.playerProfile||{},rider=createCharacter({gender:profile.gender,skin:profile.skin,hair:profile.hair,shirt:profile.shirt,pants:profile.pants,bodyType:profile.bodyType,hairstyle:profile.hairstyle,outfit:profile.outfit});rider.scale.set(.72,.72,.72);rider.position.set(0,.08,-.12);const rd=rider.userData||{};rider.rotation.x=0;if(rd.torso)rd.torso.rotation.x=.20;if(rd.hips)rd.hips.rotation.x=-.26;for(const k of ['legL','legR'])if(rd[k]){rd[k].rotation.x=-.76;rd[k].rotation.z=k==='legL'?.18:-.18;}for(const k of ['kneeL','kneeR'])if(rd[k])rd[k].rotation.x=1.05;for(const k of ['armL','armR'])if(rd[k]){rd[k].rotation.x=-1.10;rd[k].rotation.z=k==='armL'?.10:-.10;}for(const k of ['elbowL','elbowR'])if(rd[k])rd[k].rotation.x=-.38;if(rd.headGroup)rd.headGroup.rotation.x=.04;const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,14,12),new THREE.MeshStandardMaterial({color:0x263f58,roughness:.35,metalness:.18}));helmet.scale.set(1,.88,1.05);helmet.position.set(0,2.05,.02);rider.add(helmet);const visor=new THREE.Mesh(new THREE.SphereGeometry(.17,12,8),new THREE.MeshStandardMaterial({color:0x8db8c8,transparent:true,opacity:.72,metalness:.3,roughness:.2}));visor.scale.set(1,.46,.34);visor.position.set(0,2.08,.22);rider.add(visor);mesh.add(rider);mesh.userData.rider=rider;}showMessage(rec.type==='moto'?'Tu es assis sur ta moto. ZQSD pour rouler · E pour descendre.':'Tu conduis '+rec.brand+' '+rec.model+' · ZQSD pour conduire · E pour descendre.');
+ drivingVehicle=mesh;player.visible=false;if(rec.type==='moto'){if(mesh.userData.rider)mesh.remove(mesh.userData.rider);const profile=lifeState.playerProfile||{},rider=createCharacter({gender:profile.gender,skin:profile.skin,hair:profile.hair,shirt:profile.shirt,pants:profile.pants,bodyType:profile.bodyType,hairstyle:profile.hairstyle,outfit:profile.outfit});rider.scale.set(.72,.72,.72);rider.position.set(0,.23,-.30);const rd=rider.userData||{};rider.rotation.x=0;if(rd.torso)rd.torso.rotation.x=.30;if(rd.hips)rd.hips.rotation.x=-.34;for(const k of ['legL','legR'])if(rd[k]){rd[k].rotation.x=-.92;rd[k].rotation.z=k==='legL'?.10:-.10;}for(const k of ['kneeL','kneeR'])if(rd[k])rd[k].rotation.x=1.18;for(const k of ['armL','armR'])if(rd[k]){rd[k].rotation.x=-1.16;rd[k].rotation.z=k==='armL'?.08:-.08;}for(const k of ['elbowL','elbowR'])if(rd[k])rd[k].rotation.x=-.48;if(rd.headGroup)rd.headGroup.rotation.x=.04;const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,14,12),new THREE.MeshStandardMaterial({color:0x263f58,roughness:.35,metalness:.18}));helmet.scale.set(1,.88,1.05);helmet.position.set(0,2.05,.02);rider.add(helmet);const visor=new THREE.Mesh(new THREE.SphereGeometry(.17,12,8),new THREE.MeshStandardMaterial({color:0x8db8c8,transparent:true,opacity:.72,metalness:.3,roughness:.2}));visor.scale.set(1,.46,.34);visor.position.set(0,2.08,.22);rider.add(visor);mesh.add(rider);mesh.userData.rider=rider;}showMessage(rec.type==='moto'?'Tu es assis sur ta moto. ZQSD pour rouler · E pour descendre.':'Tu conduis '+rec.brand+' '+rec.model+' · ZQSD pour conduire · E pour descendre.');
 }
 function exitOwnedVehicle(){
  if(!drivingVehicle)return;
