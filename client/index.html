@@ -624,28 +624,32 @@ function terrainHeight(x,z){
   return 0.85*Math.sin(x/2100)*Math.cos(z/2600) + 0.62*Math.sin((x+z)/1450) + 0.28*Math.cos((x-z)/720);
 }
 function createAbidjanTerrain(){
-  const segments=160, half=CITY_SIZE/2, positions=[],uvs=[],indices=[];
+  // Sur mobile, réduire le coût de génération CPU/GPU du terrain avant le premier rendu.
+  // La surface reste continue et conserve le même relief et la même emprise de la ville.
+  const mobileTerrain=!!mobilePerformanceMode||window.innerWidth<700;
+  const segments=mobileTerrain?80:160, half=CITY_SIZE/2, positions=[],uvs=[],indices=[];
   for(let iz=0;iz<=segments;iz++){const z=-half+CITY_SIZE*iz/segments;for(let ix=0;ix<=segments;ix++){const x=-half+CITY_SIZE*ix/segments;positions.push(x,terrainHeight(x,z)-.08,z);uvs.push(ix/segments,iz/segments);}}
   for(let iz=0;iz<segments;iz++)for(let ix=0;ix<segments;ix++){const a=iz*(segments+1)+ix,b=a+1,c=a+segments+1,d=c+1;indices.push(a,c,b,b,c,d);}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geo.setIndex(indices);geo.computeVertexNormals();
-  // Sol tropical texturé : variation d'herbe, terre et petites touffes, sans image externe.
-  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;
-  const ctx=canvas.getContext('2d');ctx.fillStyle='#77796f';ctx.fillRect(0,0,512,512);
-  // Texture urbaine discrète : le sol ne doit plus dominer les routes, trottoirs et bâtiments.
+  // Texture procédurale plus légère sur mobile, sans téléchargement externe.
+  const textureSize=mobileTerrain?256:512;
+  const canvas=document.createElement('canvas');canvas.width=textureSize;canvas.height=textureSize;
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#77796f';ctx.fillRect(0,0,textureSize,textureSize);
   let seed=481516;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
-  for(let i=0;i<1800;i++){const x=rand()*512,y=rand()*512,w=2+rand()*18,h=2+rand()*12;ctx.fillStyle=rand()>.5?'rgba(205,198,177,.055)':'rgba(28,37,38,.045)';ctx.fillRect(x,y,w,h);}
-  for(let i=0;i<6000;i++){
-    const x=rand()*512,y=rand()*512,r=.35+rand()*1.25;
+  const scale=textureSize/512;
+  for(let i=0;i<(mobileTerrain?450:1800);i++){const x=rand()*textureSize,y=rand()*textureSize,w=(2+rand()*18)*scale,h=(2+rand()*12)*scale;ctx.fillStyle=rand()>.5?'rgba(205,198,177,.055)':'rgba(28,37,38,.045)';ctx.fillRect(x,y,w,h);}
+  for(let i=0;i<(mobileTerrain?1200:6000);i++){
+    const x=rand()*textureSize,y=rand()*textureSize,r=(.35+rand()*1.25)*scale;
     ctx.fillStyle=rand()>.92?'rgba(91,119,76,.09)':'rgba(32,40,39,.07)';
     ctx.beginPath();ctx.ellipse(x,y,r*1.8,r*.65,rand()*Math.PI,0,Math.PI*2);ctx.fill();
   }
-  for(let i=0;i<500;i++){
-    const x=rand()*512,y=rand()*512;ctx.strokeStyle='rgba(76,91,55,.12)';ctx.lineWidth=.65;
-    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+(rand()-.5)*3,y-1-rand()*3);ctx.stroke();
+  for(let i=0;i<(mobileTerrain?100:500);i++){
+    const x=rand()*textureSize,y=rand()*textureSize;ctx.strokeStyle='rgba(76,91,55,.12)';ctx.lineWidth=Math.max(.4,.65*scale);
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+(rand()-.5)*3*scale,y-(1+rand()*3)*scale);ctx.stroke();
   }
   const grass=new THREE.CanvasTexture(canvas);grass.wrapS=grass.wrapT=THREE.RepeatWrapping;grass.repeat.set(44,44);grass.colorSpace=THREE.SRGBColorSpace||grass.colorSpace;
-  grass.anisotropy=Math.min(8,renderer&&renderer.capabilities?renderer.capabilities.getMaxAnisotropy():4);
-  const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:grass,color:0xc9c1ad,roughness:0.96,metalness:0.0}));mesh.receiveShadow=true;mesh.renderOrder=0;mesh.name='abidjan-continuous-terrain';scene.add(mesh);return mesh;
+  grass.anisotropy=Math.min(mobileTerrain?2:8,renderer&&renderer.capabilities?renderer.capabilities.getMaxAnisotropy():4);
+  const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:grass,color:0xc9c1ad,roughness:0.96,metalness:0.0}));mesh.receiveShadow=!mobileTerrain;mesh.renderOrder=0;mesh.name='abidjan-continuous-terrain';scene.add(mesh);return mesh;
 }
 let osmRoadSegments = [], trafficRoadSegments = [], pedestrianNodes = [], osmLoaded = false, npcPopulationCreated = false;
 let osmTransitRoutes = [], leafletTransitLayer = null, leafletVehicleLayer = null, leafletRouteLayer = null, leafletDynamicTimer = 0;
