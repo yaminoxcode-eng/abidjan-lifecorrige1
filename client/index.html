@@ -2071,7 +2071,10 @@ async function loadAbidjanOSM() {
   let loadedFromCache = false;
   // Une copie locale récente évite de retélécharger toute la carte des 13 communes à chaque connexion.
   try{
-    const cached=await abjReadOSMCache();
+    const cached=await Promise.race([
+      abjReadOSMCache(),
+      new Promise(resolve=>setTimeout(()=>resolve(null),1000))
+    ]);
     if(cached&&cached.data&&Array.isArray(cached.data.elements)&&Date.now()-Number(cached.savedAt||0)<60*24*60*60*1000){
       data=cached.data;loadedFromCache=true;
       const status=document.getElementById('mapStatus');if(status)status.textContent='Carte d’Abidjan restaurée depuis le cache local…';
@@ -2079,19 +2082,39 @@ async function loadAbidjanOSM() {
   }catch(cacheError){console.info('Cache cartographique local indisponible, téléchargement normal.',cacheError);}
   // L'ancien instantané cartographique était trop restreint : on récupère désormais les routes et bâtiments sur l'emprise élargie des 13 communes.
   const endpoints = ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
-  if (!data) for (const endpoint of endpoints) {
+  if (!data && mobilePerformanceMode) {
+    // Sur mobile, tester les deux serveurs en parallèle : un serveur Overpass lent ne bloque plus toute l'entrée en ville.
+    const controllers=[];
+    try {
+      const requests=endpoints.map(endpoint=>{
+        const controller=new AbortController();controllers.push(controller);
+        const timeout=setTimeout(()=>controller.abort(),8000);
+        return fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query),signal:controller.signal})
+          .then(response=>{if(!response.ok)throw new Error('Overpass HTTP '+response.status);return response.json();})
+          .finally(()=>clearTimeout(timeout));
+      });
+      data=await Promise.any(requests);
+    } catch(e) { console.warn('Serveurs cartographiques mobiles indisponibles rapidement, activation du secours.',e); }
+    finally { controllers.forEach(controller=>controller.abort()); }
+  }
+  if (!data && !mobilePerformanceMode) for (const endpoint of endpoints) {
     let timeout = null;
     try {
       const controller = new AbortController();
-      const mapRequestTimeout = mobilePerformanceMode ? 22000 : 90000;
-      timeout = setTimeout(() => controller.abort(), mapRequestTimeout);
+      timeout = setTimeout(() => controller.abort(), 90000);
       const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }, body: 'data=' + encodeURIComponent(query), signal: controller.signal });
       if (!response.ok) throw new Error('Overpass HTTP ' + response.status);
       data = await response.json(); break;
     } catch (e) { console.warn('Échec du serveur cartographique', endpoint, e); }
     finally { if(timeout) clearTimeout(timeout); }
   }
-  if(!data){try{const backup=await fetch('https://d2ol7oe51mr4n9.cloudfront.net/user_3LVcgmLnYyIgIO5wyenMeyU1qx6/750912a1-208b-4fca-b488-81d5ed214b6e.gz',{cache:'force-cache'});if(backup.ok&&typeof DecompressionStream!=='undefined')data=await new Response(backup.body.pipeThrough(new DecompressionStream('gzip'))).json();}catch(e){console.warn('Carte locale de secours indisponible',e);}}
+  if(!data){try{
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),4000);
+    try{
+      const backup=await fetch('https://d2ol7oe51mr4n9.cloudfront.net/user_3LVcgmLnYyIgIO5wyenMeyU1qx6/750912a1-208b-4fca-b488-81d5ed214b6e.gz',{cache:'force-cache',signal:controller.signal});
+      if(backup.ok&&typeof DecompressionStream!=='undefined')data=await new Response(backup.body.pipeThrough(new DecompressionStream('gzip'))).json();
+    }finally{clearTimeout(timeout);}
+  }catch(e){console.warn('Carte locale de secours indisponible',e);}}
   if (!data || !data.elements) throw new Error('Impossible de récupérer les données cartographiques');
   if(!loadedFromCache){abjWriteOSMCache(data).catch(e=>console.info('Mise en cache OSM différée ou indisponible.',e));}
   if (!data.elements.some(e => e.type === 'way' && e.tags && (e.tags.highway || e.tags.building))) throw new Error('Les données reçues ne contiennent ni routes ni bâtiments');
