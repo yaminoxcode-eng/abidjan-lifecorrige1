@@ -57,6 +57,31 @@ function registerPlayerSystems(app, { auth, accounts, supabaseRequest, persistAc
         headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
         body: JSON.stringify({ player_phone: req.phone, event_key: eventKey, event_type: eventType, payload })
       });
+      // Phone ownership/equipment is materialized in the inventory table as well as the event ledger.
+      if (eventType === 'device.store' || eventType === 'device.equip') {
+        const deviceId = safeText(payload.deviceId, 64);
+        const deviceType = safeText(payload.deviceType, 24);
+        const appearance = payload.appearance && typeof payload.appearance === 'object' ? payload.appearance : {};
+        if (!deviceId || !['phone','computer','tablet'].includes(deviceType) || jsonSize(appearance) > 8000) {
+          return res.status(400).json({ error: 'Données d’appareil invalides.' });
+        }
+        if (eventType === 'device.equip') {
+          await supabaseRequest('player_devices?player_phone=eq.' + encodeURIComponent(req.phone) +
+            '&device_type=eq.' + encodeURIComponent(deviceType), {
+            method: 'PATCH', headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({ equipped: false, updated_at: new Date().toISOString() })
+          });
+        }
+        await supabaseRequest('player_devices?on_conflict=player_phone,device_id', {
+          method: 'POST',
+          headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify({
+            player_phone: req.phone, device_id: deviceId, device_type: deviceType,
+            owned: true, equipped: eventType === 'device.equip', appearance,
+            updated_at: new Date().toISOString()
+          })
+        });
+      }
       res.status(202).json({ ok: true });
     } catch (error) {
       console.error('Journal joueur:', error.message);
