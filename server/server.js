@@ -1323,6 +1323,8 @@ io.on('connection', (socket) => {
             id: row.id,
             from: outgoing ? socket.id : (peerSocket?.id || 'history-' + peerPhone),
             fromName: outgoing ? (clean(state.profile?.name, 24) || 'Citoyen') : (clean(peer?.profile?.name, 24) || 'Citoyen'),
+            peerName: clean(peer?.profile?.name, 24) || 'Citoyen',
+            direction: outgoing ? 'outgoing' : 'incoming',
             text: row.body,
             createdAt: Date.parse(row.created_at) || Date.now(),
             history: true,
