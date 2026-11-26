@@ -9,6 +9,7 @@ const { Server } = require('socket.io');
 const crypto = require('crypto');
 const { multiplayerZone, multiplayerZoneRooms } = require('./spatial-zones');
 const { COMMUNES, normalizeIdentity, calculateAge } = require('./account-identity');
+const { registerPlayerSystems } = require('./player-systems');
 
 const PORT = Number(process.env.PORT || 10000);
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('hex');
@@ -1357,6 +1358,8 @@ function clamp(v, min = 0, max = 100) {
     ? Math.max(min, Math.min(max, n))
     : 0;
 }
+
+registerPlayerSystems(app, { auth, accounts, supabaseRequest, persistAccount });
 
 loadPersistentAccounts()
   .then(() => {
