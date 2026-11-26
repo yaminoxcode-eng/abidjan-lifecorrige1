@@ -11,7 +11,7 @@
 <meta name="application-name" content="Abidjan Life">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Abidjan Life V1.49.1 — inscription plus fiable</title>
+<title>Abidjan Life V1.50.0 — interface et téléphone</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
   * { box-sizing: border-box; }
@@ -130,7 +130,7 @@
 
   /* Interface de vie quotidienne — HUD léger, lisible sur PC et mobile */
   #lifeHud{position:absolute;top:12px;left:190px;transform:none;z-index:11;display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(8,16,28,.88);border:1px solid rgba(255,209,102,.75);border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.25);pointer-events:none;max-width:calc(100vw - 300px)}
-  #lifeMood{font-size:30px;line-height:1;pointer-events:auto;cursor:pointer}.lifeNeed{display:none!important}
+  #lifeMood{font-size:30px;line-height:1;pointer-events:auto;cursor:pointer}.lifeNeed{display:flex!important}
   .lifeNeed{width:76px;min-width:60px;display:flex;flex-direction:column;gap:3px}
   .lifeNeed label{font-size:10px;color:#f4ead2;text-shadow:1px 1px 2px #000}
   .lifeTrack{height:7px;border-radius:8px;background:rgba(255,255,255,.18);overflow:hidden}
@@ -157,6 +157,7 @@
   .phoneApp[data-app="camera"],.phoneApp[data-app="gallery"]{background:linear-gradient(145deg,#8a596d,#50384f)}
   .phoneApp[data-app="jumia"],.phoneApp[data-app="boutique"]{background:linear-gradient(145deg,#a45c36,#613b32)}
   .phoneApp[data-app="google"],.phoneApp[data-app="youtube"],.phoneApp[data-app="tiktok"]{background:linear-gradient(145deg,#435d79,#26384e)}
+  .phoneApp b{display:block;position:relative;z-index:1;font-size:11px;line-height:1.15;max-width:100%;overflow-wrap:anywhere}
   .phoneApp:active{filter:brightness(1.2)}
   #phoneHome{width:86px;height:5px;border-radius:5px;background:#dce7ed;margin:12px auto 0}
   #phoneAppContent{display:none}#phoneAppContent button{border:1px solid #f4d28b;background:#243e52;color:white;border-radius:9px;padding:9px 12px;margin:5px 3px}
@@ -329,6 +330,77 @@ button,input,select{font:inherit}
 </style>
 
 <style id="abj-v148-touch">html,body{touch-action:manipulation}canvas{touch-action:none}</style>
+
+<style id="abj-v150-hud-fixes">
+#lifeHud{left:50%!important;transform:translateX(-50%)!important;max-width:calc(100vw - 340px)!important}
+#lifeHud .lifeNeed{display:flex!important}
+#lifeHud #moneyLabel{white-space:nowrap!important}
+.phoneApp b{display:block!important;position:relative;z-index:1;font-size:11px;line-height:1.15;max-width:100%;overflow-wrap:anywhere}
+@media(max-width:760px){#lifeHud{left:8px!important;right:8px!important;bottom:205px!important;top:auto!important;transform:none!important;max-width:none!important;gap:4px!important;padding:6px!important}.lifeNeed{width:11.5%!important;min-width:0!important}.lifeNeed label{font-size:8px!important}#moneyLabel{font-size:9px!important}#lifeMood{font-size:20px!important}#needToggleEmoji{bottom:48px!important}}
+</style>
+
+<style id="abj-v150-mobile-clean-hud">
+/* Mobile: retirer les compteurs et panneaux supérieurs marqués, sans toucher aux commandes. */
+@media (max-width:760px), (pointer:coarse) {
+  #onlinePlayerCount,
+  #v12Weather,
+  #v12Calendar,
+  #lifeClock,
+  #moneyLabel { display:none !important; }
+  #touchControls { display:flex !important; }
+}
+</style>
+
+
+<style id="abj-v153-home-mobile-repair">
+/* Accueil mobile : occuper tout l'écran et empêcher les cartes/boutons de se chevaucher. */
+#startScreen.abj-home{
+ position:fixed!important;inset:0!important;width:100vw!important;max-width:none!important;
+ height:100vh!important;height:100dvh!important;min-height:100dvh!important;
+ z-index:9998!important;overflow-x:hidden!important;overflow-y:auto!important;
+ display:flex!important;align-items:stretch!important;justify-content:flex-start!important;
+ padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 16px)!important;
+ background:radial-gradient(ellipse at 78% 20%,#1c655b 0%,transparent 38%),linear-gradient(125deg,#081d20,#102e30 52%,#173b36)!important;
+}
+#startScreen.abj-home .abj-home-shell{width:min(100%,1100px)!important;min-height:0!important;height:auto!important;margin:auto!important;justify-content:flex-start!important;gap:16px!important}
+#startScreen.abj-home .abj-home-nav{width:100%;flex-wrap:wrap;align-items:center;gap:10px}
+#startScreen.abj-home .abj-nav-tag{max-width:48%;font-size:8px;letter-spacing:.8px;padding:7px 9px;text-align:center}
+#startScreen.abj-home .abj-home-hero{width:100%;min-height:0!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:center}
+#startScreen.abj-home .abj-hero-copy{min-width:0}
+#startScreen.abj-home .abj-home-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;width:100%;margin-top:12px}
+#startScreen.abj-home .abj-home-actions button{width:100%!important;min-width:0!important;min-height:48px;margin:0!important;position:relative!important;inset:auto!important;transform:none!important;white-space:normal}
+#startScreen.abj-home #abjInstallApp{display:none!important}
+#startScreen.abj-home .abj-home-features{width:100%;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#startScreen.abj-home .abj-home-features article{min-width:0}
+#startScreen.abj-home .abj-home-controls{display:none!important}
+@media(max-width:760px){
+ #startScreen.abj-home{padding:calc(env(safe-area-inset-top,0px) + 12px) 14px calc(env(safe-area-inset-bottom,0px) + 14px)!important}
+ #startScreen.abj-home .abj-home-shell{gap:13px!important}
+ #startScreen.abj-home .abj-home-nav{flex-wrap:nowrap}
+ #startScreen.abj-home .abj-brand{gap:8px;min-width:0}
+ #startScreen.abj-home .abj-brand-mark{width:40px;height:40px;flex:0 0 40px}
+ #startScreen.abj-home .abj-brand b{font-size:12px;letter-spacing:1.8px}
+ #startScreen.abj-home .abj-brand small{font-size:8px;letter-spacing:1.2px}
+ #startScreen.abj-home .abj-nav-tag{max-width:48%;font-size:7px;line-height:1.35}
+ #startScreen.abj-home .abj-home-hero{grid-template-columns:minmax(0,1fr);gap:12px}
+ #startScreen.abj-home .abj-hero-copy h1{font-size:clamp(42px,12vw,64px)!important;line-height:.92;margin:0 0 10px!important}
+ #startScreen.abj-home .abj-eyebrow{font-size:9px;margin-bottom:10px}
+ #startScreen.abj-home .abj-home-lead{font-size:13px!important;line-height:1.4;margin:0 0 10px!important}
+ #startScreen.abj-home .abj-live-strip{margin:7px 0!important;font-size:11px}
+ #startScreen.abj-home .abj-home-worldline{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:9px 10px!important;font-size:11px;line-height:1.35}
+ #startScreen.abj-home .abj-world-place{white-space:normal;overflow-wrap:anywhere}
+ #startScreen.abj-home .abj-home-actions{grid-template-columns:minmax(0,1fr);gap:8px;margin-top:9px}
+ #startScreen.abj-home #startBtn{grid-column:auto!important;min-height:52px!important;font-size:14px!important}
+ #startScreen.abj-home #homeLoginBtn{min-height:46px!important}
+ #startScreen.abj-home .abj-home-note{margin-top:4px;font-size:9px}
+ #startScreen.abj-home .abj-hero-art{height:clamp(145px,34vw,205px)!important;min-height:145px!important;width:100%;border-radius:14px}
+ #startScreen.abj-home .abj-home-features{grid-template-columns:minmax(0,1fr);gap:7px}
+ #startScreen.abj-home .abj-home-features article{grid-template-columns:32px minmax(0,1fr);padding:8px 10px}
+ #startScreen.abj-home .abj-home-features article>span{width:30px;height:30px;font-size:16px}
+ #startScreen.abj-home .abj-home-features small{font-size:9px}
+ #startScreen.abj-home .abj-home-footer{gap:8px;font-size:7px;letter-spacing:.8px;padding-top:9px}
+}
+</style>
 </head>
 <body>
 
@@ -379,7 +451,21 @@ button,input,select{font:inherit}
 </script>
 
 
-<div id="afGamerIntro" aria-label="AF Gamer CI présente" style="position:fixed;inset:0;z-index:100000;display:grid;place-items:center;background:radial-gradient(circle at 50% 48%,#173b47 0%,#071018 48%,#010205 100%);color:#f5d99c;overflow:hidden;opacity:1;visibility:visible;transition:opacity .8s ease,visibility .8s ease;"><div class="af-intro-stars" aria-hidden="true"></div><div class="af-intro-ring" aria-hidden="true"></div><div class="af-intro-core" aria-hidden="true"></div><div class="af-intro-brand" style="position:relative;z-index:2;text-align:center;font-family:Georgia,serif;letter-spacing:.22em;text-shadow:0 0 24px #d8a74d88"><div style="font-size:clamp(34px,7vw,72px);font-weight:900">AF GAMER CI</div><div style="font:700 11px system-ui;letter-spacing:.38em;color:#c7d7d9;margin-top:16px">PRÉSENTE</div></div></div><style>#afGamerIntro .af-intro-stars{position:absolute;inset:-20%;background-image:radial-gradient(2px 2px at 20% 30%,#fff9 50%,transparent 60%),radial-gradient(1px 1px at 72% 22%,#fff9 50%,transparent 60%),radial-gradient(2px 2px at 82% 74%,#fff8 50%,transparent 60%),radial-gradient(1px 1px at 36% 82%,#fff8 50%,transparent 60%);background-size:230px 190px;animation:afStars 18s linear infinite}#afGamerIntro .af-intro-ring{position:absolute;width:min(68vw,620px);aspect-ratio:1;border:2px solid #cda85a66;border-radius:50%;box-shadow:0 0 55px #2da2b366,inset 0 0 65px #2da2b344;transform:rotateX(68deg) scaleY(.55);animation:afRing 2.8s ease-in-out forwards}#afGamerIntro .af-intro-core{position:absolute;width:clamp(90px,16vw,170px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 35%,#132c37 0 22%,#020408 48%,#000 70%);box-shadow:0 0 32px 12px #1d8e9c66,0 0 110px 35px #c99c4b22;animation:afBlackHole 2.8s cubic-bezier(.7,0,.2,1) forwards}#afGamerIntro .af-intro-brand{animation:afBrand 2.7s ease forwards}@keyframes afStars{to{transform:translate3d(-80px,40px,0)}}@keyframes afRing{0%{opacity:0;transform:rotateX(68deg) scale(.35,.2)}35%{opacity:1}100%{opacity:0;transform:rotateX(68deg) scale(1.6,.75)}}@keyframes afBlackHole{0%{transform:scale(.15);filter:brightness(1.8)}55%{transform:scale(1.1)}100%{transform:scale(18);filter:brightness(.2)}}@keyframes afBrand{0%,55%{opacity:0;transform:translateY(12px) scale(.9)}68%{opacity:1;transform:none}100%{opacity:0;transform:scale(.75)}}</style><div id="startScreen" class="abj-home">
+<div id="afGamerIntro" aria-label="AF Gamer CI présente" style="position:fixed;inset:0;z-index:100000;display:grid;place-items:center;background:radial-gradient(circle at 50% 48%,#173b47 0%,#071018 48%,#010205 100%);color:#f5d99c;overflow:hidden;opacity:1;visibility:visible;transition:opacity .8s ease,visibility .8s ease;"><div class="af-intro-stars" aria-hidden="true"></div><div class="af-intro-ring" aria-hidden="true"></div><div class="af-intro-core" aria-hidden="true"></div><div class="af-intro-brand" style="position:relative;z-index:2;text-align:center;font-family:Georgia,serif;letter-spacing:.22em;text-shadow:0 0 24px #d8a74d88"><div style="font-size:clamp(34px,7vw,72px);font-weight:900">AF GAMER CI</div><div style="font:700 11px system-ui;letter-spacing:.38em;color:#c7d7d9;margin-top:16px">PRÉSENTE</div></div></div><style>#afGamerIntro .af-intro-stars{position:absolute;inset:-20%;background-image:radial-gradient(2px 2px at 20% 30%,#fff9 50%,transparent 60%),radial-gradient(1px 1px at 72% 22%,#fff9 50%,transparent 60%),radial-gradient(2px 2px at 82% 74%,#fff8 50%,transparent 60%),radial-gradient(1px 1px at 36% 82%,#fff8 50%,transparent 60%);background-size:230px 190px;animation:afStars 18s linear infinite}#afGamerIntro .af-intro-ring{position:absolute;width:min(68vw,620px);aspect-ratio:1;border:2px solid #cda85a66;border-radius:50%;box-shadow:0 0 55px #2da2b366,inset 0 0 65px #2da2b344;transform:rotateX(68deg) scaleY(.55);animation:afRing 2.8s ease-in-out forwards}#afGamerIntro .af-intro-core{position:absolute;width:clamp(90px,16vw,170px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 35%,#132c37 0 22%,#020408 48%,#000 70%);box-shadow:0 0 32px 12px #1d8e9c66,0 0 110px 35px #c99c4b22;animation:afBlackHole 2.8s cubic-bezier(.7,0,.2,1) forwards}#afGamerIntro .af-intro-brand{animation:afBrand 2.7s ease forwards}@keyframes afStars{to{transform:translate3d(-80px,40px,0)}}@keyframes afRing{0%{opacity:0;transform:rotateX(68deg) scale(.35,.2)}35%{opacity:1}100%{opacity:0;transform:rotateX(68deg) scale(1.6,.75)}}@keyframes afBlackHole{0%{transform:scale(.15);filter:brightness(1.8)}55%{transform:scale(1.1)}100%{transform:scale(18);filter:brightness(.2)}}@keyframes afBrand{0%,55%{opacity:0;transform:translateY(12px) scale(.9)}68%{opacity:1;transform:none}100%{opacity:0;transform:scale(.75)}}</style><style>
+.abj-live-strip{display:flex;align-items:center;gap:8px;margin:0 0 15px;color:#e7eee9;font-size:12px}
+.abj-live-strip strong{font-size:15px;color:#f5c978;font-variant-numeric:tabular-nums}
+.abj-live-dot{width:8px;height:8px;border-radius:50%;background:#54d68a;box-shadow:0 0 12px #54d68a}
+.abj-home-worldline{display:flex;flex-direction:column;gap:7px;margin:0 0 22px;padding:12px 14px;border:1px solid #ffffff2b;border-radius:12px;background:#071a19a8;color:#fff;font-size:13px;max-width:470px}
+.abj-home-worldline strong{font-size:17px;color:#f5ca7d;font-variant-numeric:tabular-nums}
+.abj-home-worldline small{color:#c5d4cd;font-size:10px}
+.abj-world-place{color:#d6e1da;font-size:11px}
+.abj-home-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#startScreen.abj-home #startBtn{margin:0;min-width:225px}
+#startScreen.abj-home #homeLoginBtn,#startScreen.abj-home #abjInstallApp{display:flex;align-items:center;justify-content:center;min-height:50px;padding:13px 18px;border:1px solid #ffffff55;border-radius:8px;background:#102f2b;color:#fff;font-weight:800;font-size:13px}
+#startScreen.abj-home #abjInstallApp{background:#ffffff12}
+@media(max-width:760px){.abj-home-worldline{font-size:12px}.abj-home-actions{display:grid;grid-template-columns:1fr 1fr}.abj-home-actions #startBtn{grid-column:1/-1;width:100%;min-width:0}.abj-home-actions #homeLoginBtn,.abj-home-actions #abjInstallApp{width:100%;min-width:0}}
+</style>
+<div id="startScreen" class="abj-home">
   <div class="abj-home-shell">
     <header class="abj-home-nav">
       <div class="abj-brand"><span class="abj-brand-mark">A</span><span><b>ABIDJAN LIFE</b><small>LA VILLE EST À TOI</small></span></div>
@@ -387,11 +473,17 @@ button,input,select{font:inherit}
     </header>
     <main class="abj-home-hero">
       <div class="abj-hero-copy">
-        <div class="abj-eyebrow"><span></span> UNE VILLE · MILLE HISTOIRES</div>
-        <h1>Ta vie.<br><em>Ton Abidjan.</em></h1>
-        <p class="abj-home-lead">Vis ta propre histoire au cœur d’un Abidjan vivant. Trouve ton quartier, travaille, entreprends, rencontre du monde et construis ton avenir.</p>
-        <button id="startBtn"><span>Entrer dans la ville</span><b>↗</b></button>
-        <div class="abj-home-note">Aventure urbaine immersive · Inspirée de la vie à Abidjan</div>
+        <div class="abj-eyebrow"><span></span> ABIDJAN · CÔTE D’IVOIRE</div>
+        <h1>ABIDJAN<br><em>LIFE</em></h1>
+        <p class="abj-home-lead">Vis ta vie à Abidjan.</p>
+        <div class="abj-live-strip"><span class="abj-live-dot"></span><strong id="abjHomePlayerCount">—</strong><span>joueurs en ville maintenant</span></div>
+        <div class="abj-home-worldline"><span>🕒 <strong id="abjHomeWorldClock">08:00</strong> <small>(heure du jeu)</small></span><span class="abj-world-place">à Abidjan · 🪩 Maison B · Angré, Cocody : ouvert</span></div>
+        <div class="abj-home-actions">
+          <button id="startBtn"><span>▶ Commencer ma vie</span><b>↗</b></button>
+          <button id="homeLoginBtn" type="button">Se connecter</button>
+          <button id="abjInstallApp" type="button">Installer le jeu</button>
+        </div>
+        <div class="abj-home-note">un jeu AF_Gamer.ci</div>
       </div>
       <div class="abj-hero-art" aria-hidden="true">
         <div class="abj-sun"></div><div class="abj-art-grid"></div>
@@ -582,28 +674,32 @@ function terrainHeight(x,z){
   return 0.85*Math.sin(x/2100)*Math.cos(z/2600) + 0.62*Math.sin((x+z)/1450) + 0.28*Math.cos((x-z)/720);
 }
 function createAbidjanTerrain(){
-  const segments=160, half=CITY_SIZE/2, positions=[],uvs=[],indices=[];
+  // Sur mobile, réduire le coût de génération CPU/GPU du terrain avant le premier rendu.
+  // La surface reste continue et conserve le même relief et la même emprise de la ville.
+  const mobileTerrain=!!mobilePerformanceMode||window.innerWidth<700;
+  const segments=mobileTerrain?80:160, half=CITY_SIZE/2, positions=[],uvs=[],indices=[];
   for(let iz=0;iz<=segments;iz++){const z=-half+CITY_SIZE*iz/segments;for(let ix=0;ix<=segments;ix++){const x=-half+CITY_SIZE*ix/segments;positions.push(x,terrainHeight(x,z)-.08,z);uvs.push(ix/segments,iz/segments);}}
   for(let iz=0;iz<segments;iz++)for(let ix=0;ix<segments;ix++){const a=iz*(segments+1)+ix,b=a+1,c=a+segments+1,d=c+1;indices.push(a,c,b,b,c,d);}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geo.setIndex(indices);geo.computeVertexNormals();
-  // Sol tropical texturé : variation d'herbe, terre et petites touffes, sans image externe.
-  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;
-  const ctx=canvas.getContext('2d');ctx.fillStyle='#77796f';ctx.fillRect(0,0,512,512);
-  // Texture urbaine discrète : le sol ne doit plus dominer les routes, trottoirs et bâtiments.
+  // Texture procédurale plus légère sur mobile, sans téléchargement externe.
+  const textureSize=mobileTerrain?256:512;
+  const canvas=document.createElement('canvas');canvas.width=textureSize;canvas.height=textureSize;
+  const ctx=canvas.getContext('2d');ctx.fillStyle='#77796f';ctx.fillRect(0,0,textureSize,textureSize);
   let seed=481516;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
-  for(let i=0;i<1800;i++){const x=rand()*512,y=rand()*512,w=2+rand()*18,h=2+rand()*12;ctx.fillStyle=rand()>.5?'rgba(205,198,177,.055)':'rgba(28,37,38,.045)';ctx.fillRect(x,y,w,h);}
-  for(let i=0;i<6000;i++){
-    const x=rand()*512,y=rand()*512,r=.35+rand()*1.25;
+  const scale=textureSize/512;
+  for(let i=0;i<(mobileTerrain?450:1800);i++){const x=rand()*textureSize,y=rand()*textureSize,w=(2+rand()*18)*scale,h=(2+rand()*12)*scale;ctx.fillStyle=rand()>.5?'rgba(205,198,177,.055)':'rgba(28,37,38,.045)';ctx.fillRect(x,y,w,h);}
+  for(let i=0;i<(mobileTerrain?1200:6000);i++){
+    const x=rand()*textureSize,y=rand()*textureSize,r=(.35+rand()*1.25)*scale;
     ctx.fillStyle=rand()>.92?'rgba(91,119,76,.09)':'rgba(32,40,39,.07)';
     ctx.beginPath();ctx.ellipse(x,y,r*1.8,r*.65,rand()*Math.PI,0,Math.PI*2);ctx.fill();
   }
-  for(let i=0;i<500;i++){
-    const x=rand()*512,y=rand()*512;ctx.strokeStyle='rgba(76,91,55,.12)';ctx.lineWidth=.65;
-    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+(rand()-.5)*3,y-1-rand()*3);ctx.stroke();
+  for(let i=0;i<(mobileTerrain?100:500);i++){
+    const x=rand()*textureSize,y=rand()*textureSize;ctx.strokeStyle='rgba(76,91,55,.12)';ctx.lineWidth=Math.max(.4,.65*scale);
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+(rand()-.5)*3*scale,y-(1+rand()*3)*scale);ctx.stroke();
   }
   const grass=new THREE.CanvasTexture(canvas);grass.wrapS=grass.wrapT=THREE.RepeatWrapping;grass.repeat.set(44,44);grass.colorSpace=THREE.SRGBColorSpace||grass.colorSpace;
-  grass.anisotropy=Math.min(8,renderer&&renderer.capabilities?renderer.capabilities.getMaxAnisotropy():4);
-  const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:grass,color:0xc9c1ad,roughness:0.96,metalness:0.0}));mesh.receiveShadow=true;mesh.renderOrder=0;mesh.name='abidjan-continuous-terrain';scene.add(mesh);return mesh;
+  grass.anisotropy=Math.min(mobileTerrain?2:8,renderer&&renderer.capabilities?renderer.capabilities.getMaxAnisotropy():4);
+  const mesh=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:grass,color:0xc9c1ad,roughness:0.96,metalness:0.0}));mesh.receiveShadow=!mobileTerrain;mesh.renderOrder=0;mesh.name='abidjan-continuous-terrain';scene.add(mesh);return mesh;
 }
 let osmRoadSegments = [], trafficRoadSegments = [], pedestrianNodes = [], osmLoaded = false, npcPopulationCreated = false;
 let osmTransitRoutes = [], leafletTransitLayer = null, leafletVehicleLayer = null, leafletRouteLayer = null, leafletDynamicTimer = 0;
@@ -675,7 +771,7 @@ let messageTimer = 0;
 let lastLifeLightingHour = -1;
 
 // Simulation de vie : besoins, argent et horloge locale du monde.
-const lifeState = { hunger:100, energy:100, social:100, hygiene:100, health:100, respect:0, money:5000, bankBalance:25000, waveBalance:0, gameSettings:{graphics:'auto',cameraSensitivity:1,showHints:true,controlMode:'auto',infiniteNeeds:false}, waveDailyWithdrawn:0, waveDayKey:'', waveNotifs:[], creatorTier:'none', hour:8, minute:0, jobCooldown:0, job:'Aucun emploi', workXP:0, bankTransactions:[], contacts:[], messages:[], inventory:{}, homeDecor:{}, documents:{}, education:{courseId:null,remaining:0,certificates:[]}, delivery:null, creator:{certified:false,displayName:'',youtubeFollowers:0,tiktokFollowers:0,posts:[],lastPayoutDay:-1}, housing:{ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1}, cheats:{money:false,hunger:false,energy:false}, phoneSkin:{id:'default',name:'ABJ Connect',color:'#171d24',accent:'#e9c16f'}, playerProfile:{name:'Mon personnage',gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50}, lastSave:0, illness:null, illnessRisk:0 };
+const lifeState = { hunger:100, energy:100, social:100, hygiene:100, health:100, respect:0, money:5000, bankBalance:25000, waveBalance:0, gameSettings:{graphics:'auto',cameraSensitivity:1,showHints:true,controlMode:'auto',infiniteNeeds:false}, waveDailyWithdrawn:0, waveDayKey:'', waveNotifs:[], creatorTier:'none', hour:8, minute:0, jobCooldown:0, job:'Aucun emploi', employmentContract:null, rentalContract:null, workXP:0, bankTransactions:[], contacts:[], messages:[], inventory:{}, homeDecor:{}, documents:{}, education:{courseId:null,remaining:0,certificates:[]}, delivery:null, creator:{certified:false,displayName:'',youtubeFollowers:0,tiktokFollowers:0,posts:[],lastPayoutDay:-1}, housing:{ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1}, cheats:{money:false,hunger:false,energy:false}, phoneSkin:{id:'default',name:'ABJ Connect',color:'#171d24',accent:'#e9c16f'}, playerProfile:{name:'Mon personnage',gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50}, lastSave:0, illness:null, illnessRisk:0 };
 let LIFE_SAVE_KEY = 'abidjan-life-life-v1';
 const ACCOUNT_INDEX_KEY='abidjan-life-accounts-v1';
 let creatorVerifiedPhone=null;
@@ -703,7 +799,9 @@ function applyPhoneSkin(skin){
   const phone=document.getElementById('phone');
   if(phone){
     phone.style.borderColor=skin.color||'#171d24';
-    phone.style.background='linear-gradient(155deg,'+(skin.accent||'#293541')+',#090f17 68%)';
+    const base='linear-gradient(155deg,'+(skin.accent||'#293541')+',#090f17 68%)';
+    phone.style.background=skin.wallpaper?'linear-gradient(155deg,rgba(12,25,36,.70),rgba(5,12,20,.84)),url("'+skin.wallpaper+'")':base;
+    phone.style.backgroundSize='cover';phone.style.backgroundPosition='center';
     phone.dataset.phoneModel=(skin.id||'default').startsWith('phone-iphone')?'iphone':(skin.id||'').startsWith('phone-galaxy')?'galaxy':'android';
   }
   const top=document.querySelector('#phoneTop span');
@@ -953,8 +1051,15 @@ async function accountContinue(){
     if(!pass){showAccountStatus('Entre ton mot de passe.', true);return;}
     const localAccount=findGameAccount(accounts,phone);
     const api=window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
-    let response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass})});
-    let data=await response.json().catch(()=>({}));
+    let response=null,data={},loginNetworkError=null;
+    for(let attempt=0;attempt<3;attempt++){
+      try{
+        response=await fetch(api+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone,password:pass}),cache:'no-store'});
+        data=await response.json().catch(()=>({}));loginNetworkError=null;break;
+      }catch(error){loginNetworkError=error;if(attempt<2)await new Promise(resolve=>setTimeout(resolve,1000*(attempt+1)));}
+    }
+    if(loginNetworkError){showAccountStatus('Le serveur de connexion est momentanément injoignable. Ton compte et ta sauvegarde ne sont pas modifiés. Réessaie dans quelques instants.',true);return;}
+
     if(!response.ok && response.status===401 && localAccount){
       const legacyHash=await passwordDigest(pass);
       if(!/^[a-f0-9]{64}$/i.test(legacyHash)){
@@ -968,14 +1073,27 @@ async function accountContinue(){
     if(!response.ok){showAccountStatus(data.error||'Connexion au serveur impossible. Vérifie le numéro et le mot de passe.',true);return;}
     safeSet('abj-online-token:'+phone,data.token);
     const __accountSaveKey='abidjan-life-life-v1:'+phone;
-    if(data.player?.save){
-      safeSet(__accountSaveKey,JSON.stringify(data.player.save));
-    }else if(data.player?.position && (Math.abs(Number(data.player.position.x)||0)>0.01 || Math.abs(Number(data.player.position.z)||0)>0.01)){
-      try{
-        const __localRaw=safeGet(__accountSaveKey),__local=__localRaw?JSON.parse(__localRaw):{};
-        if(!__local.worldPosition)__local.worldPosition=data.player.position;
-        safeSet(__accountSaveKey,JSON.stringify(__local));
-      }catch(e){window.__abjErr&&window.__abjErr(e)}
+    // Réconcilier la sauvegarde serveur et la copie de cet appareil :
+    // conserver systématiquement la plus récente pour éviter un retour en arrière.
+    let __localSave=null,__localRaw=null;
+    try{__localRaw=safeGet(__accountSaveKey);if(__localRaw)__localSave=JSON.parse(__localRaw);}catch(e){window.__abjErr&&window.__abjErr(e);}
+    const __remoteSave=data.player?.save&&typeof data.player.save==='object'?data.player.save:null;
+    const __localTime=__localSave&&Date.parse(__localSave.savedAt);
+    const __remoteTime=__remoteSave&&Date.parse(__remoteSave.savedAt);
+    const __localHasTime=Number.isFinite(__localTime);
+    const __remoteHasTime=Number.isFinite(__remoteTime);
+    if(__remoteSave&&(!__localSave||(__remoteHasTime&&(!__localHasTime||__remoteTime>=__localTime))||(!__remoteHasTime&&!__localHasTime))){
+      if(__localRaw){
+        const __backup1=safeGet(__accountSaveKey+':backup:1');
+        if(__backup1)safeSet(__accountSaveKey+':backup:2',__backup1);
+        safeSet(__accountSaveKey+':backup:1',__localRaw);
+      }
+      safeSet(__accountSaveKey,JSON.stringify(__remoteSave));
+      window.ABJ_PENDING_REMOTE_SAVE=null;
+    }else if(__localSave){
+      window.ABJ_PENDING_REMOTE_SAVE={phone,save:__localSave};
+    }else if(data.player?.position&&(Math.abs(Number(data.player.position.x)||0)>0.01||Math.abs(Number(data.player.position.z)||0)>0.01)){
+      safeSet(__accountSaveKey,JSON.stringify({worldPosition:data.player.position}));
     }
     activateGameAccount(phone);
     return;
@@ -1362,7 +1480,8 @@ function launchGameFromCreator(){
   try{init();animate();saveLifeProgress(false);}
   catch(err){const box=document.getElementById('errorBox');box.style.display='block';box.textContent='ERREUR INIT: '+err.message;console.error(err);}
 }
-document.getElementById('startBtn').addEventListener('click',openAccountGate);
+document.getElementById('startBtn').addEventListener('click',function(){openAccountGate();openRegisterFlow();});
+document.getElementById('homeLoginBtn').addEventListener('click',openAccountGate);
 document.getElementById('creatorStart').addEventListener('click',launchGameFromCreator);
 document.getElementById('creatorStart').addEventListener('click',stopIdentityPreview,true);
 document.getElementById('creatorCancel').addEventListener('click',stopIdentityPreview);
@@ -1716,37 +1835,55 @@ function generateCity() {
       else optional('position de départ', () => startPlayerAtHome());
     }
     if (mapOpen) optional('actualisation de la carte', () => drawBigMap());
+    if (window.ABJ_APPLY_SHARED_WORLD_ASSETS) window.ABJ_APPLY_SHARED_WORLD_ASSETS();
   };
 
-  // init() crée le personnage juste après generateCity() : la frame suivante
-  // ouvre le monde pendant que les données cartographiques continuent de charger.
-  requestAnimationFrame(() => {
-    if (player && !worldReady) {
-      firstSpawnPosition = { x: player.position.x, z: player.position.z };
-      openWorld('Terrain prêt · chargement des routes, bâtiments et lieux en arrière-plan…');
-    }
-  });
+  // Ne pas laisser entrer le joueur dans un terrain vide :
+  // le monde s'ouvre après la carte OSM ou après construction du quartier de secours.
+  const mapStatusEl=document.getElementById('mapStatus');
+  if(mapStatusEl)mapStatusEl.textContent='Préparation de la ville et de la carte…';
 
   loadAbidjanOSM().then(() => {
     const status = document.getElementById('mapStatus');
     if (status) status.textContent = osmRoadSegments.length.toLocaleString('fr-FR') + ' segments de routes et rues · ' + allBuildings.length.toLocaleString('fr-FR') + ' bâtiments · ' + poi.length.toLocaleString('fr-FR') + ' commerces et lieux · ' + doors.length + ' maisons accessibles';
 
-    optional('arbres des rues', buildMappedStreetTrees);
-    optional('siège AF GAMER', createAFGamerHQ);
-    optional('auto-écoles', createDrivingSchools);
-    optional('dépôts de transport', createTransitDepots);
-    optional('stations et garages', createFuelStationsAndRepairGarages);
-    optional('aéroport', createAbidjanAirport);
-    optional('terrains et locations', createLandAndRentalParcels);
-
+    // Préparer seulement une petite population avant l'entrée : les PNJ et décors
+    // secondaires sont ajoutés par lots après l'ouverture pour éviter de figer le chargement.
     if (!npcPopulationCreated) {
-      optional('population initiale', () => createNPCs(mobilePerformanceMode ? 120 : 240));
+      optional('premiers habitants', () => createNPCs(mobilePerformanceMode ? 28 : 240));
       npcPopulationCreated = true;
     }
 
-    // Ouvrir le monde avant le trafic : la création des véhicules n'est pas une condition
-    // nécessaire pour jouer et ne doit plus laisser la barre bloquée à 93 %.
+    // Le monde devient jouable dès que routes, bâtiments et personnage sont prêts.
     openWorld((status ? status.textContent : '') + ' · monde jouable');
+
+    const deferredCityTasks = [
+      ['arbres des rues', buildMappedStreetTrees],
+      ['siège AF GAMER', createAFGamerHQ],
+      ['auto-écoles', createDrivingSchools],
+      ['dépôts de transport', createTransitDepots],
+      ['stations et garages', createFuelStationsAndRepairGarages],
+      ['aéroport', createAbidjanAirport],
+      ['terrains et locations', createLandAndRentalParcels]
+    ];
+    let deferredTaskIndex = 0;
+    let deferredNpcRemaining = mobilePerformanceMode ? 92 : 0;
+    const continueCityBuild = () => {
+      if (!worldReady) return;
+      if (deferredTaskIndex < deferredCityTasks.length) {
+        const task = deferredCityTasks[deferredTaskIndex++];
+        optional(task[0], task[1]);
+        requestAnimationFrame(continueCityBuild);
+        return;
+      }
+      if (deferredNpcRemaining > 0) {
+        const batch = Math.min(8, deferredNpcRemaining);
+        deferredNpcRemaining -= batch;
+        optional('population progressive', () => createNPCs(batch));
+        setTimeout(continueCityBuild, 100);
+      }
+    };
+    setTimeout(continueCityBuild, 250);
 
     const trafficTarget = mobilePerformanceMode ? 80 : 180;
     let trafficRemaining = trafficTarget;
@@ -1866,6 +2003,7 @@ function buildPlayableUrbanCore(){
   }
   function addSurface(v,idx,mat){if(!v.length)return;const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));g.setIndex(idx);g.computeVertexNormals();const m=new THREE.Mesh(g,mat);m.receiveShadow=!mobilePerformanceMode;scene.add(m);}
   addSurface(roadV,roadI,roadMat);addSurface(walkV,walkI,sidewalkMat);
+  scene.userData.playableUrbanCoreRoads=roads;
   // Lignes centrales et passages piétons aux carrefours.
   for(const r of roads){
     const dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,len=Math.hypot(dx,dz),nx=-dz/len,nz=dx/len;
@@ -2008,7 +2146,10 @@ async function loadAbidjanOSM() {
   let loadedFromCache = false;
   // Une copie locale récente évite de retélécharger toute la carte des 13 communes à chaque connexion.
   try{
-    const cached=await abjReadOSMCache();
+    const cached=await Promise.race([
+      abjReadOSMCache(),
+      new Promise(resolve=>setTimeout(()=>resolve(null),1000))
+    ]);
     if(cached&&cached.data&&Array.isArray(cached.data.elements)&&Date.now()-Number(cached.savedAt||0)<60*24*60*60*1000){
       data=cached.data;loadedFromCache=true;
       const status=document.getElementById('mapStatus');if(status)status.textContent='Carte d’Abidjan restaurée depuis le cache local…';
@@ -2016,7 +2157,31 @@ async function loadAbidjanOSM() {
   }catch(cacheError){console.info('Cache cartographique local indisponible, téléchargement normal.',cacheError);}
   // L'ancien instantané cartographique était trop restreint : on récupère désormais les routes et bâtiments sur l'emprise élargie des 13 communes.
   const endpoints = ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
-  if (!data) for (const endpoint of endpoints) {
+  if (!data && mobilePerformanceMode) {
+    // Sur mobile, tester les deux serveurs en parallèle : un serveur Overpass lent ne bloque plus toute l'entrée en ville.
+    const controllers=[];
+    try {
+      const requests=endpoints.map(endpoint=>{
+        const controller=new AbortController();controllers.push(controller);
+        const timeout=setTimeout(()=>controller.abort(),5500);
+        return fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query),signal:controller.signal})
+          .then(response=>{if(!response.ok)throw new Error('Overpass HTTP '+response.status);return response.json();})
+          .then(json=>{if(!json||!Array.isArray(json.elements))throw new Error('Réponse cartographique vide');return json;})
+          .finally(()=>clearTimeout(timeout));
+      });
+      // Démarrer en même temps le paquet cartographique de secours : le premier jeu de données
+      // valide ouvre la ville sans attendre qu'un serveur Overpass lent termine.
+      const backupController=new AbortController();controllers.push(backupController);
+      const backupTimer=setTimeout(()=>backupController.abort(),4200);
+      const backupRequest=fetch('https://d2ol7oe51mr4n9.cloudfront.net/user_3LVcgmLnYyIgIO5wyenMeyU1qx6/750912a1-208b-4fca-b488-81d5ed214b6e.gz',{cache:'force-cache',signal:backupController.signal})
+        .then(response=>{if(!response.ok||typeof DecompressionStream==='undefined')throw new Error('Paquet de secours indisponible');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();})
+        .then(json=>{if(!json||!Array.isArray(json.elements))throw new Error('Paquet de secours vide');return json;})
+        .finally(()=>clearTimeout(backupTimer));
+      data=await Promise.any([...requests,backupRequest]);
+    } catch(e) { console.warn('Serveurs cartographiques mobiles indisponibles rapidement, activation du secours.',e); }
+    finally { controllers.forEach(controller=>controller.abort()); }
+  }
+  if (!data && !mobilePerformanceMode) for (const endpoint of endpoints) {
     let timeout = null;
     try {
       const controller = new AbortController();
@@ -2027,7 +2192,13 @@ async function loadAbidjanOSM() {
     } catch (e) { console.warn('Échec du serveur cartographique', endpoint, e); }
     finally { if(timeout) clearTimeout(timeout); }
   }
-  if(!data){try{const backup=await fetch('https://d2ol7oe51mr4n9.cloudfront.net/user_3LVcgmLnYyIgIO5wyenMeyU1qx6/750912a1-208b-4fca-b488-81d5ed214b6e.gz',{cache:'force-cache'});if(backup.ok&&typeof DecompressionStream!=='undefined')data=await new Response(backup.body.pipeThrough(new DecompressionStream('gzip'))).json();}catch(e){console.warn('Carte locale de secours indisponible',e);}}
+  if(!data){try{
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),4000);
+    try{
+      const backup=await fetch('https://d2ol7oe51mr4n9.cloudfront.net/user_3LVcgmLnYyIgIO5wyenMeyU1qx6/750912a1-208b-4fca-b488-81d5ed214b6e.gz',{cache:'force-cache',signal:controller.signal});
+      if(backup.ok&&typeof DecompressionStream!=='undefined')data=await new Response(backup.body.pipeThrough(new DecompressionStream('gzip'))).json();
+    }finally{clearTimeout(timeout);}
+  }catch(e){console.warn('Carte locale de secours indisponible',e);}}
   if (!data || !data.elements) throw new Error('Impossible de récupérer les données cartographiques');
   if(!loadedFromCache){abjWriteOSMCache(data).catch(e=>console.info('Mise en cache OSM différée ou indisponible.',e));}
   if (!data.elements.some(e => e.type === 'way' && e.tags && (e.tags.highway || e.tags.building))) throw new Error('Les données reçues ne contiennent ni routes ni bâtiments');
@@ -2129,7 +2300,7 @@ function buildOSMRoads(ways, nodes) {
   const vertices=[],indices=[],walkVertices=[],walkIndices=[],curbVertices=[],curbIndices=[],markVertices=[],markIndices=[];
   function addQuad(a,b,w,y){
     const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<.4)return;
-    const extend=Math.min(.7,len*.06),ux=dx/len,uz=dz/len;
+    const extend=Math.min(1.8,len*.08),ux=dx/len,uz=dz/len;
     const aa={x:a.x-ux*extend,z:a.z-uz*extend},bb={x:b.x+ux*extend,z:b.z+uz*extend};
     const nx=-dz/len*w/2,nz=dx/len*w/2,k=vertices.length/3;
     const p1={x:aa.x+nx,z:aa.z+nz},p2={x:aa.x-nx,z:aa.z-nz},p3={x:bb.x-nx,z:bb.z-nz},p4={x:bb.x+nx,z:bb.z+nz};
@@ -2138,13 +2309,16 @@ function buildOSMRoads(ways, nodes) {
   }
   function addWalkQuad(a,b,w,y){
     const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<.4)return;
-    const ext=Math.min(1.2,len*.08),ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext};
+    const ext=0,ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext};
     const nx=-dz/len*w/2,nz=dx/len*w/2,k=walkVertices.length/3;
     const p1={x:aa.x+nx,z:aa.z+nz},p2={x:aa.x-nx,z:aa.z-nz},p3={x:bb.x-nx,z:bb.z-nz},p4={x:bb.x+nx,z:bb.z+nz};
     const lift=Math.max(Number(y)||0,.025);walkVertices.push(p1.x,terrainHeight(p1.x,p1.z)+lift,p1.z,p2.x,terrainHeight(p2.x,p2.z)+lift,p2.z,p3.x,terrainHeight(p3.x,p3.z)+lift,p3.z,p4.x,terrainHeight(p4.x,p4.z)+lift,p4.z);
     walkIndices.push(k,k+1,k+2,k,k+2,k+3);
   }
-  function addStripTo(a,b,w,y,verts,inds){const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<1)return;const nx=-dz/len*w/2,nz=dx/len*w/2,ext=Math.min(.8,len*.04),ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext},k=verts.length/3;const p=[{x:aa.x+nx,z:aa.z+nz},{x:aa.x-nx,z:aa.z-nz},{x:bb.x-nx,z:bb.z-nz},{x:bb.x+nx,z:bb.z+nz}];const lift=Math.max(Number(y)||0,.06);p.forEach(q=>verts.push(q.x,terrainHeight(q.x,q.z)+lift,q.z));inds.push(k,k+1,k+2,k,k+2,k+3);}
+  function addStripTo(a,b,w,y,verts,inds){const dx=b.x-a.x,dz=b.z-a.z,len=Math.hypot(dx,dz);if(len<1)return;const nx=-dz/len*w/2,nz=dx/len*w/2,ext=0,ux=dx/len,uz=dz/len,aa={x:a.x-ux*ext,z:a.z-uz*ext},bb={x:b.x+ux*ext,z:b.z+uz*ext},k=verts.length/3;const p=[{x:aa.x+nx,z:aa.z+nz},{x:aa.x-nx,z:aa.z-nz},{x:bb.x-nx,z:bb.z-nz},{x:bb.x+nx,z:bb.z+nz}];const lift=Math.max(Number(y)||0,.06);p.forEach(q=>verts.push(q.x,terrainHeight(q.x,q.z)+lift,q.z));inds.push(k,k+1,k+2,k,k+2,k+3);}
+  const roadWaysAtNode=new Map();
+  ways.forEach(way=>{const highway=way.tags&&way.tags.highway;if(!highway||ignored.has(highway)||pedestrianOnly.has(highway))return;for(const nodeId of way.nodes||[]){let set=roadWaysAtNode.get(nodeId);if(!set){set=new Set();roadWaysAtNode.set(nodeId,set);}set.add(way.id);}});
+  const junctionNodeIds=new Set([...roadWaysAtNode].filter(([,set])=>set.size>=2).map(([id])=>id));
   ways.forEach(w=>{
     const tag=w.tags.highway;if(ignored.has(tag))return;
     const raw=w.nodes.map(id=>nodes.get(id)).filter(Boolean);if(raw.length<2)return;
@@ -2166,17 +2340,21 @@ function buildOSMRoads(ways, nodes) {
     const tolerance=['motorway','motorway_link','trunk','trunk_link','primary','primary_link'].includes(tag)?1.6:
       (['secondary','secondary_link','tertiary','tertiary_link'].includes(tag)?2.1:
       (tag==='service'||tag==='track'?3.2:2.6));
-    const pts=simplifyRoadPoints(raw,tolerance);
+    const pts=raw; // conserver chaque nœud OSM : ne pas redresser une voie au travers d'un carrefour
     for(let i=1;i<pts.length;i++){
       const a=pts[i-1],b=pts[i],len=Math.hypot(b.x-a.x,b.z-a.z);if(len<.5)continue;
       addQuad(a,b,width,.025);
       if(['primary','secondary','tertiary','residential','living_street','unclassified'].includes(tag)){
         const nx=-(b.z-a.z)/len,nz=(b.x-a.x)/len,sidewalkWidth=(tag==='primary'||tag==='secondary')?3.1:2.55,side=width/2+sidewalkWidth/2+.12;
-        const l1={x:a.x+nx*side,z:a.z+nz*side},l2={x:b.x+nx*side,z:b.z+nz*side};
-        const r1={x:a.x-nx*side,z:a.z-nz*side},r2={x:b.x-nx*side,z:b.z-nz*side};
+        const setback=Math.min(len*.42,Math.max(2.8,width/2+sidewalkWidth*.72));
+        const trimStart=junctionNodeIds.has(w.nodes[i-1])?setback:0,trimEnd=junctionNodeIds.has(w.nodes[i])?setback:0;
+        const ux=(b.x-a.x)/len,uz=(b.z-a.z)/len;
+        const wa={x:a.x+ux*trimStart,z:a.z+uz*trimStart},wb={x:b.x-ux*trimEnd,z:b.z-uz*trimEnd};
+        const l1={x:wa.x+nx*side,z:wa.z+nz*side},l2={x:wb.x+nx*side,z:wb.z+nz*side};
+        const r1={x:wa.x-nx*side,z:wa.z-nz*side},r2={x:wb.x-nx*side,z:wb.z-nz*side};
         addWalkQuad(l1,l2,sidewalkWidth,.025);addWalkQuad(r1,r2,sidewalkWidth,.025);
-        addStripTo({x:a.x+nx*(width/2+.13),z:a.z+nz*(width/2+.13)},{x:b.x+nx*(width/2+.13),z:b.z+nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
-        addStripTo({x:a.x-nx*(width/2+.13),z:a.z-nz*(width/2+.13)},{x:b.x-nx*(width/2+.13),z:b.z-nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
+        addStripTo({x:wa.x+nx*(width/2+.13),z:wa.z+nz*(width/2+.13)},{x:wb.x+nx*(width/2+.13),z:wb.z+nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
+        addStripTo({x:wa.x-nx*(width/2+.13),z:wa.z-nz*(width/2+.13)},{x:wb.x-nx*(width/2+.13),z:wb.z-nz*(width/2+.13)},.28,.06,curbVertices,curbIndices);
         if(['primary','secondary','tertiary'].includes(tag)&&len>24){const dash=5,space=13,ux=(b.x-a.x)/len,uz=(b.z-a.z)/len;for(let at=8;at<len-3;at+=space){const p0={x:a.x+ux*at,z:a.z+uz*at},p1={x:a.x+ux*Math.min(len,at+dash),z:a.z+uz*Math.min(len,at+dash)};addStripTo(p0,p1,.16,.035,markVertices,markIndices);}}
         pedestrianNodes.push(l1,l2,r1,r2);
       }
@@ -2187,10 +2365,40 @@ function buildOSMRoads(ways, nodes) {
       }
     }
   });
+  // Fermer les petits vides aux vrais carrefours OSM : une surface d'asphalte
+  // commune relie les branches au lieu de laisser apparaître des pointes de terrain.
+  const junctionSurfaceMap=new Map();
+  for(const road of trafficRoadSegments){
+    for(const p of [road.a,road.b]){
+      const key=trafficNodeKey(p);
+      let node=junctionSurfaceMap.get(key);
+      if(!node){node={x:p.x,z:p.z,degree:0,radius:0};junctionSurfaceMap.set(key,node);}
+      node.degree++;
+      node.radius=Math.max(node.radius,Math.min(14,(Number(road.width)||4)*.5+1.15));
+    }
+  }
+  let junctionSurfaceCount=0;
+  const junctionSurfaceLimit=mobilePerformanceMode?900:2200;
+  for(const node of junctionSurfaceMap.values()){
+    if(node.degree<3||junctionSurfaceCount>=junctionSurfaceLimit)continue;
+    const slices=12,center=vertices.length/3,radius=Math.max(3.2,node.radius);
+    const lift=.034;
+    vertices.push(node.x,terrainHeight(node.x,node.z)+lift,node.z);
+    for(let k=0;k<slices;k++){
+      const a=k/slices*Math.PI*2,x=node.x+Math.cos(a)*radius,z=node.z+Math.sin(a)*radius;
+      vertices.push(x,terrainHeight(x,z)+lift,z);
+    }
+    for(let k=0;k<slices;k++){
+      const current=center+1+k,next=center+1+((k+1)%slices);
+      // Ordre inversé pour orienter les faces vers le haut.
+      indices.push(center,next,current);
+    }
+    junctionSurfaceCount++;
+  }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();
-  const mesh=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:0x252b2e}));mesh.receiveShadow=!mobilePerformanceMode;mesh.name='osm-road-network';scene.add(mesh);
-  if(walkVertices.length){const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(walkVertices,3));wg.setIndex(walkIndices);wg.computeVertexNormals();const wm=new THREE.Mesh(wg,new THREE.MeshLambertMaterial({color:0xc9c4b9,side:THREE.DoubleSide}));wm.receiveShadow=!mobilePerformanceMode;wm.name='osm-sidewalks-distinct';scene.add(wm);}
-  if(curbVertices.length){const cg=new THREE.BufferGeometry();cg.setAttribute('position',new THREE.Float32BufferAttribute(curbVertices,3));cg.setIndex(curbIndices);cg.computeVertexNormals();const cm=new THREE.Mesh(cg,new THREE.MeshLambertMaterial({color:0x8b8c87,side:THREE.DoubleSide}));cm.name='osm-raised-curbs';scene.add(cm);}
+  const mesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x171a1d,side:THREE.DoubleSide}));mesh.receiveShadow=!mobilePerformanceMode;mesh.name='osm-road-network';scene.add(mesh);
+  if(walkVertices.length){const wg=new THREE.BufferGeometry();wg.setAttribute('position',new THREE.Float32BufferAttribute(walkVertices,3));wg.setIndex(walkIndices);wg.computeVertexNormals();const wm=new THREE.Mesh(wg,new THREE.MeshLambertMaterial({color:0xa9a59b,side:THREE.DoubleSide}));wm.receiveShadow=!mobilePerformanceMode;wm.name='osm-sidewalks-distinct';scene.add(wm);}
+  if(curbVertices.length){const cg=new THREE.BufferGeometry();cg.setAttribute('position',new THREE.Float32BufferAttribute(curbVertices,3));cg.setIndex(curbIndices);cg.computeVertexNormals();const cm=new THREE.Mesh(cg,new THREE.MeshLambertMaterial({color:0x70736f,side:THREE.DoubleSide}));cm.name='osm-raised-curbs';scene.add(cm);}
   if(markVertices.length){const mg=new THREE.BufferGeometry();mg.setAttribute('position',new THREE.Float32BufferAttribute(markVertices,3));mg.setIndex(markIndices);mg.computeVertexNormals();const mm=new THREE.Mesh(mg,new THREE.MeshBasicMaterial({color:0xe9dfb5,side:THREE.DoubleSide}));mm.name='osm-lane-dashes';scene.add(mm);}
   rebuildPedestrianGrid();
   decorateOSMStreets();
@@ -2201,7 +2409,7 @@ function buildOSMRoads(ways, nodes) {
 
 // Habillage urbain : trottoirs continus, marquage routier, éclairage et repères de rue.
 function decorateOSMStreets(){
-  const sidewalkV=[],sidewalkI=[],lineV=[],lineI=[];
+  const lineV=[],lineI=[];
   const lampSpots=new Set(); let lampCount=0;
   function quad(arr,idx,a,b,c,d,y){const k=arr.length/3;[a,b,c,d].forEach(q=>arr.push(q.x,terrainHeight(q.x,q.z)+y,q.z));idx.push(k,k+1,k+2,k,k+2,k+3);}
   for(let roadIndex=0;roadIndex<osmRoadSegments.length;roadIndex++){
@@ -2210,14 +2418,6 @@ function decorateOSMStreets(){
     if(!detailed)continue;
     const dx=r.b.x-r.a.x,dz=r.b.z-r.a.z,len=Math.hypot(dx,dz);if(len<7)continue;
     const nx=-dz/len,nz=dx/len;
-    const sidewalkWidth=(r.type==='primary'||r.type==='secondary')?3.1:2.55;
-    for(const side of [-1,1]){
-      const off=r.width/2+sidewalkWidth/2+.12;
-      const a={x:r.a.x+nx*off*side,z:r.a.z+nz*off*side},b={x:r.b.x+nx*off*side,z:r.b.z+nz*off*side};
-      const c={x:r.b.x+nx*(off+sidewalkWidth)*side,z:r.b.z+nz*(off+sidewalkWidth)*side};
-      const d={x:r.a.x+nx*(off+sidewalkWidth)*side,z:r.a.z+nz*(off+sidewalkWidth)*side};
-      quad(sidewalkV,sidewalkI,a,b,c,d,.025);
-    }
     // Ligne centrale discontinue sur les grands axes uniquement.
     if(['motorway','trunk','primary','secondary','tertiary'].includes(r.type)&&r.width>=6){
       const dashCount=Math.min(8,Math.floor(len/18));
@@ -2250,7 +2450,7 @@ function decorateOSMStreets(){
     crossingCount++;
   }
   function addMerged(v,idx,color){if(!v.length)return;const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(v,3));geo.setIndex(idx);geo.computeVertexNormals();const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color,side:THREE.DoubleSide}));m.receiveShadow=true;scene.add(m);}
-  addMerged(sidewalkV,sidewalkI,0xc9c3b7);addMerged(lineV,lineI,0xf0e5c4);
+  addMerged(lineV,lineI,0xf0e5c4);
 }
 function createStreetLamp(x,z){
   const g=new THREE.Group();const poleMat=new THREE.MeshLambertMaterial({color:0x555b5c}),armMat=new THREE.MeshLambertMaterial({color:0x44494a});
@@ -2568,7 +2768,7 @@ function createCreatorOrb(){
  const core=new THREE.Mesh(new THREE.SphereGeometry(.24,20,16),new THREE.MeshStandardMaterial({color:0x6eeaff,emissive:0x27c9ff,emissiveIntensity:2.2,roughness:.2,metalness:.25}));
  const halo=new THREE.Mesh(new THREE.TorusGeometry(.36,.025,8,32),new THREE.MeshBasicMaterial({color:0x8df5ff,transparent:true,opacity:.9}));halo.rotation.x=Math.PI/2;
  const light=new THREE.PointLight(0x38dfff,2.2,10);creatorOrb.add(core,halo,light);creatorOrb.userData.core=core;creatorOrb.userData.halo=halo;creatorOrb.visible=false;scene.add(creatorOrb);
- const btn=document.createElement('button');btn.id='creatorOrbAssistant';btn.textContent='✦ IA';btn.style.cssText='position:fixed;right:18px;top:110px;z-index:28;border:1px solid #8eeeff;border-radius:24px;padding:9px 14px;background:#092c3be8;color:#9cf5ff;font-weight:900;box-shadow:0 0 20px #32dfff88;display:none';btn.onclick=openCreatorAssistantPanel;document.body.appendChild(btn);
+ const btn=document.createElement('button');btn.id='creatorOrbAssistant';btn.textContent='✦ IA';btn.style.cssText='position:fixed;right:18px;top:92px;z-index:28;border:1px solid #8eeeff;border-radius:24px;padding:9px 14px;background:#092c3be8;color:#9cf5ff;font-weight:900;box-shadow:0 0 20px #32dfff88;display:none';btn.onclick=openCreatorAssistantPanel;document.body.appendChild(btn);
 }
 function updateCreatorOrb(delta){
  if(!scene||!player)return;
@@ -2756,6 +2956,15 @@ function findNearbyResidentialDoor() {
   return best;
 }
 
+function abjGetLagoonMaterial(){
+  if(window.__abjLagoonMaterial)return window.__abjLagoonMaterial;
+  const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;const ctx=canvas.getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,256,256);grad.addColorStop(0,'#247c98');grad.addColorStop(.55,'#3b9eb0');grad.addColorStop(1,'#15566f');ctx.fillStyle=grad;ctx.fillRect(0,0,256,256);
+  for(let y=12;y<256;y+=24){ctx.beginPath();ctx.strokeStyle='rgba(202,239,231,.22)';ctx.lineWidth=2;for(let x=0;x<=256;x+=4){const yy=y+Math.sin(x*.055+y*.03)*3;if(x===0)ctx.moveTo(x,yy);else ctx.lineTo(x,yy);}ctx.stroke();}
+  const texture=new THREE.CanvasTexture(canvas);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(4,4);texture.anisotropy=2;window.__abjLagoonTexture=texture;
+  window.__abjLagoonMaterial=new THREE.MeshPhongMaterial({color:0x9bd5dc,map:texture,transparent:true,opacity:.94,shininess:72,specular:0x6ebacb,side:THREE.DoubleSide});
+  return window.__abjLagoonMaterial;
+}
 function buildOSMWaterAndParks(ways,nodes) {
   ways.forEach(w=>{
     const pts=w.nodes.map(id=>nodes.get(id)).filter(Boolean);if(pts.length<4)return;
@@ -2770,7 +2979,7 @@ function buildOSMWaterAndParks(ways,nodes) {
     const isLagoon=isWater&&String(w.tags.water||w.tags.name||'').toLowerCase().match(/lagune|ebri|lagoon/);
     const waterColor=isLagoon?0x318da6:0x267caa;
     const surfaceColor=isWater?waterColor:(isBeach?0xd8c18d:0x71865b);
-    const mesh=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:surfaceColor,side:THREE.DoubleSide,transparent:isWater,opacity:isWater?.94:1}));
+    const mesh=new THREE.Mesh(geo,isWater?abjGetLagoonMaterial():new THREE.MeshLambertMaterial({color:surfaceColor,side:THREE.DoubleSide}));
     mesh.renderOrder=-1;mesh.receiveShadow=true;mesh.name=isWater?(isLagoon?'lagune-ebrie':'abidjan-water'):(isBeach?'abidjan-beach':'osm-park-ground');scene.add(mesh);if(isWater){window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));const cx=pts.reduce((v,p)=>v+p.x,0)/pts.length,cz=pts.reduce((v,p)=>v+p.z,0)/pts.length;const label=String(w.tags.name||'').toLowerCase().includes('ebri')?'LAGUNE ÉBRIÉ':(w.tags.name||'PLAN D’EAU');if(typeof makeStreetLabel==='function'&&w.tags.name)makeStreetLabel(cx,cz,label);}else if(isBeach&&w.tags.name){const cx=pts.reduce((v,p)=>v+p.x,0)/pts.length,cz=pts.reduce((v,p)=>v+p.z,0)/pts.length;makeStreetLabel(cx,cz,'PLAGE · '+w.tags.name);}if(isWater){window.ABJ_WATER_POLYGONS=window.ABJ_WATER_POLYGONS||[];window.ABJ_WATER_POLYGONS.push(pts.map(p=>({x:p.x,z:p.z})));}
   });
 }
@@ -4125,6 +4334,7 @@ function createCharacter(opts) {
   } else if(hairstyle==='degrade'||hairstyle==='court'){
     const sideHair=part(new THREE.SphereGeometry(.235,12,8,0,Math.PI*2,0,Math.PI*.38),hairMat,0,.015,-.01,headGroup);sideHair.scale.set(1,.8,1);
   }
+  if(hairstyle==='afro'){for(let i=0;i<5;i++){const a=i*Math.PI*2/5;part(new THREE.SphereGeometry(.075,8,7),hairMat,Math.cos(a)*.17,.17,Math.sin(a)*.15,headGroup);}}
   if(outfit==='chic'){
     const collar=part(new THREE.CylinderGeometry(.105,.15,.12,8),mat(0xf4ead8),0,1.78,.012);collar.userData.clothingPart='detail';
     const trim=part(new THREE.BoxGeometry(.025,.55,.012),mat(0xe8d29a),0,1.42,.214);trim.userData.clothingPart='detail';
@@ -4134,21 +4344,23 @@ function createCharacter(opts) {
   function makeArm(side){
     const pivot=new THREE.Group();pivot.position.set(side*.315,1.62,0);g.add(pivot);
     const upper=part(new THREE.CylinderGeometry(.075,.068,.46,9),shirtMat,0,-.22,0,pivot);upper.userData.clothingPart='shirt';
-    const elbow=part(new THREE.SphereGeometry(.067,8,7),skinMat,0,-.43,0,pivot);
-    const fore=part(new THREE.CylinderGeometry(.057,.052,.43,9),skinMat,0,-.65,0,pivot);
-    const hand=part(new THREE.SphereGeometry(.065,9,8),skinMat,0,-.88,.012,pivot);hand.scale.set(.82,1.15,.72);
-    return pivot;
+    const elbowPivot=new THREE.Group();elbowPivot.position.set(0,-.43,0);pivot.add(elbowPivot);
+    part(new THREE.SphereGeometry(.067,8,7),skinMat,0,0,0,elbowPivot);
+    const fore=part(new THREE.CylinderGeometry(.057,.052,.43,9),skinMat,0,-.21,0,elbowPivot);
+    const hand=part(new THREE.SphereGeometry(.065,9,8),skinMat,0,-.43,.012,elbowPivot);hand.scale.set(.82,1.15,.72);
+    pivot.userData.elbow=elbowPivot;return pivot;
   }
   function makeLeg(side){
     const pivot=new THREE.Group();pivot.position.set(side*.125,.82,0);g.add(pivot);
     const upper=part(new THREE.CylinderGeometry(.092,.078,.46,9),pantsMat,0,-.22,0,pivot);upper.userData.clothingPart='pants';
     part(new THREE.SphereGeometry(.083,8,7),pantsMat,0,-.43,0,pivot);
-    const lower=part(new THREE.CylinderGeometry(.068,.06,.45,9),pantsMat,0,-.65,0,pivot);lower.userData.clothingPart='pants';
-    const foot=part(new THREE.BoxGeometry(.15,.11,.27),shoeMat,0,-.91,.065,pivot);foot.castShadow=true;
-    return pivot;
+    const kneePivot=new THREE.Group();kneePivot.position.set(0,-.43,0);pivot.add(kneePivot);
+    const lower=part(new THREE.CylinderGeometry(.068,.06,.45,9),pantsMat,0,-.22,0,kneePivot);lower.userData.clothingPart='pants';
+    const foot=part(new THREE.BoxGeometry(.15,.11,.27),shoeMat,0,-.45,.065,kneePivot);foot.castShadow=true;
+    pivot.userData.knee=kneePivot;return pivot;
   }
   const armL=makeArm(-1),armR=makeArm(1),legL=makeLeg(-1),legR=makeLeg(1);
-  g.userData={armL,armR,legL,legR,phase:0,headGroup,torso,hips,anatomyVersion:4,bodyType,hairstyle,outfit};
+  g.userData={armL,armR,legL,legR,kneeL:legL.userData.knee,kneeR:legR.userData.knee,elbowL:armL.userData.elbow,elbowR:armR.userData.elbow,phase:0,headGroup,torso,hips,anatomyVersion:5,bodyType,hairstyle,outfit};
   return g;
 }
 function applyPlayerClothing(){if(!player||!lifeState.playerProfile)return;const shirt=lifeState.playerProfile.shirt||0xe74c3c,pants=lifeState.playerProfile.pants||0x2c3e50;player.traverse(o=>{if(!o.isMesh||!o.userData.clothingPart)return;o.material.color.setHex(o.userData.clothingPart==='shirt'?shirt:pants);});}
@@ -4220,8 +4432,10 @@ function animateCharacter(char, delta, moving) {
     const isSleep=!!(player.userData&&player.userData.sleeping);
     d.legL.rotation.x=-1.05+(isSleep?0.08:0);
     d.legR.rotation.x=-1.05-(isSleep?0.06:0);
+    if(d.kneeL)d.kneeL.rotation.x=-1.05;if(d.kneeR)d.kneeR.rotation.x=-1.05;
     d.armL.rotation.x=-.55+breathe+(isSleep?-0.35:0);
     d.armR.rotation.x=-.55-breathe+(isSleep?-0.25:0);
+    if(d.elbowL)d.elbowL.rotation.x=-.25;if(d.elbowR)d.elbowR.rotation.x=-.25;
     if(d.headGroup) d.headGroup.rotation.x=isSleep?0.35:(-0.05+breathe*0.5);
     if(player.userData.bodyGroup) player.userData.bodyGroup.rotation.x=isSleep?-1.05:0.05+breathe;
     return;
@@ -4230,10 +4444,13 @@ function animateCharacter(char, delta, moving) {
     d.phase += delta * (char===player ? (keys['shift'] ? 14.2 : 10.5) : 9.5);
     const swing = Math.sin(d.phase) * (char===player && keys['shift'] ? 0.58 : 0.46);
     d.legL.rotation.x = swing; d.legR.rotation.x = -swing;
+    if(d.kneeL)d.kneeL.rotation.x=-(.25+Math.max(0,-swing)*.75);if(d.kneeR)d.kneeR.rotation.x=-(.25+Math.max(0,swing)*.75);
     d.armL.rotation.x = -swing * 0.65; d.armR.rotation.x = swing * 0.65;
+    if(d.elbowL)d.elbowL.rotation.x=.12+Math.max(0,swing)*.2;if(d.elbowR)d.elbowR.rotation.x=.12+Math.max(0,-swing)*.2;
   } else {
     d.legL.rotation.x *= 0.82; d.legR.rotation.x *= 0.82;
     d.armL.rotation.x *= 0.82; d.armR.rotation.x *= 0.82;
+    if(d.kneeL)d.kneeL.rotation.x*=.82;if(d.kneeR)d.kneeR.rotation.x*=.82;if(d.elbowL)d.elbowL.rotation.x*=.82;if(d.elbowR)d.elbowR.rotation.x*=.82;
   }
 }
 
@@ -4464,7 +4681,7 @@ function interactWithFurniture(){
 }
 
 function updatePlayer(delta) {
-  if (!player || !worldReady || dialogOpen || panelOpen || elevatorMenuOpen || elevatorTravel || cameraMode || activeCourseGoRide) return;
+  if (!player || !worldReady || dialogOpen || panelOpen || elevatorMenuOpen || elevatorTravel || cameraMode || (activeCourseGoRide && activeCourseGoRide.phase === 'riding')) return;
   // Comme dans Les Sims : une fois assis/allongé, le personnage reste immobilisé
   // jusqu'à l'action explicite « Se relever » avec F.
   if(playerSitting){ keys['z']=keys['w']=keys['q']=keys['a']=keys['s']=keys['d']=keys['arrowup']=keys['arrowdown']=keys['arrowleft']=keys['arrowright']=keys['shift']=false; return; }
@@ -4625,7 +4842,9 @@ function updateNPCs(delta) {
   // les véhicules pour chaque PNJ lors de chaque contrôle de proximité.
   const __vehicleCellSize=16, __vehicleGrid=new Map();
   for(const __vehicle of vehicles){
-    if(!__vehicle||!__vehicle.position||(__vehicle.userData&&__vehicle.userData.wreck))continue;
+    // Les véhicules hors du rayon de simulation sont déjà masqués par cullCrowd :
+    // ne pas les indexer pour les collisions piétons à chaque tick.
+    if(!__vehicle||!__vehicle.visible||!__vehicle.position||(__vehicle.userData&&__vehicle.userData.wreck))continue;
     const __cx=Math.floor(__vehicle.position.x/__vehicleCellSize),__cz=Math.floor(__vehicle.position.z/__vehicleCellSize);
     const __key=__cx+','+__cz;let __bucket=__vehicleGrid.get(__key);if(!__bucket){__bucket=[];__vehicleGrid.set(__key,__bucket);}__bucket.push(__vehicle);
   }
@@ -4633,15 +4852,34 @@ function updateNPCs(delta) {
     const __cx=Math.floor(x/__vehicleCellSize),__cz=Math.floor(z/__vehicleCellSize);
     for(let __ox=-1;__ox<=1;__ox++)for(let __oz=-1;__oz<=1;__oz++){
       const __bucket=__vehicleGrid.get((__cx+__ox)+','+(__cz+__oz));if(!__bucket)continue;
-      for(const __v of __bucket)if(Math.hypot(__v.position.x-x,__v.position.z-z)<4.1)return true;
+      for(const __v of __bucket)if(Math.hypot(__v.position.x-x,__v.position.z-z)<8.5)return __v;
     }
-    return false;
+    return null;
   };
   npcs.forEach(npc=>{
     const d=npc.userData; if(d.dead||!npc.visible)return;
+    // Un PNJ engagé dans une conversation reste immobile et regarde le joueur.
+    if(d.talkingUntil){
+      if(Date.now()<d.talkingUntil){
+        if(player){const tx=player.position.x-npc.position.x,tz=player.position.z-npc.position.z;npc.rotation.y=Math.atan2(tx,tz);}
+        animateCharacter(npc,delta,false);return;
+      }
+      d.talkingUntil=0;d.targetX=undefined;d.targetZ=undefined;d.pauseTimer=0;d.changeTimer=0;
+    }
     d.vehicleCheckTimer=(d.vehicleCheckTimer||0)-delta;
     if(d.vehicleCheckTimer<=0){d.vehicleCheckTimer=.22;d.nearVehicle=__npcNearVehicle(npc.position.x,npc.position.z);}
-    if(d.nearVehicle){d.pauseTimer=Math.max(d.pauseTimer||0,.3);animateCharacter(npc,delta,false);return;}
+    if(d.nearVehicle){
+      // Un piéton ne doit jamais rester planté au milieu de la chaussée devant un véhicule.
+      const v=d.nearVehicle,dx=npc.position.x-v.position.x,dz=npc.position.z-v.position.z;
+      let sx=dx,sz=dz,sl=Math.hypot(sx,sz);
+      if(sl<.05){sx=-Math.cos(v.rotation.y||0);sz=Math.sin(v.rotation.y||0);sl=1;}
+      sx/=sl;sz/=sl;
+      const sideStep=Math.min(3.2*delta,Math.max(0,8.8-Math.hypot(dx,dz)));
+      const next=npc.position.clone();next.x+=sx*sideStep;next.z+=sz*sideStep;resolveCollisions(next,.34);
+      npc.position.x=next.x;npc.position.z=next.z;npc.position.y=terrainHeight(next.x,next.z)+.02;
+      d.targetX=next.x+sx*7.5;d.targetZ=next.z+sz*7.5;d.pauseTimer=0;d.changeTimer=1.2;
+      animateCharacter(npc,delta,sideStep>.01);return;
+    }
     if(d.transitWaiting){animateCharacter(npc,delta,false);return;}
     if(d.pauseTimer>0){d.pauseTimer-=delta;animateCharacter(npc,delta,false);return;}
     d.changeTimer-=delta;
@@ -4687,7 +4925,14 @@ function updateNPCs(delta) {
 // ============================================================
 function loadLifeProgress(){
   try{
-    const raw=safeGet(LIFE_SAVE_KEY); if(!raw)return;
+    // Les sauvegardes sont propres à chaque compte : lire la même clé que celle utilisée par saveLifeProgress.
+    const __accountKey=activeGameAccount?'abidjan-life-life-v1:'+normalizeIvorianMobile(activeGameAccount):LIFE_SAVE_KEY;
+    let raw=safeGet(__accountKey);
+    if(!raw&&activeGameAccount){
+      raw=safeGet(__accountKey+':backup:1')||safeGet(__accountKey+':backup:2')||safeGet(LIFE_SAVE_KEY);
+      if(raw)safeSet(__accountKey,raw); // migration douce, sans effacer l'ancienne sauvegarde
+    }
+    if(!raw)return;
     const saved=JSON.parse(raw);
     if(saved.v19&&typeof saved.v19==='object'&&!Array.isArray(saved.v19)){lifeState.v19={...(lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{}),...saved.v19,installedApps:Array.isArray(saved.v19.installedApps)?[...new Set(saved.v19.installedApps.filter(x=>typeof x==='string'&&x.length<=48))].slice(0,80):[]};}
     if(saved.gameSettings&&typeof saved.gameSettings==='object')lifeState.gameSettings={graphics:['auto','performance','quality'].includes(saved.gameSettings.graphics)?saved.gameSettings.graphics:'auto',cameraSensitivity:Math.max(.5,Math.min(1.8,Number(saved.gameSettings.cameraSensitivity)||1)),showHints:saved.gameSettings.showHints!==false,controlMode:['auto','pc','touch'].includes(saved.gameSettings.controlMode)?saved.gameSettings.controlMode:'auto'};
@@ -4696,6 +4941,8 @@ function loadLifeProgress(){
       if(Number.isFinite(saved[k])) lifeState[k]=Math.max(0,Math.min(k==='hour'?23:(k==='minute'?59:(k==='money'?getMoneyCap():(k==='respect'?10000000:100))),saved[k]));
     });
     if(typeof saved.job==='string')lifeState.job=saved.job;
+    if(saved.employmentContract&&typeof saved.employmentContract==='object')lifeState.employmentContract=saved.employmentContract;
+    if(saved.rentalContract&&typeof saved.rentalContract==='object'&&typeof saved.rentalContract.assetId==='string')lifeState.rentalContract=saved.rentalContract;
     if(saved.housing&&typeof saved.housing==='object'){const savedRent=Math.max(0,Math.min(50000,Number(saved.housing.lease&&saved.housing.lease.rent)||0));lifeState.housing={ownedDoorId:typeof saved.housing.ownedDoorId==='string'?saved.housing.ownedDoorId:null,lease:saved.housing.lease&&typeof saved.housing.lease.doorId==='string'?{doorId:saved.housing.lease.doorId,rent:savedRent,deposit:Math.max(0,Math.min(100000,Number(saved.housing.lease.deposit)||savedRent*2)),startedDay:Math.max(1,Math.floor(Number(saved.housing.lease.startedDay)||1))}:null,arrears:Math.max(0,Math.min(10000000,Number(saved.housing.arrears)||0)),gameDay:Math.max(1,Math.floor(Number(saved.housing.gameDay)||1)),lastBilledDay:Math.max(1,Math.floor(Number(saved.housing.lastBilledDay)||1))};}
     if(Array.isArray(saved.contacts))lifeState.contacts=saved.contacts.filter(c=>c&&typeof c.id==='string'&&typeof c.name==='string').slice(0,100);
     if(Array.isArray(saved.messages))lifeState.messages=saved.messages.filter(m=>m&&typeof m.contactId==='string'&&typeof m.text==='string').slice(-100);
@@ -4728,7 +4975,7 @@ function saveLifeProgress(show=true){
       schemaVersion:2,
       hunger:lifeState.hunger,energy:lifeState.energy,social:lifeState.social,hygiene:lifeState.hygiene,respect:lifeState.respect,health:lifeState.health,
       money:lifeState.money,bankBalance:lifeState.bankBalance,waveBalance:lifeState.waveBalance||0,gameSettings:lifeState.gameSettings||{},waveDailyWithdrawn:lifeState.waveDailyWithdrawn,waveDayKey:lifeState.waveDayKey,waveNotifs:lifeState.waveNotifs,phoneSkin:lifeState.phoneSkin,hour:lifeState.hour,minute:lifeState.minute,documents:lifeState.documents,education:lifeState.education,cheats:lifeState.cheats,creatorTier:lifeState.creatorTier||'none',playerProfile:lifeState.playerProfile,
-      job:lifeState.job,workXP:lifeState.workXP,bankTransactions:lifeState.bankTransactions,contacts:lifeState.contacts,messages:lifeState.messages,inventory:lifeState.inventory,homeDecor:lifeState.homeDecor,delivery:lifeState.delivery,creator:lifeState.creator,housing:lifeState.housing,projects:lifeState.projects||[],
+      job:lifeState.job,employmentContract:lifeState.employmentContract||null,rentalContract:lifeState.rentalContract||null,workXP:lifeState.workXP,bankTransactions:lifeState.bankTransactions,contacts:lifeState.contacts,messages:lifeState.messages,inventory:lifeState.inventory,homeDecor:lifeState.homeDecor,delivery:lifeState.delivery,creator:lifeState.creator,housing:lifeState.housing,projects:lifeState.projects||[],
       missions:(typeof window.abjMissionsSnapshot==='function'?window.abjMissionsSnapshot():[]),relations:lifeState.relations||{},exploredCommunes:lifeState.exploredCommunes||{},
       v19:lifeState.v19&&typeof lifeState.v19==='object'?lifeState.v19:{},
       worldPosition:__worldPosition,
@@ -4749,6 +4996,18 @@ function saveLifeProgress(show=true){
     if(show)showMessage('💾 Progression sauvegardée.');
   }catch(e){showMessage('Impossible de sauvegarder dans ce navigateur.');}
 }
+// Sécurise la progression avant fermeture, changement d'onglet ou mise en arrière-plan.
+(function installLifeSaveLifecycle(){
+  let lastLifecycleSave=0;
+  const persist=()=>{
+    if(!gameStarted||!activeGameAccount||!worldReady)return;
+    const now=Date.now();if(now-lastLifecycleSave<1200)return;lastLifecycleSave=now;
+    try{saveLifeProgress(false);}catch(e){console.warn('Sauvegarde de sortie impossible',e);}
+  };
+  window.addEventListener('pagehide',persist);
+  window.addEventListener('beforeunload',persist);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persist();});
+})();
 function hasPlayerTrait(id){const p=lifeState.playerProfile||{};return Array.isArray(p.traits)&&p.traits.includes(id);}
 function addPlayerRespect(amount){lifeState.respect=Math.max(0,Math.min(10000000,(Number(lifeState.respect)||0)+Math.max(0,Number(amount)||0)));}
 function updateLifeSimulation(delta){
@@ -4774,7 +5033,7 @@ function updateLifeSimulation(delta){
   if(lifeState.cheats&&lifeState.cheats.social)lifeState.social=100;
   if(lifeState.cheats&&lifeState.cheats.health)lifeState.health=100;
   clampMoney();
-  lifeState.minute+=delta*1.5; // 16 minutes réelles par journée de 24 h (8 min jour, 8 min nuit)
+  lifeState.minute+=delta*0.25; // Journée de jeu plus lente : environ 96 minutes réelles pour 24 h de jeu.
   updateAirportFlights();
   while(lifeState.minute>=60){lifeState.minute-=60;const previousHour=lifeState.hour;lifeState.hour=(lifeState.hour+1)%24;if(previousHour===23){lifeState.housing=lifeState.housing||{ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1};lifeState.housing.gameDay=(lifeState.housing.gameDay||1)+1;processHousingBilling();}}
   const pct=(v)=>Math.round(Math.max(0,Math.min(100,v)))+'%';
@@ -4787,7 +5046,7 @@ function updateLifeSimulation(delta){
   const clockEl=document.getElementById('lifeClock');if(clockEl)clockEl.textContent=String(lifeState.hour).padStart(2,'0')+':'+String(Math.floor(lifeState.minute)).padStart(2,'0');
   updateLifeLighting();
   lifeState.lastSave+=delta;
-  if(lifeState.lastSave>45){lifeState.lastSave=0;saveLifeProgress(false);}
+  if(lifeState.lastSave>12){lifeState.lastSave=0;saveLifeProgress(false);}
 }
 
 /* Ciel dynamique : soleil, lune, étoiles et nuages suivent l'horloge de la simulation. */
@@ -5472,6 +5731,16 @@ function processHousingBilling(){
  if(unpaid)showMessage('⚠️ '+unpaid.toLocaleString('fr-FR')+' FCFA de charges ajoutés aux impayés.');
  saveLifeProgress(false);
 }
+function drawPlayerRentalMarket(){
+ const box=document.getElementById('playerRentalMarket');if(!box)return;
+ const s=state(),owned=(s.properties||[]).filter(p=>p&&p.id&&p.building&&p.building.status==='complete');
+ const mine=(window.ABJ_RENTAL_OFFERS||[]).filter(o=>owned.some(p=>'property:'+p.id===o.assetId));
+ const offers=(window.ABJ_RENTAL_OFFERS||[]).filter(o=>!mine.some(m=>m.id===o.id));
+ box.innerHTML='<h4>🏘️ Locations entre joueurs</h4>'+(owned.map(p=>'<article class="v19card"><b>'+escapeHTML(p.building.name||p.name||'Maison construite')+'</b><div>'+escapeHTML(p.location||p.commune||'Abidjan')+'</div><label>Loyer / semaine<input type="number" min="1000" max="50000000" step="1000" value="45000" data-rent-value="'+escapeHTML(p.id)+'"></label><label>Dépôt de garantie<input type="number" min="0" max="200000000" step="1000" value="90000" data-rent-deposit="'+escapeHTML(p.id)+'"></label><button data-rent-publish="'+escapeHTML(p.id)+'">Mettre ce logement en location</button></article>').join('')||'<p>Construis une maison et termine les travaux pour pouvoir la louer à un autre joueur.</p>')+(mine.map(o=>'<article class="v19card"><b>Annonce active : '+escapeHTML(o.propertyName)+'</b><div>'+Number(o.rentWeekly).toLocaleString('fr-FR')+' FCFA/semaine · '+Number(o.applicantCount||0)+' candidature(s)</div><button data-rent-applicants="'+escapeHTML(o.id)+'">Voir les demandes</button><div id="rental-applicants-'+escapeHTML(o.id)+'"></div></article>').join(''))+(offers.map(o=>'<article class="v19card"><b>🏠 '+escapeHTML(o.propertyName)+'</b><div>'+escapeHTML(o.commune||'Abidjan')+' · '+Number(o.rentWeekly).toLocaleString('fr-FR')+' FCFA/semaine</div><div>Dépôt : '+Number(o.deposit).toLocaleString('fr-FR')+' FCFA · '+Number(o.applicantCount||0)+' demande(s)</div><button data-rent-apply="'+escapeHTML(o.id)+'">Demander à louer</button></article>').join('')||'<p>Aucune annonce de location d’un autre joueur pour le moment.</p>');
+ box.querySelectorAll('[data-rent-publish]').forEach(btn=>btn.onclick=()=>{const id='property:'+btn.dataset.rentPublish,rent=Math.floor(Number(box.querySelector('[data-rent-value="'+btn.dataset.rentPublish+'"]').value)||0),deposit=Math.floor(Number(box.querySelector('[data-rent-deposit="'+btn.dataset.rentPublish+'"]').value)||0);window.ABJ_GAME_SOCKET?.emit('rentals:offer:create',{assetId:id,rentWeekly:rent,deposit},res=>showMessage(res?.ok?'Annonce de location publiée.':(res?.error||'Publication impossible.')));});
+ box.querySelectorAll('[data-rent-apply]').forEach(btn=>btn.onclick=()=>window.ABJ_GAME_SOCKET?.emit('rentals:offer:apply',{offerId:btn.dataset.rentApply},res=>showMessage(res?.ok?'Demande de location envoyée.':(res?.error||'Demande impossible.'))));
+ box.querySelectorAll('[data-rent-applicants]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.rentApplicants;window.ABJ_GAME_SOCKET?.emit('rentals:applicants:list',{offerId:id},res=>{const slot=box.querySelector('#rental-applicants-'+id);if(!slot)return;slot.innerHTML=res?.ok?(res.applicants.map(a=>'<div>'+escapeHTML(a.name)+' <button data-rent-accept="'+escapeHTML(a.phone)+'" data-rent-offer="'+escapeHTML(id)+'">Accepter</button></div>').join('')||'<small>Aucune demande.</small>'):'<small>Impossible de charger les demandes.</small>';slot.querySelectorAll('[data-rent-accept]').forEach(ab=>ab.onclick=()=>window.ABJ_GAME_SOCKET?.emit('rentals:offer:accept',{offerId:ab.dataset.rentOffer,tenantPhone:ab.dataset.rentAccept},out=>showMessage(out?.ok?'Location confirmée. Le dépôt a été encaissé.':(out?.error||'Acceptation impossible.'))));});});
+}
 function renderHousingApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
  const h=lifeState.housing||(lifeState.housing={ownedDoorId:null,lease:null,arrears:0,gameDay:1,lastBilledDay:1});
@@ -5480,7 +5749,9 @@ function renderHousingApp(){
  const candidates=getHousingCandidates();
  const status=current?'<div style="padding:12px;border-radius:12px;background:#ffffff12;margin:10px 0"><b>'+(owned?'🏡 Propriétaire':'🔑 Locataire')+' · '+escapeHTML(current.buildingName||'Logement à Abidjan')+'</b><p style="font-size:11px;margin:6px 0">Adresse de jeu : '+(current.id)+' · Journée '+h.gameDay+'</p>'+(lease?'<p>Loyer hebdomadaire : '+leaseRent().toLocaleString('fr-FR')+' FCFA</p>':'<p>Tu possèdes ce logement. Seules les factures restent à payer.</p>')+'<p>Impayés : <b style="color:'+(h.arrears?'#ffb0a0':'#8ce0a4')+'">'+Math.floor(h.arrears||0).toLocaleString('fr-FR')+' FCFA</b></p><button id="housingPay" '+(!(h.arrears>0)||lifeState.money<h.arrears?'disabled':'')+'>Régler les impayés</button>'+(lease?'<button id="housingEndLease">Résilier le bail</button>':'')+(owned?'<button id="housingSell">Revendre (70 %)</button>':'')+'</div>':'<p style="padding:10px;background:#ffffff12;border-radius:10px">Tu n’as pas encore de logement à ton nom. Tu peux louer un logement ou économiser pour en acheter un.</p>'+(h.arrears>0?'<p>Anciennes charges impayées : <b>'+Math.floor(h.arrears).toLocaleString('fr-FR')+' FCFA</b></p><button id="housingPay" '+(lifeState.money<h.arrears?'disabled':'')+'>Régler les impayés</button>':'');
  const list=candidates.slice(0,10).map(x=>'<article style="padding:10px;margin:8px 0;border:1px solid #ffffff28;border-radius:10px;background:#ffffff0d"><b>🏠 '+escapeHTML(x.door.buildingName||'Maison à Abidjan')+'</b><div style="font-size:11px;color:#c6d8e5;margin:5px 0">'+(x.distance===null?'Distance inconnue':x.distance.toLocaleString('fr-FR')+' m')+' · '+Math.round(x.area)+' m² environ</div><div style="font-size:12px;margin:5px 0">Loyer : <b>'+x.rent.toLocaleString('fr-FR')+' F / semaine</b> · Dépôt : '+(x.rent*2).toLocaleString('fr-FR')+' F</div><div style="font-size:12px;margin:5px 0">Achat : <b>'+x.price.toLocaleString('fr-FR')+' FCFA</b></div><button data-housing-rent="'+escapeHTML(x.door.id)+'" '+(current?'disabled':'')+'>Louer</button><button data-housing-buy="'+escapeHTML(x.door.id)+'" '+(current?'disabled':'')+'>Acheter</button></article>').join('');
- content.innerHTML='<button id="phoneBack">← Applications</button><h3>🏠 Logement ABJ</h3><p>Solde : <b>'+Math.floor(lifeState.money).toLocaleString('fr-FR')+' FCFA</b> · Journée '+h.gameDay+'</p><p style="font-size:11px;color:#c6d8e5">Les logements sont reliés aux portes résidentielles du monde. Le loyer et les factures sont simulés et enregistrés dans ta banque.</p>'+status+'<h4>Logements disponibles</h4>'+list+'<p id="housingStatus" style="font-size:12px;color:#ffe0a0;min-height:20px"></p>';
+ content.innerHTML='<button id="phoneBack">← Applications</button><h3>🏠 Logement ABJ</h3><p>Solde : <b>'+Math.floor(lifeState.money).toLocaleString('fr-FR')+' FCFA</b> · Journée '+h.gameDay+'</p><p style="font-size:11px;color:#c6d8e5">Les logements sont reliés aux portes résidentielles du monde. Le loyer et les factures sont simulés et enregistrés dans ta banque.</p>'+status+'<h4>Logements disponibles</h4>'+list+'<p id="housingStatus" style="font-size:12px;color:#ffe0a0;min-height:20px"></p><div id="playerRentalMarket"></div>'+(lifeState.rentalContract?'<article class="v19card"><b>🔑 Logement loué : '+escapeHTML(lifeState.rentalContract.propertyName||'Maison d’un joueur')+'</b><div>'+escapeHTML(lifeState.rentalContract.commune||'Abidjan')+' · '+Number(lifeState.rentalContract.rentWeekly||0).toLocaleString('fr-FR')+' FCFA/semaine</div><small>Arriérés : '+Number(lifeState.rentalContract.arrears||0).toLocaleString('fr-FR')+' FCFA</small><button id="enterPlayerRental">Entrer dans mon logement loué</button></article>':'');
+ window.ABJ_RENDER_RENTAL_MARKET=drawPlayerRentalMarket;drawPlayerRentalMarket();window.ABJ_GAME_SOCKET?.emit('rentals:offers:refresh');
+ const rentalEnter=document.getElementById('enterPlayerRental');if(rentalEnter)rentalEnter.onclick=()=>{const door=doors.find(d=>d&&d.sharedAssetId===lifeState.rentalContract?.assetId);if(door)enterBuilding(door);else showMessage('Le logement est en cours de chargement. Réessaie dans un instant.');};
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
  content.querySelectorAll('[data-housing-rent]').forEach(btn=>btn.onclick=()=>{
   const x=candidates.find(v=>v.door.id===btn.dataset.housingRent);if(!x)return;
@@ -5492,6 +5763,7 @@ function renderHousingApp(){
   if(lifeState.money<x.price){document.getElementById('housingStatus').textContent='Solde insuffisant : achat nécessaire de '+x.price.toLocaleString('fr-FR')+' FCFA.';return;}
   lifeState.money-=x.price;h.ownedDoorId=x.door.id;h.lease=null;h.arrears=0;h.lastBilledDay=h.gameDay;housingLedger('debit','Achat · '+(x.door.buildingName||'Logement'),x.price);saveLifeProgress(false);renderHousingApp();showMessage('🏡 Félicitations ! Tu es propriétaire de ce logement.');
  });
+ const rentalContract=lifeState.rentalContract;if(rentalContract&&window.ABJ_GAME_SOCKET?.connected){const day=Number(h.gameDay)||1;if(day-(Number(rentalContract.lastPaidDay)||1)>=7&&!rentalContract.__billingRequested){rentalContract.__billingRequested=true;window.ABJ_GAME_SOCKET.emit('rentals:pay',{gameDay:day},res=>{rentalContract.__billingRequested=false;if(res?.ok)showMessage('Loyer payé : '+Number(res.amount||0).toLocaleString('fr-FR')+' FCFA.');else if(res?.arrears){rentalContract.arrears=res.arrears;rentalContract.lastPaidDay=day;saveLifeProgress(false);showMessage('⚠️ Loyer impayé : '+res.arrears.toLocaleString('fr-FR')+' FCFA.');}});}}
  const pay=document.getElementById('housingPay');if(pay)pay.onclick=()=>{const due=Math.floor(h.arrears||0);if(due<=0||lifeState.money<due)return;lifeState.money-=due;h.arrears=0;housingLedger('debit','Règlement des charges en retard',due);saveLifeProgress(false);renderHousingApp();showMessage('✅ Tes impayés sont réglés.');};
  const end=document.getElementById('housingEndLease');if(end)end.onclick=()=>{if(!confirm('Résilier ton bail ? Le dépôt de garantie sera d’abord utilisé pour couvrir les charges impayées, puis le reste te sera remboursé.'))return;const deposit=Math.max(0,Number(h.lease&&h.lease.deposit)||leaseRent()*2),offset=Math.min(deposit,Math.max(0,h.arrears||0)),refund=deposit-offset;h.arrears=Math.max(0,(h.arrears||0)-offset);h.lease=null;if(offset)housingLedger('debit','Dépôt affecté aux charges impayées',offset);if(refund){lifeState.money+=refund;housingLedger('credit','Remboursement du dépôt de garantie',refund);}saveLifeProgress(false);renderHousingApp();showMessage('Bail résilié. Dépôt remboursé : '+refund.toLocaleString('fr-FR')+' FCFA.');};
  const sell=document.getElementById('housingSell');if(sell)sell.onclick=()=>{const x=candidates.find(v=>v.door.id===h.ownedDoorId);if(!x)return;const refund=Math.round(x.price*.7);lifeState.money+=refund;h.ownedDoorId=null;housingLedger('credit','Revente du logement',refund);saveLifeProgress(false);renderHousingApp();showMessage('Logement revendu : '+refund.toLocaleString('fr-FR')+' FCFA récupérés.');};
@@ -5601,9 +5873,10 @@ function renderEmploymentApp(){
   const content=document.getElementById('phoneAppContent');if(!content)return;
   const current=ABJ_JOBS.find(j=>j.name===lifeState.job);
   const cards=ABJ_JOBS.map(j=>'<div style="padding:10px;margin:8px 0;border:1px solid #ffffff30;border-radius:10px;background:#ffffff10"><b>'+escapeHTML(j.name)+'</b><div style="font-size:11px;color:#c6d8e5">'+escapeHTML(j.sector)+' · '+j.start+'h–'+j.end+'h</div><div style="color:#ffe0a0;margin:5px 0">'+j.salary.toLocaleString('fr-FR')+' FCFA par service</div><button data-job="'+escapeHTML(j.name)+'">Choisir ce métier</button></div>').join('');
-  content.innerHTML='<button id="phoneBack">← Applications</button><h3>💼 Emploi et recrutement</h3><p>Solde : <b>'+Math.floor(lifeState.money).toLocaleString('fr-FR')+' FCFA</b></p><p>Métier actuel : <b>'+escapeHTML(lifeState.job)+'</b> · Services terminés : '+lifeState.workXP+'</p>'+(current?'<p>Horaires : '+current.start+'h–'+current.end+'h · Salaire : '+current.salary.toLocaleString('fr-FR')+' FCFA par service</p><button id="workShift">Effectuer un service</button>':'<p>Choisis un métier pour commencer à travailler.</p>')+'<h4>Offres disponibles</h4>'+cards+'<p id="jobStatus" style="font-size:12px;color:#ffe0a0"></p>';
+  content.innerHTML='<button id="phoneBack">← Applications</button><h3>💼 Emploi et recrutement</h3><p>Solde : <b>'+Math.floor(lifeState.money).toLocaleString('fr-FR')+' FCFA</b></p><p>Métier actuel : <b>'+escapeHTML(lifeState.job)+'</b> · Services terminés : '+lifeState.workXP+'</p>'+(current?'<p>Horaires : '+current.start+'h–'+current.end+'h · Salaire : '+current.salary.toLocaleString('fr-FR')+' FCFA par service</p><button id="workShift">Effectuer un service</button>':'<p>Choisis un métier pour commencer à travailler.</p>')+'<h4>Offres disponibles</h4>'+cards+'<h4>🌍 Entreprises des autres joueurs</h4><div id="playerJobOffers">Chargement des offres…</div>'+(lifeState.employmentContract?'<article class="v19card"><b>Contrat : '+escapeHTML(lifeState.employmentContract.companyName||'Entreprise')+'</b><div>'+escapeHTML(lifeState.employmentContract.role||'Employé')+' · '+Number(lifeState.employmentContract.salary||0).toLocaleString('fr-FR')+' FCFA/mois</div></article>':'')+'<p id="jobStatus" style="font-size:12px;color:#ffe0a0"></p>';
   document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
   content.querySelectorAll('[data-job]').forEach(btn=>btn.onclick=()=>{lifeState.job=btn.dataset.job;saveLifeProgress(false);renderEmploymentApp();document.getElementById('jobStatus').textContent='Candidature acceptée : tu travailles maintenant comme '+lifeState.job+'.';});
+  const offerBox=document.getElementById('playerJobOffers');const drawOffers=()=>{if(!offerBox)return;const offers=(window.ABJ_JOB_OFFERS||[]);offerBox.innerHTML=offers.map(o=>'<article class="v19card"><b>'+escapeHTML(o.role)+'</b><div>'+escapeHTML(o.companyName)+' · '+escapeHTML(o.commune||'Abidjan')+'</div><div>'+Number(o.salary).toLocaleString('fr-FR')+' FCFA/mois · Diplôme : '+escapeHTML(o.qualification)+'</div><small>'+Number(o.applicantCount||0)+' candidature(s)</small><button data-apply-job="'+escapeHTML(o.id)+'">Postuler</button></article>').join('')||'<p>Aucune offre d’entreprise pour le moment.</p>';offerBox.querySelectorAll('[data-apply-job]').forEach(btn=>btn.onclick=()=>window.ABJ_GAME_SOCKET?.emit('jobs:offer:apply',{offerId:btn.dataset.applyJob},result=>{const status=document.getElementById('jobStatus');if(status)status.textContent=result?.ok?'Candidature envoyée à l’entreprise.':(result?.error||'Candidature impossible.');}));};window.ABJ_RENDER_JOB_OFFERS=drawOffers;drawOffers();window.ABJ_GAME_SOCKET?.emit('jobs:offers:refresh');
   const work=document.getElementById('workShift');if(work)work.onclick=()=>{
     const job=ABJ_JOBS.find(j=>j.name===lifeState.job);if(!job)return;
     if(lifeState.hour<job.start||lifeState.hour>=job.end){document.getElementById('jobStatus').textContent='Service indisponible à cette heure. Reviens entre '+job.start+'h et '+job.end+'h.';return;}
@@ -5673,8 +5946,10 @@ function renderAccountSettingsApp(){
  const content=document.getElementById('phoneAppContent');if(!content)return;
  const apps=document.getElementById('phoneApps');if(apps)apps.style.display='none';content.style.display='block';
  const phone=activeGameAccount||'Aucun compte';
- content.innerHTML='<button id="phoneBack">← Applications</button><h3>⚙️ Paramètres du jeu</h3><p style="font-size:12px;color:#c6d8e5">Réglages liés à ton compte et à ton expérience Abidjan Life.</p><div style="padding:12px;background:#ffffff12;border-radius:12px"><div style="font-size:11px;color:#b9d6e7">Compte connecté</div><b>'+escapeHTML(phone)+'</b><p style="font-size:11px;color:#c6d8e5">Progression, personnage et préférences sont associés à ce compte.</p></div><h4>Compte et sécurité</h4><button id="accountSignOut">Se déconnecter</button><div style="margin-top:12px;padding:12px;border:1px solid #c94b4b88;border-radius:12px;background:#501c2533"><b style="color:#ffaaaa">Demander la suppression du compte</b><p style="font-size:11px;color:#f0cccc">Ta demande sera envoyée à AF GAMER. Le compte et ses données ne seront supprimés qu’après validation par le créateur.</p><button id="accountDelete" style="background:#9b2929;border-color:#ff8c8c">Envoyer ma demande</button></div><p id="accountSettingStatus" style="font-size:11px;color:#ffe0a0;min-height:34px"></p>';
+ content.innerHTML='<button id="phoneBack">← Applications</button><h3>⚙️ Paramètres du jeu</h3><p style="font-size:12px;color:#c6d8e5">Réglages liés à ton compte et à ton expérience Abidjan Life.</p><div style="padding:12px;background:#ffffff12;border-radius:12px"><div style="font-size:11px;color:#b9d6e7">Compte connecté</div><b>'+escapeHTML(phone)+'</b><p style="font-size:11px;color:#c6d8e5">Progression, personnage et préférences sont associés à ce compte.</p></div><h4>Personnaliser le téléphone</h4><p style="font-size:11px;color:#c6d8e5">Importe une image de ton appareil pour l’utiliser comme fond d’écran du téléphone en jeu.</p><label style="display:block;padding:10px;border:1px solid #e9c77b;border-radius:9px;background:#ffffff10">🖼️ Choisir une image<input id="phoneWallpaperInput" type="file" accept="image/*" style="display:block;width:100%;margin-top:8px;color:white"></label><button id="phoneWallpaperReset">Retirer le fond personnalisé</button><h4>Compte et sécurité</h4><button id="accountSignOut">Se déconnecter</button><div style="margin-top:12px;padding:12px;border:1px solid #c94b4b88;border-radius:12px;background:#501c2533"><b style="color:#ffaaaa">Demander la suppression du compte</b><p style="font-size:11px;color:#f0cccc">Ta demande sera envoyée à AF GAMER. Le compte et ses données ne seront supprimés qu’après validation par le créateur.</p><button id="accountDelete" style="background:#9b2929;border-color:#ff8c8c">Envoyer ma demande</button></div><p id="accountSettingStatus" style="font-size:11px;color:#ffe0a0;min-height:34px"></p>';
  document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
+ const wallpaperInput=document.getElementById('phoneWallpaperInput');if(wallpaperInput)wallpaperInput.onchange=()=>{const file=wallpaperInput.files&&wallpaperInput.files[0];if(!file)return;abjReadCompressedImage(file,900,.68,data=>{applyPhoneSkin({...lifeState.phoneSkin,wallpaper:data});saveLifeProgress(false);const st=document.getElementById('accountSettingStatus');if(st)st.textContent='Fond d’écran appliqué et sauvegardé sur ce compte.';});};
+ const wallpaperReset=document.getElementById('phoneWallpaperReset');if(wallpaperReset)wallpaperReset.onclick=()=>{const skin={...(lifeState.phoneSkin||{})};delete skin.wallpaper;applyPhoneSkin(skin);saveLifeProgress(false);const st=document.getElementById('accountSettingStatus');if(st)st.textContent='Fond d’écran personnalisé retiré.';};
  document.getElementById('accountSignOut').onclick=()=>{closePhone();activeGameAccount=null;openAccountGate();};
  document.getElementById('accountDelete').onclick=async()=>{
   const status=document.getElementById('accountSettingStatus'),account=activeGameAccount,btn=document.getElementById('accountDelete');
@@ -5808,7 +6083,21 @@ function saveGameGallery(){try{safeSet('abj-life-gallery-v1',JSON.stringify(game
 function takeGamePhoto(){if(!renderer)return;const src=renderer.domElement,c=document.createElement('canvas'),scale=Math.min(1,1280/src.width);c.width=Math.round(src.width*scale);c.height=Math.round(src.height*scale);c.getContext('2d').drawImage(src,0,0,c.width,c.height);const data=c.toDataURL('image/jpeg',.78);gameGallery.push({id:Date.now(),data,name:'Abidjan-Life-'+Date.now()+'.jpg',at:Date.now()});gameGallery=gameGallery.slice(-40);saveGameGallery();document.getElementById('cameraStatus').textContent='Photo enregistrée dans la galerie';showMessage('📸 Photo prise ! Partage-la depuis Galerie ou Réseaux.');if(typeof abjPhoneSound==='function')abjPhoneSound('shutter');}
 function toggleGameVideo(){const status=document.getElementById('cameraStatus'),btn=document.getElementById('recordVideo');if(mediaRecorder&&mediaRecorder.state==='recording'){mediaRecorder.stop();btn.textContent='◉ Vidéo';return;}if(!renderer.domElement.captureStream||typeof MediaRecorder==='undefined'){status.textContent='Vidéo non prise en charge par ce navigateur.';return;}try{recordedChunks=[];const stream=renderer.domElement.captureStream(30);mediaRecorder=new MediaRecorder(stream);mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size)recordedChunks.push(e.data);};mediaRecorder.onstop=()=>{const blob=new Blob(recordedChunks,{type:recordedChunks[0]?.type||'video/webm'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='Abidjan-Life-video-'+Date.now()+'.webm';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);status.textContent='Vidéo téléchargée sur ton appareil.';btn.textContent='◉ Vidéo';};mediaRecorder.start();btn.textContent='■ Arrêter';status.textContent='Enregistrement vidéo en cours…';}catch(e){status.textContent='Impossible de démarrer la vidéo.';}}
 function renderGameGallery(){loadGameGallery();drawGalleryItems();}
-function drawGalleryItems(){const grid=document.getElementById('galleryGrid');if(!grid)return;loadGameGallery();grid.innerHTML='';if(!gameGallery.length){grid.innerHTML='<p>Aucune photo pour le moment. Ouvre Caméra pour en prendre.</p>';return;}gameGallery.slice().reverse().forEach(item=>{const card=document.createElement('div'),img=document.createElement('img'),a=document.createElement('a'),del=document.createElement('button');img.src=item.data;img.alt='Photo du jeu';a.href=item.data;a.download=item.name;a.textContent='Télécharger';del.textContent='Supprimer';del.onclick=()=>{gameGallery=gameGallery.filter(x=>x.id!==item.id);saveGameGallery();drawGalleryItems();};card.append(img,a,del);grid.appendChild(card);});}
+function abjReadCompressedImage(file,maxSide,quality,done){
+ if(!file||!/^image\//i.test(file.type||'')){showMessage('Choisis un fichier image.');return;}
+ const reader=new FileReader();reader.onerror=()=>showMessage('Impossible de lire cette image.');
+ reader.onload=()=>{const img=new Image();img.onerror=()=>showMessage('Image illisible.');img.onload=()=>{const scale=Math.min(1,maxSide/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext('2d').drawImage(img,0,0,c.width,c.height);try{done(c.toDataURL('image/jpeg',quality));}catch(e){showMessage('Image trop volumineuse.');}};img.src=String(reader.result||'');};reader.readAsDataURL(file);
+}
+function drawGalleryItems(){
+ const grid=document.getElementById('galleryGrid');if(!grid)return;loadGameGallery();grid.innerHTML='';
+ const tools=document.createElement('div');tools.style.cssText='grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center';
+ const importLabel=document.createElement('label');importLabel.textContent='＋ Importer une photo';importLabel.style.cssText='display:inline-block;padding:9px 12px;border-radius:9px;background:#29495d;border:1px solid #f4d28b;color:white;font-weight:800;cursor:pointer';
+ const input=document.createElement('input');input.type='file';input.accept='image/*';input.style.display='none';
+ input.onchange=()=>{const file=input.files&&input.files[0];if(!file)return;abjReadCompressedImage(file,900,.68,data=>{gameGallery.push({id:Date.now(),data,name:String(file.name||'Photo importée').slice(0,90),at:Date.now(),imported:true});gameGallery=gameGallery.slice(-40);saveGameGallery();drawGalleryItems();showMessage('Photo importée dans ta galerie.');});};
+ importLabel.appendChild(input);tools.appendChild(importLabel);grid.appendChild(tools);
+ if(!gameGallery.length){const empty=document.createElement('p');empty.textContent='Aucune photo pour le moment. Ouvre Caméra ou importe une image depuis ton appareil.';grid.appendChild(empty);return;}
+ gameGallery.slice().reverse().forEach(item=>{const card=document.createElement('div'),img=document.createElement('img'),a=document.createElement('a'),del=document.createElement('button');img.src=item.data;img.alt='Photo de la galerie';a.href=item.data;a.download=item.name||'Abidjan-Life-photo.jpg';a.textContent='Télécharger';del.textContent='Supprimer';del.onclick=()=>{gameGallery=gameGallery.filter(x=>x.id!==item.id);saveGameGallery();drawGalleryItems();};card.append(img,a,del);grid.appendChild(card);});
+}
 
 function updateTrafficLights(delta){
   const durations=[7,2,7],groups=new Map();
@@ -6099,12 +6388,69 @@ function drawMinimap() {
   ctx.strokeStyle='#343a3c';ctx.lineCap='round';
   if(osmRoadSegments.length){const range=2550;osmRoadSegments.forEach(r=>{if(Math.max(Math.abs(r.a.x-player.position.x),Math.abs(r.a.z-player.position.z),Math.abs(r.b.x-player.position.x),Math.abs(r.b.z-player.position.z))>range)return;ctx.lineWidth=Math.max(.65,r.width*scale);ctx.beginPath();ctx.moveTo(r.a.x*scale,r.a.z*scale);ctx.lineTo(r.b.x*scale,r.b.z*scale);ctx.stroke();});}
   else {ctx.fillStyle='rgba(105,120,92,.22)';ctx.beginPath();ctx.ellipse(95,95,62,43,-.25,0,Math.PI*2);ctx.fill();}
+  // Bâtiments et lieux : la mini-carte ne doit pas être un disque vide quand les données existent.
+  if(allBuildings&&allBuildings.length){
+    const step=Math.max(1,Math.ceil(allBuildings.length/1400));
+    ctx.fillStyle='rgba(55,67,61,.78)';
+    for(let i=0;i<allBuildings.length;i+=step){
+      const b=allBuildings[i];if(!b)continue;
+      if(Math.abs(b.x-player.position.x)>2500||Math.abs(b.z-player.position.z)>2500)continue;
+      const w=Math.max(1.1,(Number(b.w)||8)*scale),h=Math.max(1.1,(Number(b.d)||8)*scale);
+      ctx.fillRect(b.x*scale-w/2,b.z*scale-h/2,w,h);
+    }
+  }
+  if(typeof poi!=='undefined'&&poi.length){
+    const step=Math.max(1,Math.ceil(poi.length/500));
+    ctx.fillStyle='#d89a35';
+    for(let i=0;i<poi.length;i+=step){
+      const p=poi[i];if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.z))continue;
+      if(Math.abs(p.x-player.position.x)>2300||Math.abs(p.z-player.position.z)>2300)continue;
+      ctx.beginPath();ctx.arc(p.x*scale,p.z*scale,1.5,0,Math.PI*2);ctx.fill();
+    }
+  }
   ctx.restore();ctx.fillStyle='#ff5b50';ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f3c45b';ctx.lineWidth=2;ctx.strokeRect(1,1,188,188);
 }
 
 // ============================================================
 // BOUCLE
 // ============================================================
+function applySharedWorldAssets(list){
+ if(Array.isArray(list))window.ABJ_SHARED_WORLD_ASSETS=list;
+ if(!scene||!worldReady||!window.THREE)return;
+ const assets=Array.isArray(window.ABJ_SHARED_WORLD_ASSETS)?window.ABJ_SHARED_WORLD_ASSETS:[];
+ const groups=scene.userData.sharedWorldGroups||[];groups.forEach(g=>{try{scene.remove(g);}catch(e){}});scene.userData.sharedWorldGroups=[];
+ scene.userData.sharedWorldObstacleIds=scene.userData.sharedWorldObstacleIds||new Set();
+ for(const asset of assets.slice(0,1200)){
+  const p=asset&&asset.payload||{},x=Number(p.x),z=Number(p.z),type=asset.asset_type||asset.assetType,id=String(asset.asset_id||asset.assetId||'');
+  if(!id||!Number.isFinite(x)||!Number.isFinite(z)||Math.abs(x)>25000||Math.abs(z)>25000)continue;
+  const w=Math.max(8,Math.min(24,Number(p.width)||12)),d=Math.max(7,Math.min(20,Number(p.depth)||10)),g=new THREE.Group();g.name='shared-world-'+id;
+  const groundY=typeof terrainHeight==='function'?terrainHeight(x,z):0;
+  if(type==='plot'){
+   const land=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshBasicMaterial({color:0xf2df91,transparent:true,opacity:.48,side:THREE.DoubleSide,depthWrite:false}));land.rotation.x=-Math.PI/2;land.position.y=.12;g.add(land);
+   const border=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(w,d)),new THREE.LineBasicMaterial({color:0xf0d36e,transparent:true,opacity:.9}));border.rotation.x=-Math.PI/2;border.position.y=.16;g.add(border);
+  }else{
+   const company=type==='company',underConstruction=String(p.status||'').toLowerCase()==='construction',height=company?9:(underConstruction?5.5:7.5);
+   const wall=new THREE.Mesh(new THREE.BoxGeometry(w,height,d),new THREE.MeshStandardMaterial({color:company?0xd8c49e:0xe1d2b7,roughness:.92}));wall.position.y=height/2;wall.castShadow=true;wall.receiveShadow=true;g.add(wall);
+   const roof=new THREE.Mesh(new THREE.ConeGeometry(w*.72,company?2.4:2.8,4),new THREE.MeshStandardMaterial({color:company?0x536c76:0x914d39,roughness:.88}));roof.position.y=height+(company?1.2:1.4);roof.rotation.y=Math.PI/4;roof.castShadow=true;g.add(roof);
+   const door=new THREE.Mesh(new THREE.BoxGeometry(1.25,2.5,.12),new THREE.MeshStandardMaterial({color:0x60452f,roughness:.9}));door.position.set(0,1.25,d/2+.07);g.add(door);
+   const glass=new THREE.MeshStandardMaterial({color:0x83b6c5,roughness:.35,metalness:.08,emissive:0x18313a,emissiveIntensity:.12});
+   for(const side of [-1,1]){const win=new THREE.Mesh(new THREE.BoxGeometry(1.55,1.35,.1),glass);win.position.set(side*w*.27,height*.62,d/2+.07);g.add(win);}
+   if(underConstruction){const scaffoldMat=new THREE.MeshStandardMaterial({color:0xb58b4c,roughness:.9});for(const side of [-1,1]){const pole=new THREE.Mesh(new THREE.BoxGeometry(.12,height+.8,.12),scaffoldMat);pole.position.set(side*w*.48,height/2,d*.48);g.add(pole);}}
+   if(!scene.userData.sharedWorldObstacleIds.has(id)&&typeof addObstacle==='function'){
+    try{addObstacle(x,z,w/2,d/2,height);scene.userData.sharedWorldObstacleIds.add(id);}catch(e){console.warn('Obstacle partagé ignoré',e);}
+   }
+  }
+  g.position.set(x,groundY,z);scene.add(g);scene.userData.sharedWorldGroups.push(g);
+  const known=allBuildings.find(b=>b&&b.sharedAssetId===id);
+  if(known){known.x=x;known.z=z;known.w=w;known.d=d;}
+  else allBuildings.push({sharedAssetId:id,x,z,w,d,shared:true});
+  if(type==='house'&&p.building&&String(p.building.status||p.status)==='complete'&&!doors.some(d=>d&&d.sharedAssetId===id)){
+   doors.push({id:'shared-'+id,sharedAssetId:id,shared:true,x,z,rot:0,normal:new THREE.Vector3(0,0,1),home:true,buildingName:p.name||'Logement construit par un joueur',bw:w,bd:d,bh:7.5,style:'resident',lazy:true});
+  }
+ }
+}
+window.ABJ_APPLY_SHARED_WORLD_ASSETS=applySharedWorldAssets;
+
 function animate() {
   requestAnimationFrame(animate);
   if (!gameStarted || !renderer) return;
@@ -6113,6 +6459,7 @@ function animate() {
   try {
     updateLifeSimulation(delta);
     updateDynamicSky(delta);
+    if(window.__abjLagoonTexture){window.__abjLagoonTexture.offset.x=(window.__abjLagoonTexture.offset.x+delta*.003)%1;window.__abjLagoonTexture.offset.y=(window.__abjLagoonTexture.offset.y+delta*.0015)%1;}
     updateCreatorOrb(delta);
     updateCourseGoRide(delta);
     updateCourseGoCamera(delta);
@@ -6125,7 +6472,7 @@ function animate() {
     if(vehicleUpdateAccumulator>=1/20){const vehicleDelta=Math.min(vehicleUpdateAccumulator,.12);vehicleUpdateAccumulator=0;updateVehicles(vehicleDelta);}
     updateTrafficLights(delta);
     updateParticles(delta);
-    updateDistanceManagedBuildings(delta);
+    if(!window.__abjLastBuildingCull||performance.now()-window.__abjLastBuildingCull>250){window.__abjLastBuildingCull=performance.now();updateDistanceManagedBuildings(delta);}
     if(playerShowering){showerTimer+=delta;const drops=currentInterior&&currentInterior.interactables.find(i=>i.type==='douche'&&i.floor===currentFloor);if(drops&&drops.object){drops.object.children.forEach((d,i)=>{d.position.y=1.85-((showerTimer*2.2+i*.19)%1.35);d.visible=true;});}}
     districtCheckTimer+=delta;if(districtCheckTimer>.45){districtCheckTimer=0;updateDistrictHUD();}
     const phoneClock=document.getElementById('phoneClock');if(phoneClock)phoneClock.textContent=String(lifeState.hour).padStart(2,'0')+':'+String(lifeState.minute).padStart(2,'0');
@@ -6696,10 +7043,12 @@ const v11OrigDraw=drawBigMap;
 drawBigMap=function(){v11OrigDraw();try{v11DrawOverlay();}catch(e){console.warn('overlay carte',e);}};
 
 /* ---------- 7. BOUCLE V1.11 ---------- */
+let v11NpcVisibilityTimer=0;
 function V11tick(delta){
   if(worldReady&&!V11.spawned&&player)v11Spawn();
   v11UpdateRides(delta);
-  for(const n of npcs){const L=n.userData.life;if(L&&(L.hid||n.userData.transitRider||L.state==='car'||L.state==='taxi'))n.visible=false;}
+  v11NpcVisibilityTimer+=delta;
+  if(v11NpcVisibilityTimer>=.5){v11NpcVisibilityTimer=0;for(const n of npcs){const L=n.userData.life;if(L&&(L.hid||n.userData.transitRider||L.state==='car'||L.state==='taxi'))n.visible=false;}}
   if(playerSitting&&V11.seat&&player)animateCharacter(player,delta,false);
   if(V11.held&&player){const a=player.rotation.y;V11.held.sp.visible=true;V11.held.sp.position.set(player.position.x+Math.sin(a)*.5,player.position.y+1.15,player.position.z+Math.cos(a)*.5);}
   if(mapOpen&&(V11.vel.x||V11.vel.z)){mapView.follow=false;mapView.centerX+=V11.vel.x*delta;mapView.centerZ+=V11.vel.z*delta;V11.vel.x*=.9;V11.vel.z*=.9;if(Math.abs(V11.vel.x)+Math.abs(V11.vel.z)<.5)V11.vel.x=V11.vel.z=0;}
@@ -6817,7 +7166,7 @@ function v13InitHUD(){
  if(!document.getElementById(needStyleId)){const st=document.createElement('style');st.id=needStyleId;st.textContent='body:not(.abj-in-world) #needToggleEmoji{display:none!important} #needToggleEmoji:focus{outline:3px solid #ffe19a;outline-offset:3px} @media(max-width:760px){#needToggleEmoji{left:128px!important;bottom:30px!important;width:46px!important;height:46px!important}}';document.head.appendChild(st);}
  const close=document.getElementById('needPanelClose');if(close&&!close.dataset.v13){close.dataset.v13='1';close.onclick=()=>document.getElementById('needPanel').classList.remove('open');}
 }
-function v13MiniMap(){V13.miniTimer-=.016;if(V13.miniTimer>0)return;V13.miniTimer=.22;const c=document.getElementById('miniMapCanvas');if(!c||!player)return;const ctx=c.getContext('2d'),W=c.width,H=c.height,cx=W/2,cy=H/2,R=145,range=1150;ctx.clearRect(0,0,W,H);ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();ctx.fillStyle='#b9c8b5';ctx.fillRect(0,0,W,H);const __mp=getPlayerMapPosition(),px=__mp.x,pz=__mp.z,sc=R/range;ctx.lineCap='round';for(const road of osmRoadSegments){if(Math.abs((road.a.x+road.b.x)/2-px)>range*1.5||Math.abs((road.a.z+road.b.z)/2-pz)>range*1.5)continue;ctx.strokeStyle=['motorway','trunk','primary'].includes(road.type)?'#d39b50':'#f7f5e9';ctx.lineWidth=Math.max(1,(road.width||5)*sc*.8);ctx.beginPath();ctx.moveTo(cx+(road.a.x-px)*sc,cy+(road.a.z-pz)*sc);ctx.lineTo(cx+(road.b.x-px)*sc,cy+(road.b.z-pz)*sc);ctx.stroke();}for(const b of allBuildings){if(Math.abs(b.x-px)>range||Math.abs(b.z-pz)>range)continue;ctx.fillStyle='#77877b';ctx.fillRect(cx+(b.x-px)*sc-1,cy+(b.z-pz)*sc-1,2,2);}const gpsTarget=window.__abjGpsTarget;
+function v13MiniMap(){V13.miniTimer-=.016;if(V13.miniTimer>0)return;V13.miniTimer=mobilePerformanceMode?.48:.32;const c=document.getElementById('miniMapCanvas');if(!c||!player)return;const ctx=c.getContext('2d'),W=c.width,H=c.height,cx=W/2,cy=H/2,R=145,range=1150;ctx.clearRect(0,0,W,H);ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();ctx.fillStyle='#b9c8b5';ctx.fillRect(0,0,W,H);const __mp=getPlayerMapPosition(),px=__mp.x,pz=__mp.z,sc=R/range;ctx.lineCap='round';const miniRoads=osmRoadSegments.length?osmRoadSegments:(scene&&scene.userData&&scene.userData.playableUrbanCoreRoads||[]);for(const road of miniRoads){if(Math.abs((road.a.x+road.b.x)/2-px)>range*1.5||Math.abs((road.a.z+road.b.z)/2-pz)>range*1.5)continue;ctx.strokeStyle=['motorway','trunk','primary'].includes(road.type)?'#d39b50':'#f7f5e9';ctx.lineWidth=Math.max(1,(road.width||5)*sc*.8);ctx.beginPath();ctx.moveTo(cx+(road.a.x-px)*sc,cy+(road.a.z-pz)*sc);ctx.lineTo(cx+(road.b.x-px)*sc,cy+(road.b.z-pz)*sc);ctx.stroke();}for(const b of allBuildings){if(Math.abs(b.x-px)>range||Math.abs(b.z-pz)>range)continue;ctx.fillStyle='#77877b';ctx.fillRect(cx+(b.x-px)*sc-1,cy+(b.z-pz)*sc-1,2,2);}const gpsTarget=window.__abjGpsTarget;
 if(gpsTarget&&Number.isFinite(gpsTarget.x)&&Number.isFinite(gpsTarget.z)){
  const dx=gpsTarget.x-px,dz=gpsTarget.z-pz,dist=Math.hypot(dx,dz),angle=Math.atan2(dz,dx),markDist=Math.min(R-18,dist*sc),mx=cx+Math.cos(angle)*markDist,my=cy+Math.sin(angle)*markDist;
  ctx.save();ctx.strokeStyle='#f3c34e';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(mx,my);ctx.stroke();
@@ -7315,6 +7664,8 @@ function v16ValidateTrafficRoutes(){
  let v19LastClockDay=-1,v19LastReminder='';
  updateLifeSimulation=function(dt){oldTick(dt);if(!worldReady)return;const s=state();updateLifeDreamProgress();lifeState.minute+=Math.max(0,Math.min(.1,Number(dt)||0))*1.5;while(lifeState.minute>=60){lifeState.minute-=60;const h=lifeState.hour;lifeState.hour=(lifeState.hour+1)%24;if(h===23){lifeState.housing=lifeState.housing||{gameDay:1};lifeState.housing.gameDay=(lifeState.housing.gameDay||1)+1;try{processHousingBilling();}catch(e){window.__abjErr&&window.__abjErr(e)}}}
    const day=Number(lifeState.housing&&lifeState.housing.gameDay)||1;
+   if(lifeState.rentalContract&&window.ABJ_GAME_SOCKET?.connected&&day-(Number(lifeState.rentalContract.lastPaidDay)||1)>=7&&!lifeState.rentalContract.__billingRequested){const contract=lifeState.rentalContract;contract.__billingRequested=true;window.ABJ_GAME_SOCKET.emit('rentals:pay',{gameDay:day},result=>{contract.__billingRequested=false;if(result?.ok)showMessage('Loyer payé : '+Number(result.amount||0).toLocaleString('fr-FR')+' FCFA.');else if(result?.arrears){contract.arrears=result.arrears;contract.lastPaidDay=day;saveLifeProgress(false);showMessage('⚠️ Loyer impayé : '+result.arrears.toLocaleString('fr-FR')+' FCFA.');}});}
+   if(lifeState.employmentContract&&window.ABJ_GAME_SOCKET?.connected&&day-(Number(lifeState.employmentContract.lastPaidDay)||1)>=7&&!lifeState.employmentContract.__payrollRequested){const contract=lifeState.employmentContract;contract.__payrollRequested=true;window.ABJ_GAME_SOCKET.emit('jobs:pay',{gameDay:day},result=>{contract.__payrollRequested=false;if(result?.ok)showMessage('💼 Salaire reçu : '+Number(result.amount||0).toLocaleString('fr-FR')+' FCFA.');else if(result?.arrears){contract.arrears=result.arrears;contract.lastPaidDay=day;saveLifeProgress(false);showMessage('⚠️ Salaire en attente : '+result.arrears.toLocaleString('fr-FR')+' FCFA.');}});}
    if(day!==v19LastClockDay){v19LastClockDay=day;}
    // Rappels une heure avant le début du service (une heure de jeu = 20 s réelles).
    const job=ABJ_JOBS.find(j=>j.name===lifeState.job);
@@ -7349,6 +7700,43 @@ function v16ValidateTrafficRoutes(){
   {id:'lot-marcory',name:'Terrain — Marcory',commune:'Marcory',price:3100000,x:4300,z:1900}
  ];
  const rentListings=[{id:'rent-shop',name:'Magasin de quartier',commune:'Cocody',rent:95000,deposit:190000,kind:'shop',x:650,z:-3900},{id:'rent-depot',name:'Dépôt / entrepôt',commune:'Yopougon',rent:145000,deposit:290000,kind:'depot',x:-4900,z:-5200},{id:'rent-office',name:'Local administratif',commune:'Plateau',rent:180000,deposit:360000,kind:'office',x:-1100,z:-1750}];
+ // V1.51 : parcelles visibles et proposition d'achat/location à proximité.
+ const abjMarketMarkers=[];
+ let abjMarketPromptAt=0,abjMarketNearby=null;
+ function ensureAbjMarketMarkers(){
+  if(!scene||!scene.add||!window.THREE||abjMarketMarkers.length)return;
+  const listings=[...plotListings,...rentListings];
+  listings.forEach(item=>{
+   const group=new THREE.Group();group.position.set(item.x,terrainHeight(item.x,item.z)+.16,item.z);
+   const ring=new THREE.Mesh(new THREE.RingGeometry(5.2,6.3,32),new THREE.MeshBasicMaterial({color:0x49f28b,transparent:true,opacity:.9,side:THREE.DoubleSide}));
+   ring.rotation.x=-Math.PI/2;group.add(ring);
+   const core=new THREE.Mesh(new THREE.CircleGeometry(4.8,28),new THREE.MeshBasicMaterial({color:0x35d978,transparent:true,opacity:.12,side:THREE.DoubleSide}));
+   core.rotation.x=-Math.PI/2;core.position.y=.015;group.add(core);
+   const light=new THREE.PointLight(0x45f58c,1.15,24);light.position.y=2.2;group.add(light);
+   group.userData.marketListing=item;scene.add(group);abjMarketMarkers.push(group);
+  });
+ }
+ const abjMarketTick=updateLifeSimulation;
+ updateLifeSimulation=function(dt){
+  abjMarketTick(dt);
+  ensureAbjMarketMarkers();
+  if(!player||currentInterior||!worldReady)return;
+  let best=null,bestDist=Infinity;
+  for(const marker of abjMarketMarkers){
+   const item=marker.userData.marketListing,d=Math.hypot(player.position.x-item.x,player.position.z-item.z);
+   marker.visible=d<950;
+   if(d<20&&d<bestDist){best=item;bestDist=d;}
+   marker.children[0].material.opacity=.62+Math.sin((performance.now?performance.now():Date.now())/420)*.24;
+  }
+  abjMarketNearby=best;
+  const now=Date.now();
+  if(best&&now-abjMarketPromptAt>22000){
+   abjMarketPromptAt=now;
+   showMessage((best.kind?'🏬 '+best.name+' · location':'🟢 '+best.name+' · '+Number(best.price).toLocaleString('fr-FR')+' FCFA')+' — ouvre Immo ABJ pour consulter cette offre.');
+  }
+ };
+ window.ABJ_OPEN_NEARBY_PROPERTY=function(){if(!abjMarketNearby)return false;window.ABJ_OPEN_PROPERTY_MARKET?.(abjMarketNearby.id);return true;};
+
  function nearAdmin(kind){const a=adminPlaces.find(x=>x.kind===kind);if(!a||!player)return false;if(currentInterior&&lastExteriorPosition&&lastExteriorPosition.door&&lastExteriorPosition.door.buildingName===a.name)return true;return Math.hypot(player.position.x-a.x,player.position.z-a.z)<35;}
  function docs(){return state().adminDocs;}
  function pay(cost,label){if(lifeState.money<cost){showMessage('Fonds insuffisants : il manque '+(cost-lifeState.money).toLocaleString('fr-FR')+' FCFA.');return false;}lifeState.money-=cost;lifeState.bankTransactions=lifeState.bankTransactions||[];lifeState.bankTransactions.push({type:'debit',label,amount:cost,date:String(lifeState.hour).padStart(2,'0')+':'+String(Math.floor(lifeState.minute)).padStart(2,'0')});lifeState.bankTransactions=lifeState.bankTransactions.slice(-80);return true;}
@@ -7400,8 +7788,12 @@ function v16ValidateTrafficRoutes(){
  {id:'tiktok',name:'TikTok',emoji:'🎵',category:'Médias',desc:'Consulter les contenus courts simulés du jeu.'},
  {id:'inventaire',name:'Inventaire',emoji:'🎒',category:'Outils',desc:'Consulter les objets et équipements de ton personnage.'},
  {id:'afgamer',name:'AF GAMER CI',emoji:'🎮',category:'Outils',desc:'Contacter le studio et envoyer des suggestions.'},
- {id:'google',name:'Recherche ABJ',emoji:'🔎',category:'Outils',desc:'Rechercher des lieux et informations dans la ville.'}
+ {id:'google',name:'Recherche ABJ',emoji:'🔎',category:'Outils',desc:'Rechercher des lieux et informations dans la ville.'},
+ {id:'toktok',name:'TokTok',emoji:'🎬',category:'Médias',desc:'Publier des vidéos, gagner des abonnés, des vues, des likes et des revenus virtuels.'}
 ];
+ // YouTube et TikTok deviennent une seule application TokTok.
+ for(let i=appCatalog.length-1;i>=0;i--)if(appCatalog[i].id==='youtube'||appCatalog[i].id==='tiktok')appCatalog.splice(i,1);
+ window.ABJ_APP_CATALOG=appCatalog;
  window.ABJ_OPEN_PROPERTY_MARKET=function(listingId){const item=(plotListings.find(p=>p.id===listingId)?'land':'rent');openPhone();openPhoneApp('immoabj');renderProjectsV19(item);};
  function addInstalledIcon(app){const host=document.getElementById('phoneApps');if(!host||host.querySelector('[data-app="'+app.id+'"]'))return;let grid=host.querySelector('.phoneAppsPage:last-child');if(!grid||grid.querySelectorAll('.phoneApp').length>=9){grid=document.createElement('div');grid.className='phoneAppsPage';host.appendChild(grid);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=app.id;b.innerHTML='<span>'+app.emoji+'</span>'+app.name;b.onclick=()=>openPhoneApp(app.id);grid.appendChild(b);}
  function renderAppStore(){
@@ -7563,8 +7955,12 @@ const oldOpen=window.openPhoneApp;window.openPhoneApp=function(app){if(app==='ya
  const oldOpen=openPhoneApp;openPhoneApp=function(app){if(['entreprises','factu','forum','afgamer','documents'].includes(app)){if($('phoneHomeShell'))$('phoneHomeShell').style.display='none';if($('phoneAppContent'))$('phoneAppContent').style.display='block';if(app==='entreprises')renderBusinessApp();if(app==='factu')renderBillsApp();if(app==='forum')renderForumApp();if(app==='afgamer')renderAFApp();if(app==='documents')renderPickupApp();return;}return oldOpen(app);};
  function back(){const c=$('phoneAppContent');if(c){c.style.display='none';showPhoneHome();}}
  const sectors={transport:{name:'Transport',docs:[['registre','Registre de commerce',25000],['transport','Autorisation de transport',45000],['assurance','Assurance flotte',30000],['taxe','Quitus fiscal',18000]],monthly:185000},divertissement:{name:'Divertissement',docs:[['registre','Registre de commerce',25000],['licence','Licence d’exploitation',35000],['securite','Attestation sécurité',22000]],monthly:165000},tourisme:{name:'Tourisme',docs:[['registre','Registre de commerce',25000],['tourisme','Agrément tourisme',45000],['assurance','Assurance responsabilité',30000]],monthly:175000},agriculture:{name:'Agriculture',docs:[['registre','Registre de commerce',25000],['foncier','Justificatif foncier',35000],['environnement','Autorisation environnementale',28000],['intrants','Convention fournisseur d’engrais',20000]],monthly:145000},jeux:{name:'Développement de jeux vidéo',docs:[['registre','Registre de commerce',25000],['propriete','Déclaration propriété intellectuelle',30000],['fiscal','Immatriculation fiscale',18000],['numerique','Autorisation / formalités numériques',20000]],monthly:210000}};
- function renderBusinessApp(){const c=$('phoneAppContent');if(!c)return;const companies=v.companies;const properties=v.properties;const sectorOpts=Object.keys(sectors).map(k=>'<option value="'+k+'">'+sectors[k].name+'</option>').join('');const docs=Object.entries(v.businessDocs).filter(([k,d])=>d&&d.paid).map(([k,d])=>'<li>'+escapeHTML(d.label)+' — payé</li>').join('');const cards=companies.map(co=>'<article class="v19card"><b>'+escapeHTML(co.name)+'</b><div>'+escapeHTML(sectors[co.sector]?.name||co.sector)+' · '+escapeHTML(co.status||'enregistrée')+'</div><small>Local : '+escapeHTML(co.location||'Abidjan')+'</small></article>').join('');c.innerHTML='<button id="phoneBack">← Applications</button><h3>🏢 Entreprises & autorisations</h3><p>Chaque activité exige ses propres documents. Achète ou loue un local avant l’immatriculation. L’agriculture exige un terrain agricole acheté.</p><h4>1. Préparer les documents</h4><label>Secteur<select id="bizSector">'+sectorOpts+'</select></label><div id="bizDocs"></div><p id="bizStatus" style="color:#ffe0a0"></p><h4>2. Créer la société</h4><label>Nom de la société<input id="bizName" maxlength="36" placeholder="Ex. Abidjan Mobilité" /></label><label>Local / terrain<select id="bizProperty"><option value="">Choisir un bien</option>'+properties.map((p,i)=>'<option value="'+i+'">'+escapeHTML(p.name||p.kind||'Bien')+' · '+escapeHTML(p.location||'Abidjan')+'</option>').join('')+'</select></label><button id="bizCreate">Vérifier les pièces et immatriculer</button><h4>Mes sociétés</h4>'+(cards||'<p>Aucune société créée.</p>')+'<h4>Mes documents payés</h4><ul>'+(docs||'<li>Aucun document professionnel.</li>')+'</ul>';
- c.querySelector('#phoneBack').onclick=back;const select=c.querySelector('#bizSector');const draw=()=>{const k=select.value,s=sectors[k];$('bizDocs').innerHTML=s.docs.map(([id,label,price])=>'<div class="v19card"><b>'+label+'</b><div>'+price.toLocaleString('fr-FR')+' FCFA</div><button data-bizdoc="'+id+'" '+(v.businessDocs[id]?.paid?'disabled':'')+'>'+(v.businessDocs[id]?.paid?'Document payé':'Acheter / demander')+'</button></div>').join('')+'<small>'+(k==='agriculture'?'Condition spéciale : terrain agricole acheté obligatoire, puis convention avec le fournisseur d’engrais.':'Vérifie les autorisations propres à ce secteur avant de lancer l’activité.')+'</small>';c.querySelectorAll('[data-bizdoc]').forEach(b=>b.onclick=()=>{const row=s.docs.find(x=>x[0]===b.dataset.bizdoc);if(!row)return;if(lifeState.money<row[2]){$('bizStatus').textContent='Solde insuffisant.';return;}lifeState.money-=row[2];v.businessDocs[row[0]]={label:row[1],paid:true,sector:k};if(!v.pendingDocuments.some(d=>d.id===row[0]))v.pendingDocuments.push({id:row[0],label:row[1],ready:false});v.inbox=v.inbox||[];v.inbox.unshift({title:'Document demandé',body:row[1]+' : rends-toi au guichet de retrait de la mairie / institution.',day:lifeState.housing?.gameDay||1});save();draw();$('bizStatus').textContent='Demande enregistrée : '+row[1]+'. Un message t’indique où retirer le document.';});};select.onchange=draw;draw();c.querySelector('#bizCreate').onclick=()=>{const k=select.value,name=safeName($('bizName').value),prop=properties[Number($('bizProperty').value)],missing=sectors[k].docs.filter(d=>!v.businessDocs[d[0]]?.paid);if(name.length<3){$('bizStatus').textContent='Choisis un nom de société (3 caractères minimum).';return;}if(companies.some(x=>x.name.toLocaleLowerCase()===name.toLocaleLowerCase())){$('bizStatus').textContent='Ce nom de société est déjà utilisé sur cette sauvegarde.';return;}if(!prop){$('bizStatus').textContent='Tu dois posséder ou louer un local avant de créer la société.';return;}if(k==='agriculture'&&prop.kind!=='land'){$('bizStatus').textContent='L’agriculture exige un terrain agricole acheté, pas un simple local loué.';return;}if(missing.length){$('bizStatus').textContent='Dossier incomplet : '+missing.map(x=>x[1]).join(', ');return;}const fee=25000;if(lifeState.money<fee){$('bizStatus').textContent='Prévois 25 000 FCFA de frais d’immatriculation.';return;}lifeState.money-=fee;companies.push({name,sector:k,location:prop.location||prop.name,status:'active',monthlyRevenue:sectors[k].monthly,nextPayoutDay:(lifeState.housing?.gameDay||1)+30,createdDay:lifeState.housing?.gameDay||1});save();renderBusinessApp();};}
+ function renderBusinessApp(){const c=$('phoneAppContent');if(!c)return;const companies=v.companies;const properties=v.properties;const sectorOpts=Object.keys(sectors).map(k=>'<option value="'+k+'">'+sectors[k].name+'</option>').join('');const docs=Object.entries(v.businessDocs).filter(([k,d])=>d&&d.paid).map(([k,d])=>'<li>'+escapeHTML(d.label)+' — payé</li>').join('');const cards=companies.map(co=>'<article class="v19card"><b>'+escapeHTML(co.name)+'</b><div>'+escapeHTML(sectors[co.sector]?.name||co.sector)+' · '+escapeHTML(co.status||'enregistrée')+'</div><small>Local : '+escapeHTML(co.location||'Abidjan')+'</small></article>').join('');c.innerHTML='<button id="phoneBack">← Applications</button><h3>🏢 Entreprises & autorisations</h3><p>Chaque activité exige ses propres documents. Achète ou loue un local avant l’immatriculation. L’agriculture exige un terrain agricole acheté.</p><h4>1. Préparer les documents</h4><label>Secteur<select id="bizSector">'+sectorOpts+'</select></label><div id="bizDocs"></div><p id="bizStatus" style="color:#ffe0a0"></p><h4>2. Créer la société</h4><label>Nom de la société<input id="bizName" maxlength="36" placeholder="Ex. Abidjan Mobilité" /></label><label>Local / terrain<select id="bizProperty"><option value="">Choisir un bien</option>'+properties.map((p,i)=>'<option value="'+i+'">'+escapeHTML(p.name||p.kind||'Bien')+' · '+escapeHTML(p.location||'Abidjan')+'</option>').join('')+'</select></label><button id="bizCreate">Vérifier les pièces et immatriculer</button><h4>Mes sociétés</h4>'+(cards||'<p>Aucune société créée.</p>')+'<h4>Mes documents payés</h4><ul>'+(docs||'<li>Aucun document professionnel.</li>')+'</ul><h4>👥 Recruter des joueurs</h4><label>Entreprise<select id="jobCompanySelect">'+companies.map((co,i)=>'<option value="'+i+'">'+escapeHTML(co.name)+'</option>').join('')+'</select></label><label>Poste<input id="jobRole" maxlength="60" placeholder="Ex. Chauffeur, comptable, vendeur"></label><label>Salaire mensuel (FCFA)<input id="jobSalary" type="number" min="1000" max="50000000" step="1000" value="80000"></label><label>Diplôme exigé<select id="jobQualification"><option value="aucun">Aucun diplôme obligatoire</option><option value="CAP">CAP</option><option value="BTS">BTS</option><option value="Licence">Licence</option><option value="Master">Master</option></select></label><button id="jobOfferCreate" '+(!companies.length?'disabled':'')+'>Publier l’offre pour tous les joueurs</button><p id="jobOfferStatus"></p><div id="companyHiringOffers"></div>';
+ c.querySelector('#phoneBack').onclick=back;const select=c.querySelector('#bizSector');const draw=()=>{const k=select.value,s=sectors[k];$('bizDocs').innerHTML=s.docs.map(([id,label,price])=>'<div class="v19card"><b>'+label+'</b><div>'+price.toLocaleString('fr-FR')+' FCFA</div><button data-bizdoc="'+id+'" '+(v.businessDocs[id]?.paid?'disabled':'')+'>'+(v.businessDocs[id]?.paid?'Document payé':'Acheter / demander')+'</button></div>').join('')+'<small>'+(k==='agriculture'?'Condition spéciale : terrain agricole acheté obligatoire, puis convention avec le fournisseur d’engrais.':'Vérifie les autorisations propres à ce secteur avant de lancer l’activité.')+'</small>';c.querySelectorAll('[data-bizdoc]').forEach(b=>b.onclick=()=>{const row=s.docs.find(x=>x[0]===b.dataset.bizdoc);if(!row)return;if(lifeState.money<row[2]){$('bizStatus').textContent='Solde insuffisant.';return;}lifeState.money-=row[2];v.businessDocs[row[0]]={label:row[1],paid:true,sector:k};if(!v.pendingDocuments.some(d=>d.id===row[0]))v.pendingDocuments.push({id:row[0],label:row[1],ready:false});v.inbox=v.inbox||[];v.inbox.unshift({title:'Document demandé',body:row[1]+' : rends-toi au guichet de retrait de la mairie / institution.',day:lifeState.housing?.gameDay||1});save();draw();$('bizStatus').textContent='Demande enregistrée : '+row[1]+'. Un message t’indique où retirer le document.';});};select.onchange=draw;draw();c.querySelector('#bizCreate').onclick=()=>{const k=select.value,name=safeName($('bizName').value),prop=properties[Number($('bizProperty').value)],missing=sectors[k].docs.filter(d=>!v.businessDocs[d[0]]?.paid);if(name.length<3){$('bizStatus').textContent='Choisis un nom de société (3 caractères minimum).';return;}if(companies.some(x=>x.name.toLocaleLowerCase()===name.toLocaleLowerCase())){$('bizStatus').textContent='Ce nom de société est déjà utilisé sur cette sauvegarde.';return;}if(!prop){$('bizStatus').textContent='Tu dois posséder ou louer un local avant de créer la société.';return;}if(k==='agriculture'&&prop.kind!=='land'){$('bizStatus').textContent='L’agriculture exige un terrain agricole acheté, pas un simple local loué.';return;}if(missing.length){$('bizStatus').textContent='Dossier incomplet : '+missing.map(x=>x[1]).join(', ');return;}const fee=25000;if(lifeState.money<fee){$('bizStatus').textContent='Prévois 25 000 FCFA de frais d’immatriculation.';return;}lifeState.money-=fee;companies.push({id:'co-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8),ownerPhone:normalizeIvorianMobile(activeGameAccount),name,sector:k,location:prop.location||prop.name,propertyId:prop.id||null,status:'active',employees:[],monthlyRevenue:sectors[k].monthly,nextPayoutDay:(lifeState.housing?.gameDay||1)+30,createdDay:lifeState.housing?.gameDay||1});save();renderBusinessApp();};
+ const publish=c.querySelector('#jobOfferCreate');if(publish)publish.onclick=()=>{const co=companies[Number(c.querySelector('#jobCompanySelect').value)],role=c.querySelector('#jobRole').value.trim(),salary=Math.floor(Number(c.querySelector('#jobSalary').value)||0),qualification=c.querySelector('#jobQualification').value,sock=window.ABJ_GAME_SOCKET;if(!co||role.length<2||salary<1000){c.querySelector('#jobOfferStatus').textContent='Choisis une entreprise, un poste et un salaire valide.';return;}if(!sock?.connected){c.querySelector('#jobOfferStatus').textContent='Connexion au serveur indisponible. Réessaie dans un instant.';return;}publish.disabled=true;sock.emit('jobs:offer:create',{companyId:co.id||co.name,companyName:co.name,role,salary,qualification,commune:co.location||''},result=>{publish.disabled=false;c.querySelector('#jobOfferStatus').textContent=result?.ok?'Offre publiée : les autres joueurs peuvent maintenant postuler.':(result?.error||'Publication impossible.');});};
+ const drawHiring=()=>{const box=c.querySelector('#companyHiringOffers');if(!box)return;const mine=(window.ABJ_JOB_OFFERS||[]).filter(o=>companies.some(co=>(co.id||co.name)===o.companyId||co.name===o.companyName));box.innerHTML=mine.map(o=>'<article class="v19card"><b>'+escapeHTML(o.role)+'</b><div>'+escapeHTML(o.companyName)+' · '+Number(o.salary).toLocaleString('fr-FR')+' FCFA/mois · '+escapeHTML(o.qualification)+'</div><small>'+Number(o.applicantCount||0)+' candidature(s)</small><button data-job-candidates="'+escapeHTML(o.id)+'">Voir les candidatures</button><div id="job-candidates-'+escapeHTML(o.id)+'"></div></article>').join('')||'<p>Aucune offre active.</p>';box.querySelectorAll('[data-job-candidates]').forEach(btn=>btn.onclick=()=>{const id=btn.dataset.jobCandidates;window.ABJ_GAME_SOCKET?.emit('jobs:applicants:list',{offerId:id},res=>{const slot=box.querySelector('#job-candidates-'+CSS.escape(id));if(!slot)return;slot.innerHTML=res?.ok?(res.applicants.map(a=>'<div>'+escapeHTML(a.name)+' <button data-hire-phone="'+escapeHTML(a.phone)+'" data-hire-offer="'+escapeHTML(id)+'">Recruter</button></div>').join('')||'<small>Aucun candidat.</small>'):'<small>Impossible de charger les candidatures.</small>';slot.querySelectorAll('[data-hire-phone]').forEach(hb=>hb.onclick=()=>window.ABJ_GAME_SOCKET?.emit('jobs:offer:hire',{offerId:hb.dataset.hireOffer,candidatePhone:hb.dataset.hirePhone},out=>{if(slot)slot.textContent=out?.ok?'Recrutement confirmé.':(out?.error||'Recrutement impossible.');}));});});};
+ window.ABJ_RENDER_JOB_OFFERS=drawHiring;drawHiring();
+}
  function renderBillsApp(){const c=$('phoneAppContent');if(!c)return;const day=Number(lifeState.housing?.gameDay||1),home=lifeState.housing||{},owned=!!home.ownedDoorId,lease=!!home.lease;const items=[['eau','Facture d’eau',6500],['electricite','Facture d’électricité',12000],['internet','Internet',9000],['loyer','Loyer',lease?45000:owned?0:35000]];c.innerHTML='<button id="phoneBack">← Applications</button><h3>🧾 Factu</h3><p>Gère tes factures et évite les retards. Cycle simulé : 30 jours de jeu.</p><div class="v19stat">Jour de jeu : '+day+' · Logement : '+(owned?'propriétaire':lease?'locataire':'sans logement')+'</div>'+items.map(([id,label,price])=>'<article class="v19card"><b>'+label+'</b><div>'+price.toLocaleString('fr-FR')+' FCFA / cycle</div><button data-bill="'+id+'" '+(price===0||v.bills.paid[id]===day?'disabled':'')+'>'+(price===0?'Aucun loyer à payer':v.bills.paid[id]===day?'Payé ce cycle':'Régler la facture')+'</button></article>').join('')+'<p id="billStatus"></p>';c.querySelector('#phoneBack').onclick=back;c.querySelectorAll('[data-bill]').forEach(b=>b.onclick=()=>{const item=items.find(x=>x[0]===b.dataset.bill);if(!item)return;if(lifeState.money<item[2]){$('billStatus').textContent='Solde insuffisant pour régler cette facture.';return;}lifeState.money-=item[2];v.bills.paid[item[0]]=day;save();renderBillsApp();$('billStatus').textContent=item[1]+' réglée.';});}
  function renderForumApp(){const c=$('phoneAppContent');if(!c)return;const username=v.username||lifeState.playerProfile?.name||'Visiteur';const posts=v.forum.slice(-35).reverse().map(m=>'<div class="v19card"><b>'+escapeHTML(m.name)+'</b><small> · '+escapeHTML(m.time||'')+'</small><div>'+escapeHTML(m.text)+'</div></div>').join('');c.innerHTML='<button id="phoneBack">← Applications</button><h3>🌐 Forum mondial</h3><p>Discute avec les autres habitants et joueurs. Dans cette version hors ligne, les publications sont enregistrées sur cet appareil uniquement.</p><label>Ton pseudo<input id="forumName" maxlength="22" value="'+escapeHTML(username)+'"></label><label>Message<textarea id="forumText" maxlength="400" rows="3" placeholder="Écris ton message…"></textarea></label><button id="forumSend">Publier</button><p id="forumStatus"></p><h4>Discussions récentes</h4>'+(posts||'<p>Aucun message pour le moment.</p>');c.querySelector('#phoneBack').onclick=back;c.querySelector('#forumSend').onclick=()=>{const name=safeName($('forumName').value),text=$('forumText').value.trim();if(name.length<3||!text){$('forumStatus').textContent='Pseudo (3 caractères minimum) et message obligatoires.';return;}if(!registerUsername(name)){$('forumStatus').textContent='Ce pseudo est déjà pris sur cet appareil. Choisis-en un autre.';return;}v.forum.push({name,text,time:String(lifeState.hour).padStart(2,'0')+':'+String(Math.floor(lifeState.minute)).padStart(2,'0')});v.forum=v.forum.slice(-120);save();renderForumApp();};}
  function renderAFApp(){
@@ -7610,8 +8006,8 @@ const oldOpen=window.openPhoneApp;window.openPhoneApp=function(app){if(app==='ya
 
 <script>
 // ABIDJAN LIFE — mises à jour et multijoueur.
-window.ABJ_BUILD_VERSION = window.ABJ_BUILD_VERSION || '1.26.0';
-window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-lifecorrige1.onrender.com';
+window.ABJ_BUILD_VERSION = window.ABJ_BUILD_VERSION || '1.50.0';
+window.ABJ_ONLINE_SERVER = window.ABJ_ONLINE_SERVER || 'https://abidjan-life-v150-preview.onrender.com';
 (function(){
  'use strict';
  const api=()=>window.ABJ_ONLINE_SERVER.replace(/\/$/,'');
@@ -7702,6 +8098,14 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    socket.on('world:host',v=>{window.ABJ_WORLD_HOST=!!v&&v.id===socket.id;});
    socket.on('creator:report:new',()=>{if(isCreatorAccount(activeGameAccount)){creatorOrbAlert=true;showMessage('⚠️ Nouveau signalement reçu au siège AF_GAMER.');}});
    socket.on('world:state',w=>{if(!w||!lifeState)return;lifeState.hour=Number(w.hour)||0;lifeState.minute=Number(w.minute)||0;if(typeof V12!=='undefined'){V12.weather=w.weather||'ensoleille';V12.temperature=Number(w.temperature)||31;V12.weatherTimer=4;const rain=document.getElementById('v12Rain');if(rain)rain.style.display=V12.weather==='pluie'?'block':'none';}if(typeof updateLifeLighting==='function')updateLifeLighting();});
+   socket.on('world:assets',list=>{window.ABJ_SHARED_WORLD_ASSETS=Array.isArray(list)?list:[];if(window.ABJ_APPLY_SHARED_WORLD_ASSETS)window.ABJ_APPLY_SHARED_WORLD_ASSETS();});
+   socket.on('jobs:offers',list=>{window.ABJ_JOB_OFFERS=Array.isArray(list)?list:[];if(typeof window.ABJ_RENDER_JOB_OFFERS==='function')window.ABJ_RENDER_JOB_OFFERS();});
+   socket.on('rentals:offers',list=>{window.ABJ_RENTAL_OFFERS=Array.isArray(list)?list:[];if(typeof window.ABJ_RENDER_RENTAL_MARKET==='function')window.ABJ_RENDER_RENTAL_MARKET();});
+   socket.on('rentals:contract',contract=>{if(contract&&typeof contract.assetId==='string'){lifeState.rentalContract=contract;saveLifeProgress(false);showMessage('🔑 Ton bail chez '+(contract.landlordName||'un propriétaire')+' est actif.');if(typeof window.ABJ_RENDER_RENTAL_MARKET==='function')window.ABJ_RENDER_RENTAL_MARKET();}});
+   socket.on('rentals:owner:balance',data=>{if(data&&Number.isFinite(Number(data.money))){lifeState.money=Math.max(0,Number(data.money));saveLifeProgress(false);}});
+   socket.on('jobs:contract',contract=>{if(contract&&typeof contract==='object'){lifeState.employmentContract=contract;saveLifeProgress(false);showMessage('💼 Tu as été recruté(e) chez '+(contract.companyName||'une entreprise')+' !');if(typeof renderEmploymentApp==='function'&&document.getElementById('phoneAppContent')?.innerHTML.includes('Emploi'))renderEmploymentApp();}});
+   socket.on('jobs:company:update',data=>{if(data&&data.companyId){const co=(lifeState.v19?.companies||[]).find(c=>String(c.id||c.name)===String(data.companyId));if(co){co.employees=Array.isArray(data.employees)?data.employees:[];saveLifeProgress(false);}}});
+   socket.on('rentals:property:update',data=>{if(data&&data.assetId){const id=String(data.assetId).replace(/^property:/,'');const p=(lifeState.v19?.properties||[]).find(x=>String(x.id)===id);if(p){p.rentalTenant=data.rentalTenant||null;saveLifeProgress(false);}}});
    socket.on('session:replaced',()=>{socket.disconnect();showAccountStatus('Ton compte vient d’être connecté sur un autre appareil.',true);});
    socket.on('update:available',checkUpdate);
    window.ABJ_GAME_SOCKET=socket;
@@ -7721,18 +8125,18 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:linear-gradient(145deg,#06121fF5,#102e40F5);color:white;display:grid;place-items:center;font:16px system-ui;text-align:center;padding:22px;backdrop-filter:blur(8px)';
    const panel=document.createElement('div');panel.style.cssText='width:min(460px,100%);padding:28px 22px;border:1px solid #e9c77b;border-radius:20px;background:linear-gradient(145deg,#1b394b,#0b1b29);box-shadow:0 22px 70px #000b';
    const title=document.createElement('h2');title.textContent='🚀 Mise à jour disponible';title.style.cssText='color:#ffe0a0;margin:0 0 14px';
-   const apology=document.createElement('p');apology.textContent='Nous sommes désolés pour cette interruption. Une nouvelle mise à jour d’Abidjan Life est prête. Merci de patienter pendant son installation.';apology.style.cssText='font-size:14px;line-height:1.6;color:#dce8ef';
+   const apology=document.createElement('p');apology.textContent='Une nouvelle version d’Abidjan Life est disponible. Clique sur le bouton pour ouvrir la version 1.50.0.';apology.style.cssText='font-size:14px;line-height:1.6;color:#dce8ef';
    const version=document.createElement('p');version.textContent='Nouvelle version : '+m.version;version.style.cssText='font-weight:800;color:#ffe0a0';
    const notes=document.createElement('p');notes.textContent=m.releaseNotes||'Améliorations et corrections du jeu.';notes.style.cssText='font-size:13px;color:#c4d5df;line-height:1.5';
    const size=document.createElement('p');const bytes=Math.max(0,Number(m.clientSizeBytes)||0);size.textContent=bytes?'Taille du fichier : '+(bytes/1000000).toLocaleString('fr-FR',{maximumFractionDigits:2})+' Mo ('+bytes.toLocaleString('fr-FR')+' octets)':'Taille du fichier : non renseignée';size.style.cssText='font-size:12px;color:#c4d5df;margin:0 0 8px';
    const track=document.createElement('div');track.style.cssText='height:14px;border-radius:20px;background:#07121c;border:1px solid #ffffff35;overflow:hidden;margin:20px 0 8px';
    const bar=document.createElement('div');bar.style.cssText='height:100%;width:0%;border-radius:20px;background:linear-gradient(90deg,#c28d36,#ffe09a);transition:width .18s ease';
    track.appendChild(bar);
-   const status=document.createElement('p');status.textContent='Prêt à télécharger la mise à jour.';status.style.cssText='font-size:12px;color:#b8cbd7;min-height:18px;margin:8px 0 14px';
+   const status=document.createElement('p');status.textContent='La version 1.50.0 est prête à être ouverte.';status.style.cssText='font-size:12px;color:#b8cbd7;min-height:18px;margin:8px 0 14px';
    const percent=document.createElement('p');percent.textContent='0 %';percent.style.cssText='font-size:13px;font-weight:800;color:#ffe0a0;margin:0 0 16px';
-   const button=document.createElement('button');button.type='button';button.textContent='LANCER LE CHARGEMENT';button.style.cssText='width:100%;padding:14px 18px;border:0;border-radius:10px;background:#e5b85e;color:#17232c;font-weight:900;font-size:15px;cursor:pointer';
+   const button=document.createElement('button');button.type='button';button.textContent='OUVRIR LA NOUVELLE VERSION';button.style.cssText='width:100%;padding:14px 18px;border:0;border-radius:10px;background:#e5b85e;color:#17232c;font-weight:900;font-size:15px;cursor:pointer';
    const help=document.createElement('p');help.textContent='Le jeu et tes sauvegardes restent en place pendant la préparation.';help.style.cssText='font-size:11px;color:#9eb4c2;margin:14px 0 0';
-   panel.append(title,apology,version,size,notes,track,percent,status,button,help);overlay.appendChild(panel);document.body.appendChild(overlay);
+   panel.append(title,apology,version,size,notes,status,button,help);overlay.appendChild(panel);document.body.appendChild(overlay);
 
    button.addEventListener('click',async()=>{
     if(button.disabled)return;
@@ -7744,12 +8148,12 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
       // Ne pas télécharger le fichier une première fois avec fetch puis une seconde
       // fois lors de la navigation : le navigateur charge la page directement.
       status.textContent='Ouverture de la nouvelle version…';
-      bar.style.width='100%';percent.textContent='100 %';
+      
       sessionStorage.setItem(key,'1');
       location.replace(target.toString());
      }else{
       status.textContent='Redémarrage du jeu pour appliquer la mise à jour…';
-      bar.style.width='100%';percent.textContent='100 %';sessionStorage.setItem(key,'1');
+      sessionStorage.setItem(key,'1');
       setTimeout(()=>location.reload(),500);
      }
     }catch(error){
@@ -7810,7 +8214,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
   const phoneNav=document.getElementById('phonePageDots')?.parentElement;if(phoneNav)phoneNav.style.display='none';
  }
  window.__ABJ_ORIGINAL_OPEN_PHONE_APP=openPhoneApp;
- const coreApps=new Set(['localisation','yango','jeux','appstore','parametres']);
+ const coreApps=new Set(['localisation','yango','jeux','appstore','parametres','gallery']);
  const isDownloadedApp=(id)=>{
   const saved=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];
   let legacy={};try{legacy=JSON.parse(safeGet('abj-installed-apps:'+normalizeIvorianMobile(activeGameAccount))||'{}')||{};}catch(e){window.__abjErr&&window.__abjErr(e)}
@@ -7820,10 +8224,10 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
   if(!coreApps.has(app)&&!isDownloadedApp(app)){showMessage('Télécharge d’abord cette application dans Apps Jeux.');return;}
   return window.__ABJ_ORIGINAL_OPEN_PHONE_APP(app==='appstore'?'jeux':app);
  };
- const downloadedAppMeta={contacts:{name:'Contacts',emoji:'👥'},messages:{name:'Messages',emoji:'💬'},appels:{name:'Appels',emoji:'📞'},offrescreateur:{name:'Offres spéciales',emoji:'🎁'},cheats:{name:'Codes',emoji:'⌨️'},recompenses:{name:'Récompenses',emoji:'🏆'},helicoptere:{name:'Hélicoptère',emoji:'🚁'},yango:{name:'Yango',emoji:'🚕'},achats:{name:'Achats & livraisons',emoji:'🛍️'},finances:{name:'Finances',emoji:'💳'},communication:{name:'Communication',emoji:'💬'},medias:{name:'Médias',emoji:'📸'},viepratique:{name:'Vie pratique',emoji:'🏙️'},monsuccess:{name:'Mon Success',emoji:'🏆'},immoabj:{name:'Immo ABJ',emoji:'🏘️'},proemploi:{name:'Pro Emploi',emoji:'🧰'},inventaire:{name:'Inventaire',emoji:'🎒'},afgamer:{name:'AF GAMER CI',emoji:'🎮'},google:{name:'Recherche',emoji:'🔎'}};
- function restoreDownloadedPhoneApps(){const host=document.getElementById('phoneApps');if(!host)return;const ids=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];ids.forEach(id=>{const a=downloadedAppMeta[id];if(!a||host.querySelector('[data-app="'+id+'"]'))return;let target=host.querySelector('.phoneAppsPage:last-child');if(!target||target.querySelectorAll('.phoneApp').length>=9){target=document.createElement('div');target.className='phoneAppsPage';host.appendChild(target);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+a.emoji+'</span>'+a.name;b.addEventListener('click',()=>openPhoneApp(id));target.appendChild(b);});}
+ const downloadedAppMeta={gallery:{name:'Galerie',emoji:'🖼️'},contacts:{name:'Contacts',emoji:'👥'},messages:{name:'Messages',emoji:'💬'},appels:{name:'Appels',emoji:'📞'},offrescreateur:{name:'Offres spéciales',emoji:'🎁'},cheats:{name:'Codes',emoji:'⌨️'},recompenses:{name:'Récompenses',emoji:'🏆'},helicoptere:{name:'Hélicoptère',emoji:'🚁'},yango:{name:'Yango',emoji:'🚕'},achats:{name:'Achats & livraisons',emoji:'🛍️'},finances:{name:'Finances',emoji:'💳'},communication:{name:'Communication',emoji:'💬'},medias:{name:'Médias',emoji:'📸'},viepratique:{name:'Vie pratique',emoji:'🏙️'},monsuccess:{name:'Mon Success',emoji:'🏆'},immoabj:{name:'Immo ABJ',emoji:'🏘️'},proemploi:{name:'Pro Emploi',emoji:'🧰'},inventaire:{name:'Inventaire',emoji:'🎒'},afgamer:{name:'AF GAMER CI',emoji:'🎮'},google:{name:'Recherche',emoji:'🔎'}};
+ function restoreDownloadedPhoneApps(){const host=document.getElementById('phoneApps');if(!host)return;const ids=lifeState&&lifeState.v19&&Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];ids.forEach(id=>{const a=downloadedAppMeta[id];if(!a||host.querySelector('[data-app="'+id+'"]'))return;let target=host.querySelector('.phoneAppsPage:last-child');if(!target||target.querySelectorAll('.phoneApp').length>=9){target=document.createElement('div');target.className='phoneAppsPage';host.appendChild(target);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+a.emoji+'</span><b>'+a.name+'</b>';b.addEventListener('click',()=>openPhoneApp(id));target.appendChild(b);});}
  const activateBeforePhoneRestore=activateGameAccount;
- activateGameAccount=async function(phone){await activateBeforePhoneRestore(phone);if(lifeState){lifeState.v19=lifeState.v19||{};lifeState.v19.installedApps=Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];['contacts','messages','appels','offrescreateur','cheats','recompenses'].forEach(id=>{if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);});if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('recompenses'))lifeState.v19.installedApps.push('recompenses');if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('helicoptere'))lifeState.v19.installedApps.push('helicoptere');saveLifeProgress(false);}setTimeout(()=>{restoreDownloadedPhoneApps();window.ABJ_CONNECT_ONLINE&&window.ABJ_CONNECT_ONLINE();},350);};
+ activateGameAccount=async function(phone){await activateBeforePhoneRestore(phone);const creatorBadge=document.getElementById('creatorTitleBadge');if(creatorBadge)creatorBadge.style.display=(typeof isCreatorAccount==='function'&&isCreatorAccount(activeGameAccount))?'inline-flex':'none';if(lifeState){lifeState.v19=lifeState.v19||{};lifeState.v19.installedApps=Array.isArray(lifeState.v19.installedApps)?lifeState.v19.installedApps:[];['gallery','contacts','messages','appels','offrescreateur','cheats','recompenses'].forEach(id=>{if(!lifeState.v19.installedApps.includes(id))lifeState.v19.installedApps.push(id);});if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('recompenses'))lifeState.v19.installedApps.push('recompenses');if(creatorRoleVerified&&!lifeState.v19.installedApps.includes('helicoptere'))lifeState.v19.installedApps.push('helicoptere');saveLifeProgress(false);}setTimeout(()=>{restoreDownloadedPhoneApps();window.ABJ_CONNECT_ONLINE&&window.ABJ_CONNECT_ONLINE();},350);};
  window.ABJ_RESTORE_PHONE_APPS=restoreDownloadedPhoneApps;
  const countBtn=document.createElement('button');countBtn.id='abjOnlineCount';countBtn.type='button';countBtn.innerHTML='👥 <b id="abjOnlineNumber">0</b>';
  countBtn.style.cssText='display:none;position:relative;z-index:2;margin-left:auto;padding:6px 9px;border:1px solid #f0d18d;border-radius:18px;background:#081827;color:#fff;font:700 12px system-ui;cursor:pointer;box-shadow:0 2px 8px #0008';
@@ -8371,7 +8775,7 @@ function enterOwnedVehicle(mesh){
  if(!recVehiclePapersReady(mesh.userData.ownedId)){showMessage('Dossier incomplet : carte grise, assurance automobile et visite technique sont obligatoires dans MY V.');return;}
  const rec=abjV19().ownedVehicles.find(v=>v.id===mesh.userData.ownedId);
  if(!rec||rec.key!==mesh.userData.vehicleKey||abjV19().activeVehicleKey!==rec.key){showMessage('Cette clé ne correspond pas à ce véhicule.');return;}
- drivingVehicle=mesh;player.visible=false;if(rec.type==='moto'){if(mesh.userData.rider)mesh.remove(mesh.userData.rider);const profile=lifeState.playerProfile||{},rider=createCharacter({gender:profile.gender,skin:profile.skin,hair:profile.hair,shirt:profile.shirt,pants:profile.pants,bodyType:profile.bodyType,hairstyle:profile.hairstyle,outfit:profile.outfit});rider.scale.set(.72,.72,.72);rider.position.set(0,.66,-.12);const rd=rider.userData||{};if(rd.bodyGroup)rd.bodyGroup.rotation.x=-.12;for(const k of ['legL','legR'])if(rd[k]){rd[k].rotation.x=-1.02;rd[k].rotation.z=k==='legL'?.10:-.10;}for(const k of ['armL','armR'])if(rd[k]){rd[k].rotation.x=-1.05;rd[k].rotation.z=k==='armL'?.16:-.16;}if(rd.headGroup)rd.headGroup.rotation.x=-.04;const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,14,12),new THREE.MeshStandardMaterial({color:0x263f58,roughness:.35,metalness:.18}));helmet.scale.set(1,.88,1.05);helmet.position.set(0,2.05,.02);rider.add(helmet);const visor=new THREE.Mesh(new THREE.SphereGeometry(.17,12,8),new THREE.MeshStandardMaterial({color:0x8db8c8,transparent:true,opacity:.72,metalness:.3,roughness:.2}));visor.scale.set(1,.46,.34);visor.position.set(0,2.08,.22);rider.add(visor);mesh.add(rider);mesh.userData.rider=rider;}showMessage(rec.type==='moto'?'Tu es assis sur ta moto. ZQSD pour rouler · E pour descendre.':'Tu conduis '+rec.brand+' '+rec.model+' · ZQSD pour conduire · E pour descendre.');
+ drivingVehicle=mesh;player.visible=false;if(rec.type==='moto'){if(mesh.userData.rider)mesh.remove(mesh.userData.rider);const profile=lifeState.playerProfile||{},rider=createCharacter({gender:profile.gender,skin:profile.skin,hair:profile.hair,shirt:profile.shirt,pants:profile.pants,bodyType:profile.bodyType,hairstyle:profile.hairstyle,outfit:profile.outfit});rider.scale.set(.72,.72,.72);rider.position.set(0,.23,-.30);const rd=rider.userData||{};rider.rotation.x=0;if(rd.torso)rd.torso.rotation.x=.30;if(rd.hips)rd.hips.rotation.x=-.34;for(const k of ['legL','legR'])if(rd[k]){rd[k].rotation.x=-.92;rd[k].rotation.z=k==='legL'?.10:-.10;}for(const k of ['kneeL','kneeR'])if(rd[k])rd[k].rotation.x=1.18;for(const k of ['armL','armR'])if(rd[k]){rd[k].rotation.x=-1.16;rd[k].rotation.z=k==='armL'?.08:-.08;}for(const k of ['elbowL','elbowR'])if(rd[k])rd[k].rotation.x=-.48;if(rd.headGroup)rd.headGroup.rotation.x=.04;const helmet=new THREE.Mesh(new THREE.SphereGeometry(.25,14,12),new THREE.MeshStandardMaterial({color:0x263f58,roughness:.35,metalness:.18}));helmet.scale.set(1,.88,1.05);helmet.position.set(0,2.05,.02);rider.add(helmet);const visor=new THREE.Mesh(new THREE.SphereGeometry(.17,12,8),new THREE.MeshStandardMaterial({color:0x8db8c8,transparent:true,opacity:.72,metalness:.3,roughness:.2}));visor.scale.set(1,.46,.34);visor.position.set(0,2.08,.22);rider.add(visor);mesh.add(rider);mesh.userData.rider=rider;}showMessage(rec.type==='moto'?'Tu es assis sur ta moto. ZQSD pour rouler · E pour descendre.':'Tu conduis '+rec.brand+' '+rec.model+' · ZQSD pour conduire · E pour descendre.');
 }
 function exitOwnedVehicle(){
  if(!drivingVehicle)return;
@@ -8470,8 +8874,7 @@ renderAccountSettingsApp=function(){
  section.querySelector('#abjSaveSettings').onclick=()=>{lifeState.gameSettings={...lifeState.gameSettings,graphics:graphics.value,cameraSensitivity:Number(sens.value),controlMode:controls.value,showHints:hints.checked,infiniteNeeds:infiniteNeeds.checked};applyAbjGameSettings();saveLifeProgress(false);section.querySelector('#abjSettingsStatus').textContent='Paramètres enregistrés.';};
 };
 </script>
-
-
+<script>
 /* V1.25 — chargement visible avant l'initialisation lourde + locomotion plus naturelle. */
 (function(){
   const loadStyle=document.createElement('style');
@@ -8507,7 +8910,6 @@ renderAccountSettingsApp=function(){
 })();
 
 
-<script>
 /* ABJ V1.27 — gares, aide des joueurs, commissariat et ambiance sonore. */
 (function(){
  'use strict';
@@ -8566,7 +8968,7 @@ renderAccountSettingsApp=function(){
  const oldNPCs=createNPCs;
  createNPCs=function(n){return oldNPCs(Math.min(innerWidth<700?125:270,Math.round((Number(n)||0)*1.32)));};
  const oldTraffic=createAbidjanTraffic;
- createAbidjanTraffic=function(n){const before=vehicles.length;oldTraffic(Math.min(innerWidth<700?125:270,Math.round((Number(n)||0)*1.3)));for(let i=before;i<vehicles.length;i++){const v=vehicles[i],t=v&&v.userData&&v.userData.vType;if(!v||!['moto','moto_livreur'].includes(t)||v.userData.riderAdded)continue;v.userData.riderAdded=true;const delivery=t==='moto_livreur',r=createCharacter({gender:'homme',shirt:delivery?0x188c55:[0x244b72,0x9c4335,0xd2a33a][i%3],pants:0x202b32,skin:0x80553c});r.scale.set(.53,.53,.53);r.position.set(0,.78,-.12);if(r.userData){if(r.userData.bodyGroup)r.userData.bodyGroup.rotation.x=-.12;for(const k of ['legL','legR'])if(r.userData[k])r.userData[k].rotation.x=-1.05;for(const k of ['armL','armR'])if(r.userData[k]){r.userData[k].rotation.x=-1.05;r.userData[k].rotation.z=k==='armL'?.12:-.12;}}v.add(r);const helmet=new THREE.Mesh(new THREE.SphereGeometry(.255,12,10),new THREE.MeshStandardMaterial({color:delivery?0xf1b72c:0x243c58}));helmet.position.set(0,2.28,.015);r.add(helmet);if(delivery){const bag=new THREE.Mesh(new THREE.BoxGeometry(.62,.62,.42),new THREE.MeshStandardMaterial({color:0xf1b72c}));bag.position.set(0,1.55,-.33);r.add(bag);}if(t==='moto'&&Math.random()<.22){const passenger=createCharacter({gender:'femme',shirt:0x9b5b83,pants:0x2d3540,skin:0x80553c});passenger.scale.set(.43,.43,.43);passenger.position.set(0,.72,-.82);v.add(passenger);}}};
+ createAbidjanTraffic=function(n){const before=vehicles.length;oldTraffic(Math.min(innerWidth<700?125:270,Math.round((Number(n)||0)*1.3)));for(let i=before;i<vehicles.length;i++){const v=vehicles[i],t=v&&v.userData&&v.userData.vType;if(!v||!['moto','moto_livreur'].includes(t)||v.userData.riderAdded)continue;v.userData.riderAdded=true;const delivery=t==='moto_livreur',r=createCharacter({gender:'homme',shirt:delivery?0x188c55:[0x244b72,0x9c4335,0xd2a33a][i%3],pants:0x202b32,skin:0x80553c});r.scale.set(.53,.53,.53);r.position.set(0,.36,-.38);if(r.userData){if(r.userData.torso)r.userData.torso.rotation.x=.30;if(r.userData.hips)r.userData.hips.rotation.x=-.34;for(const k of ['legL','legR'])if(r.userData[k]){r.userData[k].rotation.x=-.92;r.userData[k].rotation.z=k==='legL'?.10:-.10;}for(const k of ['kneeL','kneeR'])if(r.userData[k])r.userData[k].rotation.x=1.18;for(const k of ['armL','armR'])if(r.userData[k]){r.userData[k].rotation.x=-1.16;r.userData[k].rotation.z=k==='armL'?.08:-.08;}for(const k of ['elbowL','elbowR'])if(r.userData[k])r.userData[k].rotation.x=-.48;}v.add(r);const helmet=new THREE.Mesh(new THREE.SphereGeometry(.255,12,10),new THREE.MeshStandardMaterial({color:delivery?0xf1b72c:0x243c58}));helmet.position.set(0,2.08,.015);r.add(helmet);if(delivery){const bag=new THREE.Mesh(new THREE.BoxGeometry(.62,.62,.42),new THREE.MeshStandardMaterial({color:0xf1b72c}));bag.position.set(0,1.55,-.33);r.add(bag);}if(t==='moto'&&Math.random()<.22){const passenger=createCharacter({gender:'femme',shirt:0x9b5b83,pants:0x2d3540,skin:0x80553c});passenger.scale.set(.43,.43,.43);passenger.position.set(0,.72,-.82);v.add(passenger);}}};
  const oldVehicle=createVehicleMesh;
  createVehicleMesh=function(type){const g=oldVehicle(type),glass=new THREE.MeshStandardMaterial({color:0x8fc6d8,transparent:true,opacity:.68,metalness:.18,roughness:.2}),chrome=new THREE.MeshStandardMaterial({color:0x9da9ae,metalness:.78,roughness:.28}),white=new THREE.MeshBasicMaterial({color:0xfff1c5}),red=new THREE.MeshBasicMaterial({color:0xe7473e});if(['taxi','yango','woro','voiture','luxe'].includes(type)){const a=new THREE.Mesh(new THREE.BoxGeometry(1.48,.48,.08),glass);a.position.set(0,1.34,1.48);g.add(a);const b=new THREE.Mesh(new THREE.BoxGeometry(1.42,.42,.08),glass);b.position.set(0,1.34,-1.48);g.add(b);for(const side of [-1,1]){const pane=new THREE.Mesh(new THREE.BoxGeometry(.07,.43,.9),glass);pane.position.set(side*.93,1.35,.25);g.add(pane);const mirror=new THREE.Mesh(new THREE.BoxGeometry(.22,.12,.25),chrome);mirror.position.set(side*1.02,1.38,1.02);g.add(mirror);const hl=new THREE.Mesh(new THREE.BoxGeometry(.28,.16,.08),white);hl.position.set(side*.61,.94,2.12);g.add(hl);const tl=new THREE.Mesh(new THREE.BoxGeometry(.25,.18,.08),red);tl.position.set(side*.61,.94,-2.12);g.add(tl);}const bumper=new THREE.Mesh(new THREE.BoxGeometry(1.35,.16,.16),chrome);bumper.position.set(0,.53,2.14);g.add(bumper);}else if(type==='moto'||type==='moto_livreur'){for(const side of [-1,1]){const m=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),chrome);m.position.set(side*.38,1.15,.65);g.add(m);}const lamp=new THREE.Mesh(new THREE.SphereGeometry(.13,10,8),white);lamp.position.set(0,.94,.85);g.add(lamp);}return g;};
  // Son : bouton visible pour déclencher la musique, puis klaxons synthétiques près du joueur.
@@ -9243,18 +9645,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
 })();
 </script>
 
-<script>
-/* ABIDJAN LIFE — le bouton d'installation est volontairement retiré de cette version. */
-(function(){
- if(window.__ABJ_PWA_INIT__)return;
- window.__ABJ_PWA_INIT__=true;
- const removeInstallButton=()=>{const button=document.getElementById('abjInstallApp');if(button)button.remove();};
- removeInstallButton();
- document.addEventListener('DOMContentLoaded',removeInstallButton,{once:true});
- window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();removeInstallButton();});
- window.addEventListener('appinstalled',removeInstallButton);
-})();
-</script>
+
 
 <script>
 /* ABJ V1.29 — éléments repérés sur les captures de référence, intégrés à la logique du monde (FCFA, quartiers réels). */
@@ -9449,6 +9840,7 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
  };
  const originalEnter=enterBuilding;
  enterBuilding=function(door){
+  if(door&&door.sharedAssetId){const own=state().properties.some(p=>'property:'+String(p.id)===door.sharedAssetId);const tenant=lifeState.rentalContract&&lifeState.rentalContract.assetId===door.sharedAssetId;if(!own&&!tenant){showMessage('Ce logement appartient à un autre joueur. Il faut obtenir un bail pour y entrer.');return;}}
   if(door&&door.lazy&&!interiors[door.id]){
    try{
     const floors=Math.max(1,Math.min(6,Math.round(door.bh/3.1)));
@@ -12871,7 +13263,7 @@ function layoutHUD(){
   #moneyLabel,#money{position:fixed!important;top:8px!important;right:12px!important;z-index:26!important}
   #abjOnlineCount{position:fixed!important;top:36px!important;right:12px!important;left:auto!important;z-index:26!important}
   #respectLabel{position:fixed!important;left:12px!important;bottom:12px!important;z-index:26!important;background:rgba(10,20,28,.72);padding:6px 10px;border-radius:10px}
-  #creatorOrbAssistant{top:auto!important;bottom:120px!important;right:16px!important}
+  #creatorOrbAssistant{top:auto!important;bottom:140px!important;right:16px!important}
   body.abj-phone-open #creatorOrbAssistant,body.abj-map-open #creatorOrbAssistant{display:none!important}
   #playerSpeech,#emojiBar,.emoji-btn{position:fixed!important;left:12px!important;top:auto!important;bottom:70px!important;z-index:24!important}
   @media(max-width:700px){
@@ -12895,6 +13287,7 @@ function layoutHUD(){
   // Respect label
   const rl=document.getElementById('respectLabel');
   if(rl) rl.textContent='⭐ '+(Math.round(lifeState.respect||0));
+  const creatorBadge=document.getElementById('creatorTitleBadge');if(creatorBadge) creatorBadge.style.display=(typeof isCreatorAccount==='function'&&isCreatorAccount(activeGameAccount))?'inline-flex':'none';
 }
 
 /* ---------- Joystick mobile ---------- */
@@ -12996,12 +13389,17 @@ function ensureAfGamerAccess(){
 
 /* ---------- Moto : posture assise (jambes visibles) ---------- */
 function fixMotoRiderPose(){
-  if(!player||!player.userData)return;
-  if(!window.__abjOnMoto)return;
-  // Légère position haute sur la selle
-  if(player.userData.legL) player.userData.legL.rotation.x = 0.85;
-  if(player.userData.legR) player.userData.legR.rotation.x = 0.85;
-  if(player.userData.spine) player.userData.spine.rotation.x = 0.12;
+  const bike=typeof drivingVehicle!=='undefined'?drivingVehicle:null;
+  const rider=bike&&bike.userData?bike.userData.rider:null;
+  if(!rider||!rider.userData)return;
+  const d=rider.userData;
+  rider.position.set(0,.08,-.12);rider.rotation.x=0;
+  if(d.torso)d.torso.rotation.x=.20;if(d.hips)d.hips.rotation.x=-.26;
+  if(d.legL)d.legL.rotation.set(-.76,0,.18);if(d.legR)d.legR.rotation.set(-.76,0,-.18);
+  if(d.kneeL)d.kneeL.rotation.x=1.05;if(d.kneeR)d.kneeR.rotation.x=1.05;
+  if(d.armL)d.armL.rotation.set(-1.10,0,.10);if(d.armR)d.armR.rotation.set(-1.10,0,-.10);
+  if(d.elbowL)d.elbowL.rotation.x=-.38;if(d.elbowR)d.elbowR.rotation.x=-.38;
+  if(d.headGroup)d.headGroup.rotation.x=.04;
 }
 // Détecter montée moto (owned vehicle)
 setInterval(()=>{
@@ -14597,6 +14995,458 @@ requestAnimationFrame(arrowLoop);
 console.info('ABJ V1.49.1 — inscription renforcée et correctifs de stabilité');
 })();
 
+</script>
+
+
+<style id="abj-v150-mobile-hud-correction">
+@media (max-width:760px), (pointer:coarse) {
+
+  /* Le menu emoji regroupe déjà tous les besoins : masquer toute la barre compacte. */
+  #lifeHud { display:none !important; visibility:hidden !important; }
+  #needToggleEmoji { display:grid !important; visibility:visible !important; pointer-events:auto !important; }
+
+  /* Retirer uniquement le joystick analogique; garder le pavé directionnel tactile. */
+  #abjMobileStick { display:none !important; visibility:hidden !important; pointer-events:none !important; }
+  #touchControls { display:flex !important; }
+  /* Les informations météo et calendrier du monde restent visibles. */
+  #v12Weather { display:block !important; position:fixed !important; top:calc(env(safe-area-inset-top, 0px) + 62px) !important; right:12px !important; left:auto !important; z-index:30 !important; }
+  #v12Calendar { display:block !important; position:fixed !important; top:calc(env(safe-area-inset-top, 0px) + 104px) !important; right:12px !important; left:auto !important; z-index:30 !important; max-width:min(82vw,360px) !important; text-align:right !important; }
+  #lifeClock { display:block !important; position:fixed !important; top:calc(env(safe-area-inset-top, 0px) + 12px) !important; right:12px !important; z-index:31 !important; }
+  /* Le visage/emoji devient un bouton indépendant de la barre des besoins. */
+  #lifeHud #lifeMood { display:none !important; }
+  #needToggleEmoji { display:grid !important; position:fixed !important; left:16px !important; bottom:calc(env(safe-area-inset-bottom, 0px) + 150px) !important; z-index:45 !important; }
+  /* Le montant reste masqué comme demandé précédemment. */
+  #lifeHud #moneyLabel { display:none !important; }
+}
+#abjTopOnlineBadge {
+  position:fixed; top:calc(env(safe-area-inset-top, 0px) + 12px); left:50%;
+  transform:translateX(-50%); z-index:60; display:none; align-items:center; justify-content:center; gap:12px;
+  padding:0; border:0; border-radius:0; background:transparent; box-shadow:none;
+  color:#fff; font:800 14px system-ui; pointer-events:none;
+}
+#abjTopOnlineBadge .abjTopStat {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  min-height:36px; padding:7px 13px; border:1px solid rgba(240,209,141,.9);
+  border-radius:22px; background:rgba(8,24,39,.96); box-shadow:0 4px 16px #0008;
+  white-space:nowrap;
+}
+#abjTopOnlineBadge .abjOnlineIcon { font-size:19px; line-height:1; }
+#abjTopOnlineBadge .abjWalletStat { border-color:rgba(167,240,196,.75); }
+#abjTopOnlineBadge .abjWalletIcon { font-size:18px; line-height:1; }
+@media (max-width:760px), (pointer:coarse) {
+  #abjTopOnlineBadge { display:flex !important; }
+  #abjOnlineCount { display:none !important; }
+}
+</style>
+<script id="abj-v150-mobile-hud-runtime">
+(function(){
+  function install(){
+    if(document.getElementById('abjTopOnlineBadge')) return;
+    const badge=document.createElement('div');
+    badge.id='abjTopOnlineBadge';
+    badge.setAttribute('aria-label','Nombre de joueurs connectés');
+    badge.innerHTML='<span class="abjTopStat abjPlayersStat"><span class="abjOnlineIcon" aria-hidden="true">👥</span><span id="abjTopOnlineNumber">0</span></span><span class="abjTopStat abjWalletStat"><span class="abjWalletIcon" aria-hidden="true">💰</span><span id="abjTopMoney">0 FCFA</span></span>';
+    document.body.appendChild(badge);
+    const oldUpdate=window.updateOnlineCount;
+    window.updateOnlineCount=function(n){
+      const value=String(Math.max(0,Number(n)||0));
+      const top=document.getElementById('abjTopOnlineNumber');
+      if(top)top.textContent=value;
+      if(typeof oldUpdate==='function')oldUpdate(n);
+    };
+    const existing=document.getElementById('abjOnlineNumber');
+    if(existing)window.updateOnlineCount(existing.textContent);
+    const refresh=()=>{
+      const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+      if(!api)return;
+      fetch(api+'/api/players',{cache:'no-store'}).then(r=>r.ok?r.json():null)
+        .then(d=>{if(d&&typeof window.updateOnlineCount==='function')window.updateOnlineCount(d.count);})
+        .catch(()=>{});
+    };
+    refresh();setInterval(refresh,30000);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
+  else install();
+})();
+</script>
+
+
+<style id="abj-v150-world-only-hud">
+/* Les indicateurs de simulation n'existent que dans le monde jouable. */
+#lifeClock,#v12Weather,#v12Calendar,#abjTopOnlineBadge { display:none !important; }
+body.abj-world-exploring #lifeClock,
+body.abj-world-exploring #v12Weather,
+body.abj-world-exploring #v12Calendar { display:block !important; }
+body.abj-world-exploring #abjTopOnlineBadge { display:flex !important; }
+</style>
+<script id="abj-v150-world-only-hud-runtime">
+(function(){
+  let previous=false;
+  function syncWorldHud(){
+    const active=!!(typeof gameStarted!=='undefined' && gameStarted && typeof worldReady!=='undefined' && worldReady);
+    if(active!==previous){
+      previous=active;
+      document.body.classList.toggle('abj-world-exploring',active);
+    }
+  }
+  function start(){
+    syncWorldHud();
+    window.addEventListener('pageshow',syncWorldHud);
+    window.addEventListener('focus',syncWorldHud);
+    setInterval(syncWorldHud,300);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
+})();
+</script>
+
+
+<script id="abj-v150-world-only-hud">
+(function(){
+  function syncWorldHud(){
+    let inWorld=false;
+    try { inWorld=!!(gameStarted&&worldReady); } catch(e) {}
+    const ids=['abjTopOnlineBadge','lifeClock','v12Weather','v12Calendar'];
+    ids.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el)return;
+      if(inWorld)el.style.removeProperty('display');
+      else el.style.setProperty('display','none','important');
+    });
+  }
+  function start(){
+    syncWorldHud();
+    setInterval(syncWorldHud,350);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
+})();
+</script>
+
+
+<style id="abj-v150-map-hud-stability">
+@media (max-width:760px), (pointer:coarse) {
+  #abjTopOnlineBadge {left:50%!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 8px)!important;transform:translateX(-50%)!important;white-space:nowrap!important;min-width:max-content!important;gap:6px!important}
+  #abjTopOnlineBadge {gap:10px!important}
+  #abjTopOnlineBadge .abjTopStat {min-height:35px;padding:7px 11px}
+  #abjTopOnlineBadge #abjTopMoney {font-size:12px;font-weight:900;color:#a7f0c4}
+  #miniMapWrap {display:block!important;visibility:visible!important;opacity:1!important;z-index:18!important;backface-visibility:hidden;will-change:contents}
+  body.abj-world-exploring #miniMapWrap {display:block!important;visibility:visible!important;opacity:1!important}
+}
+body:not(.abj-world-exploring) #miniMapWrap {visibility:hidden!important;opacity:0!important}
+body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!important;opacity:1!important}
+</style>
+<script id="abj-v150-map-money-stability">
+(function(){
+  function refreshMoney(){
+    const target=document.getElementById('abjTopMoney');
+    if(!target)return;
+    let amount=0;
+    try{amount=Number(lifeState&&lifeState.money)||0;}catch(e){}
+    target.textContent=Math.floor(amount).toLocaleString('fr-FR')+' FCFA';
+  }
+  function drawStableMiniMap(){
+    const c=document.getElementById('miniMapCanvas');
+    if(!c||!player||!scene||!gameStarted||!worldReady)return;
+    const ctx=c.getContext('2d');if(!ctx)return;
+    const W=c.width,H=c.height,cx=W/2,cy=H/2,R=145,range=1150;
+    let pos;try{pos=getPlayerMapPosition();}catch(e){pos={x:player.position.x,z:player.position.z};}
+    const px=Number(pos.x)||0,pz=Number(pos.z)||0,scale=R/range;
+    ctx.clearRect(0,0,W,H);ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();
+    ctx.fillStyle='#b9c8b5';ctx.fillRect(0,0,W,H);
+    const roads=(osmRoadSegments&&osmRoadSegments.length)?osmRoadSegments:(scene.userData.playableUrbanCoreRoads||[]);
+    ctx.lineCap='round';
+    for(const road of roads){
+      if(!road||!road.a||!road.b)continue;
+      const mx=(road.a.x+road.b.x)/2,mz=(road.a.z+road.b.z)/2;
+      if(Math.abs(mx-px)>range*1.6||Math.abs(mz-pz)>range*1.6)continue;
+      const major=['motorway','trunk','primary'].includes(road.type);
+      ctx.strokeStyle=major?'#d39b50':'#fffdf4';
+      ctx.lineWidth=Math.max(1.5,(Number(road.width)||5)*scale*(major?1.3:1));
+      ctx.beginPath();ctx.moveTo(cx+(road.a.x-px)*scale,cy+(road.a.z-pz)*scale);
+      ctx.lineTo(cx+(road.b.x-px)*scale,cy+(road.b.z-pz)*scale);ctx.stroke();
+    }
+    // Les bâtiments sont représentés par leur empreinte réelle, avec une taille minimale lisible.
+    for(const b of (allBuildings||[])){
+      if(!b||!Number.isFinite(b.x)||!Number.isFinite(b.z))continue;
+      const dx=b.x-px,dz=b.z-pz;if(Math.abs(dx)>range||Math.abs(dz)>range)continue;
+      const bw=Math.max(3.2,Math.min(18,Number(b.w)||8)*scale);
+      const bd=Math.max(3.2,Math.min(18,Number(b.d)||8)*scale);
+      ctx.fillStyle=/shop|commerce|urban-shop|mairie|market/i.test(String(b.type||''))?'#d58c3d':'#64776b';
+      ctx.strokeStyle='rgba(35,53,43,.55)';ctx.lineWidth=.65;
+      ctx.fillRect(cx+dx*scale-bw/2,cy+dz*scale-bd/2,bw,bd);
+      ctx.strokeRect(cx+dx*scale-bw/2,cy+dz*scale-bd/2,bw,bd);
+    }
+    for(const v of (vehicles||[])){
+      if(!v||!v.visible||v.userData?.wreck)continue;
+      const dx=v.position.x-px,dz=v.position.z-pz;if(Math.abs(dx)>range||Math.abs(dz)>range)continue;
+      ctx.fillStyle=v.userData?.vType==='gbaka'?'#e58b22':'#e6bd36';
+      ctx.beginPath();ctx.arc(cx+dx*scale,cy+dz*scale,2.4,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='#1769d2';ctx.strokeStyle='#fff';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
+    const label=document.getElementById('miniMapLabel');
+    if(label){let zone=null;try{zone=getCommuneZoneAt(px,pz);}catch(e){}label.textContent=(zone?.name||'Abidjan')+' · '+(currentQuartier||'');}
+  }
+  function install(){
+    const original=window.updateOnlineCount;
+    window.updateOnlineCount=function(n){
+      const el=document.getElementById('abjTopOnlineNumber');
+      if(el)el.textContent=String(Math.max(0,Number(n)||0));
+      if(typeof original==='function')original(n);
+    };
+    setInterval(refreshMoney,700);
+    setInterval(drawStableMiniMap,450);
+    refreshMoney();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
+</script>
+
+<script id="abj-v151-save-pulse">
+(function(){
+  setInterval(function(){try{if(gameStarted&&worldReady&&activeGameAccount)saveLifeProgress(false);}catch(e){console.warn('Auto-save sécurité:',e);}},12000);
+})();
+</script>
+
+<script>
+(function(){
+ let installPrompt=null;
+ const installButton=document.getElementById('abjInstallApp');
+ const clock=document.getElementById('abjHomeWorldClock');
+ const players=document.getElementById('abjHomePlayerCount');
+ const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+ function updateWorldClock(){const gameClock=document.getElementById('lifeClock');if(gameClock&&/^\d{1,2}:\d{2}$/.test(gameClock.textContent.trim()))clock.textContent=gameClock.textContent.trim();}
+ async function updatePlayers(){if(!api||!players)return;try{const response=await fetch(api+'/api/players',{cache:'no-store'});if(!response.ok)return;const data=await response.json();const count=Number(data.count??(Array.isArray(data.players)?data.players.length:NaN));if(Number.isFinite(count))players.textContent=count.toLocaleString('fr-FR');}catch(e){}}
+ window.addEventListener('beforeinstallprompt',function(event){event.preventDefault();installPrompt=event;});
+ if(installButton)installButton.addEventListener('click',async function(){if(installPrompt){installPrompt.prompt();try{await installPrompt.userChoice;}catch(e){}installPrompt=null;}else{const isiOS=/iphone|ipad|ipod/i.test(navigator.userAgent);alert(isiOS?'Pour installer le jeu : touche Partager dans Safari, puis « Sur l’écran d’accueil ».':'Pour installer le jeu : ouvre le menu du navigateur puis choisis « Installer l’application » ou « Ajouter à l’écran d’accueil ».');}});
+ window.addEventListener('appinstalled',function(){if(installButton)installButton.textContent='Jeu installé';});
+ updateWorldClock();updatePlayers();setInterval(updateWorldClock,1000);setInterval(updatePlayers,30000);
+})();
+</script>
+
+<!-- Correctifs HUD mobile et mini-carte de quartier -->
+<style id="abj-v152-hud-quarter-map">
+@media (max-width:760px), (pointer:coarse) {
+  /* Les besoins restent accessibles uniquement depuis le bouton emoji. */
+  #lifeHud,#topMenu,.lifeNeed,#hungerFill,#energyFill,#faimBar,#energieBar {display:none!important;visibility:hidden!important}
+  /* Une seule source d'argent et un seul compteur de joueurs : le badge du haut. */
+  #moneyLabel,#money,#abjOnlineCount,#abjOnlinePanel {display:none!important;visibility:hidden!important}
+  #abjTopOnlineBadge {display:flex!important;position:fixed!important;left:50%!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 7px)!important;transform:translateX(-50%)!important;z-index:70!important;gap:6px!important;min-width:max-content!important}
+  #abjTopOnlineBadge .abjTopStat {min-height:32px!important;padding:5px 9px!important;font-size:12px!important}
+  /* Horloge en haut à gauche, météo et calendrier juste en dessous. */
+  body.abj-world-exploring #lifeClock {display:block!important;position:fixed!important;left:8px!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 7px)!important;z-index:71!important;padding:6px 9px!important;font-size:13px!important}
+  body.abj-world-exploring #v12Weather {display:block!important;position:fixed!important;left:8px!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 43px)!important;z-index:70!important;font-size:10px!important;padding:5px 7px!important}
+  body.abj-world-exploring #v12Calendar {display:block!important;position:fixed!important;left:8px!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 75px)!important;z-index:70!important;font-size:9px!important;padding:4px 6px!important;text-align:left!important;max-width:145px!important}
+  /* Mini-carte déplacée en haut à droite et réduite pour laisser place aux commandes. */
+  #miniMapWrap {display:block!important;position:fixed!important;left:auto!important;right:8px!important;top:calc(env(safe-area-inset-top,0px) + 7px)!important;bottom:auto!important;width:112px!important;height:112px!important;transform:none!important;z-index:68!important;pointer-events:auto!important;cursor:pointer!important;touch-action:manipulation!important;border-width:2px!important}
+  #miniMapCanvas {pointer-events:auto!important;touch-action:manipulation!important}
+  #miniMapLabel {font-size:8px!important;max-width:100px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  /* Bouton besoins entre le compteur supérieur et la mini-carte. */
+  #needToggleEmoji {display:grid!important;visibility:visible!important;position:fixed!important;left:50%!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 49px)!important;bottom:auto!important;transform:translateX(-50%)!important;width:42px!important;height:42px!important;font-size:23px!important;z-index:72!important;pointer-events:auto!important}
+  /* Retirer la bulle/barre flottante qui apparaissait au-dessus du personnage. */
+  #playerSpeech {display:none!important;visibility:hidden!important}
+  #respectLabel {left:8px!important;bottom:90px!important}
+}
+</style>
+<script id="abj-v152-hud-quarter-map-runtime">
+(function(){
+  function installQuarterMap(){
+    const wrap=document.getElementById('miniMapWrap');
+    if(wrap&&!wrap.dataset.quarterTap){
+      wrap.dataset.quarterTap='1';
+      wrap.setAttribute('role','button');
+      wrap.setAttribute('aria-label','Ouvrir la carte du quartier');
+      wrap.setAttribute('tabindex','0');
+      const openQuarter=()=>{
+        if(typeof gameStarted==='undefined'||!gameStarted||typeof worldReady==='undefined'||!worldReady||!player)return;
+        try{
+          const p=typeof getPlayerMapPosition==='function'?getPlayerMapPosition():{x:player.position.x,z:player.position.z};
+          mapView.centerX=p.x;mapView.centerZ=p.z;mapView.follow=false;mapView.zoom=4.8;
+          openBigMap();
+        }catch(error){console.warn('Ouverture de la carte du quartier impossible',error);}
+      };
+      wrap.addEventListener('click',openQuarter);
+      wrap.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openQuarter();}});
+    }
+    const btn=document.getElementById('needToggleEmoji');
+    if(btn){btn.style.pointerEvents='auto';btn.style.zIndex='72';}
+  }
+  function refreshQuarterMap(){
+    const c=document.getElementById('miniMapCanvas');
+    if(!c||typeof player==='undefined'||!player||typeof scene==='undefined'||!scene||typeof gameStarted==='undefined'||!gameStarted||typeof worldReady==='undefined'||!worldReady)return;
+    const ctx=c.getContext('2d');if(!ctx)return;
+    const W=c.width,H=c.height,cx=W/2,cy=H/2,R=145,range=420;
+    let pos;try{pos=getPlayerMapPosition();}catch(e){pos={x:player.position.x,z:player.position.z};}
+    const px=Number(pos.x)||0,pz=Number(pos.z)||0,scale=R/range;
+    ctx.clearRect(0,0,W,H);ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();
+    ctx.fillStyle='#b9c8b5';ctx.fillRect(0,0,W,H);
+    const roads=(osmRoadSegments&&osmRoadSegments.length)?osmRoadSegments:(scene.userData.playableUrbanCoreRoads||[]);
+    ctx.lineCap='round';
+    for(const road of roads){
+      if(!road||!road.a||!road.b)continue;
+      const mx=(road.a.x+road.b.x)/2,mz=(road.a.z+road.b.z)/2;
+      if(Math.abs(mx-px)>range*1.5||Math.abs(mz-pz)>range*1.5)continue;
+      ctx.strokeStyle=['motorway','trunk','primary'].includes(road.type)?'#d39b50':'#fffdf4';
+      ctx.lineWidth=Math.max(1.3,(Number(road.width)||5)*scale*.8);
+      ctx.beginPath();ctx.moveTo(cx+(road.a.x-px)*scale,cy+(road.a.z-pz)*scale);
+      ctx.lineTo(cx+(road.b.x-px)*scale,cy+(road.b.z-pz)*scale);ctx.stroke();
+    }
+    for(const b of (allBuildings||[])){
+      if(!b||!Number.isFinite(b.x)||!Number.isFinite(b.z))continue;
+      const dx=b.x-px,dz=b.z-pz;if(Math.abs(dx)>range||Math.abs(dz)>range)continue;
+      const bw=Math.max(2,Math.min(12,Number(b.w)||7)*scale),bd=Math.max(2,Math.min(12,Number(b.d)||7)*scale);
+      ctx.fillStyle=/shop|commerce|urban-shop|mairie|market/i.test(String(b.type||''))?'#d58c3d':'#64776b';
+      ctx.fillRect(cx+dx*scale-bw/2,cy+dz*scale-bd/2,bw,bd);
+    }
+    for(const v of (vehicles||[])){
+      if(!v||!v.visible||v.userData?.wreck)continue;
+      const dx=v.position.x-px,dz=v.position.z-pz;if(Math.abs(dx)>range||Math.abs(dz)>range)continue;
+      ctx.fillStyle=v.userData?.vType==='gbaka'?'#e58b22':'#e6bd36';
+      ctx.beginPath();ctx.arc(cx+dx*scale,cy+dz*scale,2.5,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='#1769d2';ctx.strokeStyle='#fff';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
+    const label=document.getElementById('miniMapLabel');
+    if(label)label.textContent=String(currentQuartier||'Quartier actuel').toUpperCase();
+  }
+  function start(){
+    installQuarterMap();
+    setInterval(installQuarterMap,1000);
+    setInterval(refreshQuarterMap,650);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
+
+
+<script id="abj-v153-daily-home">
+(function(){
+ try{
+  const home=document.getElementById('startScreen');
+  if(!home||!home.classList.contains('abj-home'))return;
+  const now=new Date(),dayKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  const dayIndex=Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())/86400000);
+  const editions=[
+   {eyebrow:'ABIDJAN · NOUVEAU DÉPART',lead:'Une nouvelle journée, une nouvelle histoire à écrire dans la ville.',tag:'La ville bouge, ta vie aussi.'},
+   {eyebrow:'ABIDJAN · CÔTÉ LAGON',lead:'Retrouve tes quartiers, tes proches et les routes de ta vie à Abidjan.',tag:'Ta prochaine aventure commence ici.'},
+   {eyebrow:'ABIDJAN · VIE URBAINE',lead:'Travaille, découvre, voyage et construis ton quotidien à ton rythme.',tag:'Chaque quartier a son histoire.'},
+   {eyebrow:'ABIDJAN · À TOI DE JOUER',lead:'De nouvelles rencontres et de nouvelles possibilités t’attendent en ville.',tag:'Vis la ville à ta manière.'},
+   {eyebrow:'ABIDJAN · DESTINATION VIE',lead:'La ville est ouverte : choisis ta route et fais évoluer ton histoire.',tag:'Aujourd’hui, tout peut commencer.'},
+   {eyebrow:'ABIDJAN · NOUVELLE ÉDITION',lead:'Les rues, les habitants et les opportunités t’attendent pour une autre journée.',tag:'Une ville, mille histoires.'},
+   {eyebrow:'ABIDJAN · TON QUOTIDIEN',lead:'Retrouve ton monde et continue à bâtir ta vie dans les communes d’Abidjan.',tag:'La suite de ton histoire se joue ici.'}
+  ];
+  const edition=editions[((dayIndex%editions.length)+editions.length)%editions.length];
+  const eyebrow=home.querySelector('.abj-eyebrow'),lead=home.querySelector('.abj-home-lead'),tag=home.querySelector('.abj-nav-tag');
+  if(eyebrow)eyebrow.textContent=edition.eyebrow;
+  if(lead)lead.textContent=edition.lead;
+  if(tag)tag.innerHTML='<i></i> '+edition.tag.toUpperCase();
+  home.dataset.dailyEdition=dayKey;
+  home.style.setProperty('--abj-daily-hue',String((dayIndex*17)%360));
+ }catch(error){console.warn('Accueil quotidien non appliqué',error);}
+})();
+</script>
+
+<script id="abj-v154-npc-talk-and-yango-walk">
+(function(){
+ try{
+  const original=interactWithCityLife;
+  if(typeof original==='function'&&!original.__abjConversationPatch){
+   const wrapped=function(){
+    let target=null,dist=4.6;
+    if(player&&Array.isArray(npcs))for(const npc of npcs){
+     if(!npc||!npc.visible||!npc.userData||npc.userData.dead)continue;
+     const d=Math.hypot(npc.position.x-player.position.x,npc.position.z-player.position.z);
+     if(d<dist){target=npc;dist=d;}
+    }
+    const result=original.apply(this,arguments);
+    if(target&&target.userData){
+     target.userData.talkingUntil=Date.now()+5200;
+     target.userData.pauseTimer=5.2;
+     target.userData.targetX=undefined;target.userData.targetZ=undefined;
+     target.userData.changeTimer=6;
+     target.rotation.y=Math.atan2(player.position.x-target.position.x,player.position.z-target.position.z);
+     showMessage('💬 Tu prends le temps de discuter avec '+(target.userData.name||'cet habitant')+'. Il reprendra son activité à la fin de votre échange.');
+     if(typeof messageTimer!=='undefined')messageTimer=5.2;
+    }
+    return result;
+   };
+   wrapped.__abjConversationPatch=true;interactWithCityLife=wrapped;
+  }
+ }catch(error){console.warn('Conversation PNJ non initialisée',error);}
+})();
+</script>
+
+<script>
+/* V1.51 — PlayShop, TokTok, raccourcis du téléphone et compteur Messages. */
+(function(){
+ const $=id=>document.getElementById(id);
+ function getInstalled(){try{return lifeState.v19.installedApps||(lifeState.v19.installedApps=[]);}catch(e){return [];}}
+ function addIcon(id,label,emoji){
+  const host=$('phoneApps');if(!host)return;
+  if(host.querySelector('[data-app="'+id+'"]'))return;
+  let page=host.querySelector('.phoneAppsPage:last-child');
+  if(!page||page.querySelectorAll('.phoneApp').length>=9){page=document.createElement('div');page.className='phoneAppsPage';host.appendChild(page);}
+  const b=document.createElement('button');b.type='button';b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+emoji+'</span><b>'+label+'</b>';
+  b.addEventListener('click',()=>openPhoneApp(id));page.appendChild(b);
+ }
+ function refreshCoreApps(){
+  const host=$('phoneApps');if(!host)return;
+  const installed=getInstalled(),keep=new Set(['parametres','gallery','localisation','messages','appels','cheats','jeux']);
+  host.innerHTML='<div class="phoneAppsPage"></div>';
+  const first=host.firstElementChild;
+  [['parametres','Paramètres','⚙️'],['gallery','Photos & galerie','🖼️'],['localisation','Plan','🗺️'],['messages','Messages','💬'],['appels','Appels','📞'],['cheats','Codes','⌨️'],['jeux','PlayShop','🛍️']].forEach(([id,label,emoji])=>{
+   const b=document.createElement('button');b.type='button';b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+emoji+'</span><b>'+label+'</b>';b.addEventListener('click',()=>openPhoneApp(id));first.appendChild(b);
+  });
+  installed.forEach(id=>{
+   if(keep.has(id))return;
+   if(id==='youtube'||id==='tiktok')id='toktok';
+   const meta=(window.ABJ_APP_CATALOG||[]).find(x=>x.id===id);
+   if(meta)addIcon(meta.id,meta.name,meta.emoji);
+  });
+  updateUnreadBadge();
+  if(typeof updatePhonePageDots==='function')updatePhonePageDots();
+ }
+ function updateUnreadBadge(){
+  const button=$('phoneApps')?.querySelector('[data-app="messages"]');if(!button)return;
+  let unread=0;try{unread=(lifeState.messages||[]).filter(m=>m&&m.from!=='player'&&!m.read&&!m.seen).length;}catch(e){}
+  let badge=button.querySelector('.abjUnreadBadge');
+  if(unread>0){if(!badge){badge=document.createElement('b');badge.className='abjUnreadBadge';button.appendChild(badge);}badge.textContent=String(Math.min(99,unread));}
+  else if(badge)badge.remove();
+ }
+ const style=document.createElement('style');style.textContent='.abjUnreadBadge{position:absolute;right:7px;top:6px;min-width:19px;height:19px;padding:0 5px;border-radius:12px;background:#e74c3c;color:#fff;font-size:11px;display:grid;place-items:center;z-index:4}.abjTokCard{background:#f2f6f5;border:1px solid #d6e2df;border-radius:14px;padding:12px;margin:9px 0;color:#172b30}.abjTokCard button{margin:4px 4px 0 0}';document.head.appendChild(style);
+ function renderTokTok(){
+  const c=$('phoneAppContent');if(!c)return;
+  const v=lifeState.v19||(lifeState.v19={}),t=v.toktok||(v.toktok={followers:0,views:0,likes:0,earnings:0,posts:[],lastPayoutDay:0});
+  const day=Number(lifeState.housing?.gameDay||1);
+  if(day>Number(t.lastPayoutDay||0)){
+   const payout=Math.max(0,Math.floor((Number(t.views||0)*.08)+(Number(t.likes||0)*.35)+(Number(t.followers||0)*1.5)));
+   if(payout){lifeState.money=(Number(lifeState.money)||0)+payout;t.earnings=(Number(t.earnings)||0)+payout;}
+   t.lastPayoutDay=day;
+  }
+  c.style.display='block';$('phoneHomeShell')&&($('phoneHomeShell').style.display='none');
+  c.innerHTML='<button id="tokBack">← Téléphone</button><h3>🎬 TokTok</h3><p>Ton réseau vidéo dans Abidjan Life. Les revenus sont en FCFA virtuels du jeu.</p><div class="abjTokCard"><b>📊 Ton compte créateur</b><p>👥 Abonnés : <b>'+Number(t.followers||0).toLocaleString('fr-FR')+'</b><br>❤️ Likes : <b>'+Number(t.likes||0).toLocaleString('fr-FR')+'</b><br>▶️ Vues : <b>'+Number(t.views||0).toLocaleString('fr-FR')+'</b><br>💰 Revenus cumulés : <b>'+Number(t.earnings||0).toLocaleString('fr-FR')+' FCFA</b></p></div><div class="abjTokCard"><b>➕ Publier une vidéo</b><input id="tokCaption" maxlength="90" placeholder="Titre ou description de ta vidéo" style="display:block;width:100%;padding:10px;margin:8px 0;border:1px solid #cbd8d5;border-radius:9px"><button id="tokPublish">Publier</button></div><h4>📱 Tes publications</h4>'+(t.posts.length?t.posts.slice().reverse().map((p,i)=>'<div class="abjTokCard"><b>'+escapeHTML(p.caption)+'</b><p>▶️ '+p.views+' vues · ❤️ '+p.likes+' likes</p><button data-tok-like="'+(t.posts.length-1-i)+'">❤️ J’aime</button><button data-tok-view="'+(t.posts.length-1-i)+'">▶️ Simuler des vues</button></div>').join(''):'<p>Aucune vidéo publiée pour le moment.</p>');
+  $('tokBack').onclick=()=>{c.style.display='none';showPhoneHome();};
+  $('tokPublish').onclick=()=>{const caption=$('tokCaption').value.trim();if(!caption){showMessage('Ajoute un titre à ta vidéo.');return;}t.posts.push({caption,views:0,likes:0,createdAt:Date.now()});t.followers+=1;saveLifeProgress(false);renderTokTok();showMessage('Ta vidéo est publiée sur TokTok.');};
+  c.querySelectorAll('[data-tok-like]').forEach(b=>b.onclick=()=>{const p=t.posts[Number(b.dataset.tokLike)];if(!p)return;p.likes++;t.likes++;saveLifeProgress(false);renderTokTok();});
+  c.querySelectorAll('[data-tok-view]').forEach(b=>b.onclick=()=>{const p=t.posts[Number(b.dataset.tokView)];if(!p)return;const n=5+Math.floor(Math.random()*26);p.views+=n;t.views+=n;t.followers+=Math.floor(n/12);saveLifeProgress(false);renderTokTok();});
+  saveLifeProgress(false);
+ }
+ const oldOpen=window.openPhoneApp;
+ window.openPhoneApp=function(id){
+  if(id==='appstore')id='jeux';
+  if(id==='toktok'){renderTokTok();return;}
+  if(id==='appels'&&oldOpen)return oldOpen('contacts');
+  if(id==='localisation')id='localisation';
+  return oldOpen&&oldOpen(id);
+ };
+ // PlayShop reste la seule porte d'entrée vers les applications téléchargeables.
+ const oldStore=window.renderAppStore;
+ if(typeof oldStore==='function')window.renderAppStore=function(){oldStore();const c=$('phoneAppContent');if(c){const h=c.querySelector('h3');if(h)h.textContent='🛍️ PlayShop';}};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshCoreApps,{once:true});else refreshCoreApps();
+ setInterval(updateUnreadBadge,1800);
+ window.ABJ_REFRESH_PHONE_APPS=refreshCoreApps;
+})();
 </script>
 
 </body>

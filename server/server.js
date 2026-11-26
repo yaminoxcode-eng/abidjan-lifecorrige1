@@ -65,6 +65,10 @@ const accounts = new Map();
 const activePlayers = new Map();
 let sharedWorldState = null;
 let worldStateOwner = null;
+let lastWorldPersistAt = 0;
+const sharedWorldAssets = new Map();
+const sharedJobOffers = new Map();
+const sharedRentalOffers = new Map();
 function publicPlayer(p){return {id:p.id,profile:p.profile,position:p.position,needs:p.needs,vehicle:p.vehicle||null};}
 function broadcastPlayerCount(){io.emit('players:count',{count:activePlayers.size});}
 
@@ -150,7 +154,95 @@ async function loadPersistentAccounts() {
   console.log(`Supabase connecté : ${accounts.size} compte(s) et ${creatorReports.length} signalement(s) chargés.`);
 }
 
+function publicSharedWorldAssets() {
+  return [...sharedWorldAssets.values()].map(({owner_phone, ...asset}) => asset);
+}
+async function loadPersistentWorld() {
+  if (!persistentStorageEnabled) return;
+  try {
+    const worldRows = await supabaseRequest('shared_world_state?id=eq.1&select=payload');
+    if (worldRows && worldRows[0] && worldRows[0].payload) sharedWorldState = worldRows[0].payload;
+    const rows = await supabaseRequest('shared_world_assets?select=owner_phone,asset_id,asset_type,commune,payload&limit=5000');
+    for (const row of rows || []) sharedWorldAssets.set(row.owner_phone + ':' + row.asset_id, row);
+    // Reconstituer le monde à partir des sauvegardes déjà enregistrées, sans toucher aux comptes.
+    for (const account of accounts.values()) {
+      if (!account.save) continue;
+      try { await persistSharedWorldAssets(account.phone, account.save); }
+      catch (assetError) { console.error('Import des biens existants ignoré pour un compte:', assetError.message); }
+    }
+    console.log(`Monde partagé chargé : ${sharedWorldAssets.size} objet(s) persistant(s).`);
+    const jobs = await supabaseRequest('shared_job_offers?select=id,owner_phone,company_id,company_name,role,salary,qualification,commune,active,applicant_phones,hired_phone,created_at&active=eq.true&limit=500');
+    for (const job of jobs || []) sharedJobOffers.set(job.id, job);
+    console.log(`Offres d’emploi actives chargées : ${sharedJobOffers.size}.`);
+    const rentals = await supabaseRequest('shared_rental_offers?select=id,owner_phone,asset_id,property_name,rent_weekly,deposit,commune,active,applicant_phones,tenant_phone,created_at&active=eq.true&limit=500');
+    for (const rental of rentals || []) sharedRentalOffers.set(rental.id, rental);
+    console.log(`Offres de location actives chargées : ${sharedRentalOffers.size}.`);
+  } catch (error) {
+    console.error('Chargement du monde partagé impossible :', error.message);
+  }
+}
+async function persistSharedWorldState(world) {
+  if (!persistentStorageEnabled || !world) return false;
+  await supabaseRequest('shared_world_state?id=eq.1', {
+    method: 'PATCH', headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ payload: world, updated_at: new Date().toISOString() })
+  });
+  return true;
+}
+async function persistSharedWorldAssets(phone, save) {
+  if (!persistentStorageEnabled || !phone || !save || typeof save !== 'object') return false;
+  const v19 = save.v19 && typeof save.v19 === 'object' ? save.v19 : {};
+  const properties = Array.isArray(v19.properties) ? v19.properties.slice(0, 300) : [];
+  const companies = Array.isArray(v19.companies) ? v19.companies.slice(0, 300) : [];
+  const rows = [];
+  for (const property of properties) {
+    if (!property || !['land','rental'].includes(property.kind)) continue;
+    const x = Number(property.x), z = Number(property.z);
+    if (!Number.isFinite(x) || !Number.isFinite(z) || Math.abs(x) > 25000 || Math.abs(z) > 25000) continue;
+    const company = companies.find(c => c && String(c.propertyId || '') === String(property.id || ''));
+    const building = property.building && typeof property.building === 'object' ? property.building : null;
+    const assetType = company ? 'company' : (building ? 'house' : 'plot');
+    const assetId = company ? 'company:' + clean(company.id || company.name, 100) : 'property:' + clean(property.id, 100);
+    if (!assetId || assetId.endsWith(':')) continue;
+    const profileName = clean(save.playerProfile?.name || accounts.get(phone)?.profile?.name || 'Citoyen', 24);
+    const payload = {
+      name: clean(company?.name || building?.name || property.name || 'Terrain', 80),
+      ownerName: clean(company?.owner || profileName, 24),
+      x, z, width: assetType === 'company' ? 18 : 12, depth: assetType === 'company' ? 14 : 10,
+      status: clean(company?.status || building?.status || property.status || 'owned', 24),
+      commune: clean(property.commune || company?.commune || '', 48),
+      building: building ? { name: clean(building.name, 80), status: clean(building.status, 24) } : null,
+      activity: clean(company?.activity || '', 60), size: clean(company?.size || '', 16)
+    };
+    rows.push({ owner_phone: phone, asset_id: assetId, asset_type: assetType, commune: payload.commune, payload, updated_at: new Date().toISOString() });
+  }
+  if (!rows.length) return true;
+  await supabaseRequest('shared_world_assets?on_conflict=owner_phone,asset_id', {
+    method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(rows)
+  });
+  for (const row of rows) sharedWorldAssets.set(row.owner_phone + ':' + row.asset_id, { ...row });
+  return true;
+}
+
 const clean = (v, max = 80) => String(v ?? '').trim().slice(0, max);
+
+function publicJobOffers() {
+  return [...sharedJobOffers.values()].filter(x => x.active).map(x => ({
+    id:x.id, companyName:x.company_name, role:x.role, salary:x.salary,
+    qualification:x.qualification, commune:x.commune,
+    applicantCount:Array.isArray(x.applicant_phones)?x.applicant_phones.length:0,
+    createdAt:x.created_at
+  }));
+}
+async function saveJobOffer(row) {
+  await supabaseRequest('shared_job_offers?on_conflict=id', {
+    method:'POST', headers:{Prefer:'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify({...row,updated_at:new Date().toISOString()})
+  });
+}
+function publicRentalOffers(){return [...sharedRentalOffers.values()].filter(x=>x.active).map(x=>({id:x.id,assetId:x.asset_id,propertyName:x.property_name,rentWeekly:x.rent_weekly,deposit:x.deposit,commune:x.commune,applicantCount:Array.isArray(x.applicant_phones)?x.applicant_phones.length:0}));}
+async function saveRentalOffer(row){await supabaseRequest('shared_rental_offers?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({...row,updated_at:new Date().toISOString()})});}
 
 function phoneOf(v) {
   let d = String(v || '').replace(/\D/g, '');
@@ -1102,6 +1194,9 @@ io.on('connection', (socket) => {
   if (!worldStateOwner) worldStateOwner = socket.id;
   socket.emit('world:host', { id: worldStateOwner });
   if (sharedWorldState) socket.emit('world:state', sharedWorldState);
+  socket.emit('world:assets', publicSharedWorldAssets());
+  socket.emit('jobs:offers', publicJobOffers());
+  socket.emit('rentals:offers', publicRentalOffers());
   broadcastPlayerCount();
 
   socket.emit(
@@ -1253,6 +1348,10 @@ io.on('connection', (socket) => {
         };
         state.lastWorldSync = nowWorld;
         socket.broadcast.emit('world:state', sharedWorldState);
+        if (nowWorld - lastWorldPersistAt > 5000) {
+          lastWorldPersistAt = nowWorld;
+          persistSharedWorldState(sharedWorldState).catch(error => console.error('Sauvegarde horloge monde:', error.message));
+        }
       }
     }
 
@@ -1283,6 +1382,175 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('jobs:offers:refresh', () => socket.emit('jobs:offers', publicJobOffers()));
+  socket.on('rentals:offers:refresh', () => socket.emit('rentals:offers', publicRentalOffers()));
+  socket.on('jobs:offer:create', async (payload={}, ack) => {
+    try {
+      const save=account.save||{}, companies=save.v19&&Array.isArray(save.v19.companies)?save.v19.companies:[];
+      const company=companies.find(c=>c&&(String(c.id||'')===String(payload.companyId||'')||String(c.name||'')===String(payload.companyName||'')));
+      const role=clean(payload.role,60), salary=Math.floor(Number(payload.salary)||0), qualification=clean(payload.qualification||'aucun',40);
+      if(!company||!role||salary<1000||salary>50000000) throw new Error("Entreprise introuvable ou offre invalide.");
+      if(!persistentStorageEnabled) throw new Error("Sauvegarde serveur indisponible.");
+      const id=crypto.randomBytes(12).toString('hex');
+      const row={id,owner_phone:socket.phone,company_id:clean(company.id||company.name,100),company_name:clean(company.name,60),role,salary,qualification,commune:clean(payload.commune||company.location||'',48),active:true,applicant_phones:[],hired_phone:null};
+      await saveJobOffer(row);sharedJobOffers.set(id,row);io.emit('jobs:offers',publicJobOffers());
+      if(typeof ack==='function')ack({ok:true,id});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('jobs:offer:apply', async (payload={}, ack) => {
+    try{
+      const offer=sharedJobOffers.get(clean(payload.offerId,40));
+      if(!offer||!offer.active)throw new Error("Cette offre n’est plus disponible.");
+      if(offer.owner_phone===socket.phone)throw new Error("Tu ne peux pas postuler à ta propre offre.");
+      const applicants=Array.isArray(offer.applicant_phones)?offer.applicant_phones:[];
+      if(applicants.includes(socket.phone))throw new Error("Ta candidature est déjà enregistrée.");
+      applicants.push(socket.phone);offer.applicant_phones=applicants.slice(0,200);
+      await saveJobOffer(offer);io.emit('jobs:offers',publicJobOffers());
+      if(typeof ack==='function')ack({ok:true});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('jobs:applicants:list', (payload={}, ack) => {
+    const offer=sharedJobOffers.get(clean(payload.offerId,40));
+    if(!offer||offer.owner_phone!==socket.phone){if(typeof ack==='function')ack({ok:false,error:'Accès refusé.'});return;}
+    const applicants=(offer.applicant_phones||[]).map(phone=>({phone,name:clean(accounts.get(phone)?.profile?.name||'Citoyen',24)}));
+    if(typeof ack==='function')ack({ok:true,applicants});
+  });
+  socket.on('jobs:offer:hire', async (payload={}, ack) => {
+    try{
+      const offer=sharedJobOffers.get(clean(payload.offerId,40)),candidatePhone=phoneOf(payload.candidatePhone);
+      if(!offer||!offer.active||offer.owner_phone!==socket.phone||!candidatePhone)throw new Error("Action de recrutement non autorisée.");
+      if(!(offer.applicant_phones||[]).includes(candidatePhone))throw new Error("Cette personne n’a pas postulé.");
+      const owner=accounts.get(socket.phone),candidate=accounts.get(candidatePhone);
+      if(!owner||!candidate||!candidate.save)throw new Error("Compte candidat introuvable.");
+      const required=String(offer.qualification||'aucun').toLocaleLowerCase('fr');
+      const certificates=Array.isArray(candidate.save.education?.certificates)?candidate.save.education.certificates.map(x=>String(x).toLocaleLowerCase('fr')):[];
+      if(required!=='aucun'&&!certificates.some(x=>x.includes(required)))throw new Error('Diplôme requis non validé : '+offer.qualification+'.');
+      const candidateSave=candidate.save,ownerSave=owner.save;
+      candidate.save=Object.assign({},candidate.save,{employmentContract:{companyId:offer.company_id,companyName:offer.company_name,role:offer.role,salary:offer.salary,qualification:offer.qualification,employerPhone:socket.phone,lastPaidDay:Math.max(1,Math.floor(Number(candidate.save.housing?.gameDay)||1)),arrears:0,startedAt:new Date().toISOString()}});
+      owner.save=Object.assign({},owner.save,{v19:Object.assign({},owner.save?.v19||{})});
+      const ownerV19=owner.save.v19;
+      ownerV19.companies=Array.isArray(ownerV19.companies)?ownerV19.companies:[];
+      const company=ownerV19.companies.find(c=>c&&(String(c.id||c.name)===String(offer.company_id)||c.name===offer.company_name));
+      if(!company)throw new Error("L’entreprise n’existe plus dans ta sauvegarde.");
+      company.employees=Array.isArray(company.employees)?company.employees:[];
+      if(!company.employees.some(e=>e.phone===candidatePhone))company.employees.push({phone:candidatePhone,name:clean(candidate.profile?.name||'Employé',24),role:offer.role,salary:offer.salary,qualification:offer.qualification,startedAt:new Date().toISOString()});
+      offer.active=false;offer.hired_phone=candidatePhone;
+      try{await persistAccount(candidate);await persistAccount(owner);await saveJobOffer(offer);}
+      catch(error){candidate.save=candidateSave;owner.save=ownerSave;offer.active=true;offer.hired_phone=null;throw error;}
+      io.emit('jobs:offers',publicJobOffers());
+      const target=[...activePlayers.entries()].find(([,p])=>p.phone===candidatePhone);
+      if(target)io.to(target[0]).emit('jobs:contract',candidate.save.employmentContract);
+      const ownerTarget=[...activePlayers.entries()].find(([,p])=>p.phone===socket.phone);
+      if(ownerTarget)io.to(ownerTarget[0]).emit('jobs:company:update',{companyId:offer.company_id,employees:company.employees});
+      if(typeof ack==='function')ack({ok:true});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('rentals:offer:create', async (payload={}, ack) => {
+    try{
+      const assetId=clean(payload.assetId,120),asset=sharedWorldAssets.get(socket.phone+':'+assetId);
+      const rent=Math.floor(Number(payload.rentWeekly)||0),deposit=Math.floor(Number(payload.deposit)||0);
+      if(!asset||asset.asset_type!=='house'||!asset.payload||!asset.payload.building||String(asset.payload.building.status||asset.payload.status)!=='complete')throw new Error("Seule une maison terminée que tu possèdes peut être mise en location.");
+      if(rent<1000||rent>50000000||deposit<0||deposit>200000000)throw new Error("Montant du loyer ou dépôt invalide.");
+      const id=crypto.randomBytes(12).toString('hex');
+      const row={id,owner_phone:socket.phone,asset_id:assetId,property_name:clean(asset.payload.name||'Logement',80),rent_weekly:rent,deposit,commune:clean(asset.commune||'',48),active:true,applicant_phones:[],tenant_phone:null};
+      await saveRentalOffer(row);sharedRentalOffers.set(id,row);io.emit('rentals:offers',publicRentalOffers());
+      if(typeof ack==='function')ack({ok:true,id});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('rentals:offer:apply', async (payload={}, ack) => {
+    try{
+      const offer=sharedRentalOffers.get(clean(payload.offerId,40));
+      if(!offer||!offer.active)throw new Error("Cette annonce n’est plus disponible.");
+      if(offer.owner_phone===socket.phone)throw new Error("Tu ne peux pas postuler à ton propre logement.");
+      if(offer.applicant_phones.includes(socket.phone))throw new Error("Ta demande est déjà enregistrée.");
+      offer.applicant_phones.push(socket.phone);offer.applicant_phones=offer.applicant_phones.slice(0,200);
+      await saveRentalOffer(offer);io.emit('rentals:offers',publicRentalOffers());
+      if(typeof ack==='function')ack({ok:true});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('rentals:applicants:list',(payload={},ack)=>{
+    const offer=sharedRentalOffers.get(clean(payload.offerId,40));
+    if(!offer||offer.owner_phone!==socket.phone){if(typeof ack==='function')ack({ok:false,error:'Accès refusé.'});return;}
+    const applicants=offer.applicant_phones.map(phone=>({phone,name:clean(accounts.get(phone)?.profile?.name||'Citoyen',24)}));
+    if(typeof ack==='function')ack({ok:true,applicants});
+  });
+  socket.on('rentals:offer:accept',async(payload={},ack)=>{
+    try{
+      const offer=sharedRentalOffers.get(clean(payload.offerId,40)),tenantPhone=phoneOf(payload.tenantPhone);
+      if(!offer||!offer.active||offer.owner_phone!==socket.phone||!tenantPhone||!offer.applicant_phones.includes(tenantPhone))throw new Error("Acceptation non autorisée.");
+      const owner=accounts.get(socket.phone),tenant=accounts.get(tenantPhone),asset=sharedWorldAssets.get(socket.phone+':'+offer.asset_id);
+      if(!owner?.save||!tenant?.save||!asset)throw new Error("Compte ou logement introuvable.");
+      if(tenant.save.rentalContract)throw new Error("Ce joueur possède déjà un bail actif.");
+      const tenantMoney=Math.max(0,Number(tenant.save.money)||0),ownerMoney=Math.max(0,Number(owner.save.money)||0);
+      if(tenantMoney<offer.deposit)throw new Error("Le candidat n’a pas assez d’argent pour le dépôt de garantie.");
+      const oldOwner=owner.save,oldTenant=tenant.save;
+      tenant.save=Object.assign({},tenant.save,{money:tenantMoney-offer.deposit,rentalContract:{assetId:offer.asset_id,propertyName:offer.property_name,rentWeekly:offer.rent_weekly,deposit:offer.deposit,landlordPhone:socket.phone,landlordName:clean(owner.profile?.name||'Propriétaire',24),commune:offer.commune,x:Number(asset.payload.x)||0,z:Number(asset.payload.z)||0,width:Number(asset.payload.width)||12,depth:Number(asset.payload.depth)||10,lastPaidDay:1,startedAt:new Date().toISOString()}});
+      owner.save=Object.assign({},owner.save,{money:ownerMoney+offer.deposit,v19:Object.assign({},owner.save.v19||{})});
+      const propertyId=offer.asset_id.startsWith('property:')?offer.asset_id.slice(9):'';
+      if(propertyId){owner.save.v19.properties=Array.isArray(owner.save.v19.properties)?owner.save.v19.properties:[];const property=owner.save.v19.properties.find(p=>String(p.id)===propertyId);if(property)property.rentalTenant={phone:tenantPhone,name:clean(tenant.profile?.name||'Locataire',24),rentWeekly:offer.rent_weekly};}
+      offer.active=false;offer.tenant_phone=tenantPhone;
+      try{await persistAccount(tenant);await persistAccount(owner);await saveRentalOffer(offer);}
+      catch(error){owner.save=oldOwner;tenant.save=oldTenant;offer.active=true;offer.tenant_phone=null;throw error;}
+      io.emit('rentals:offers',publicRentalOffers());
+      const target=[...activePlayers.entries()].find(([,p])=>p.phone===tenantPhone);
+      if(target)io.to(target[0]).emit('rentals:contract',tenant.save.rentalContract);
+      const ownerTarget=[...activePlayers.entries()].find(([,p])=>p.phone===socket.phone);
+      if(ownerTarget){io.to(ownerTarget[0]).emit('rentals:owner:balance',{money:owner.save.money});io.to(ownerTarget[0]).emit('rentals:property:update',{assetId:offer.asset_id,rentalTenant:owner.save.v19?.properties?.find(p=>'property:'+String(p.id)===offer.asset_id)?.rentalTenant||null});}
+      if(typeof ack==='function')ack({ok:true});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('jobs:pay',async(payload={},ack)=>{
+    try{
+      const employee=accounts.get(socket.phone),contract=employee?.save?.employmentContract,day=Math.max(1,Math.floor(Number(payload.gameDay)||1));
+      if(!contract||!contract.employerPhone||day<(Number(contract.lastPaidDay)||1)+7){if(typeof ack==='function')ack({ok:false,skip:true});return;}
+      const employer=accounts.get(contract.employerPhone);if(!employer?.save)throw new Error('Employeur introuvable.');
+      const weekly=Math.max(1000,Math.min(12500000,Math.floor((Number(contract.salary)||0)/4)));
+      const due=weekly+Math.max(0,Math.min(50000000,Math.floor(Number(contract.arrears)||0)));
+      const employerMoney=Math.max(0,Number(employer.save.money)||0);
+      if(employerMoney<due){
+        employee.save=Object.assign({},employee.save,{employmentContract:Object.assign({},contract,{arrears:due,lastPaidDay:day})});
+        await persistAccount(employee);
+        if(typeof ack==='function')ack({ok:false,arrears:due});
+        return;
+      }
+      const oldEmployee=employee.save,oldEmployer=employer.save;
+      employee.save=Object.assign({},employee.save,{money:Math.max(0,Number(employee.save.money)||0)+due,employmentContract:Object.assign({},contract,{arrears:0,lastPaidDay:day})});
+      employer.save=Object.assign({},employer.save,{money:employerMoney-due});
+      try{await persistAccount(employee);await persistAccount(employer);}
+      catch(error){employee.save=oldEmployee;employer.save=oldEmployer;throw error;}
+      const employeeTarget=[...activePlayers.entries()].find(([,p])=>p.phone===socket.phone);
+      if(employeeTarget)io.to(employeeTarget[0]).emit('jobs:contract',employee.save.employmentContract);
+      const employerTarget=[...activePlayers.entries()].find(([,p])=>p.phone===contract.employerPhone);
+      if(employerTarget)io.to(employerTarget[0]).emit('rentals:owner:balance',{money:employer.save.money});
+      if(typeof ack==='function')ack({ok:true,amount:due});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
+  socket.on('rentals:pay',async(payload={},ack)=>{
+    try{
+      const tenant=accounts.get(socket.phone),contract=tenant?.save?.rentalContract,day=Math.max(1,Math.floor(Number(payload.gameDay)||1));
+      if(!contract||!contract.landlordPhone||day<(Number(contract.lastPaidDay)||1)+7){if(typeof ack==='function')ack({ok:false,skip:true});return;}
+      const owner=accounts.get(contract.landlordPhone);if(!owner?.save)throw new Error('Propriétaire introuvable.');
+      const rent=Math.max(0,Math.min(50000000,Math.floor(Number(contract.rentWeekly)||0)));
+      const arrears=Math.max(0,Math.min(200000000,Math.floor(Number(contract.arrears)||0)));
+      const due=rent+arrears,tenantMoney=Math.max(0,Number(tenant.save.money)||0);
+      if(tenantMoney<due){
+        tenant.save=Object.assign({},tenant.save,{rentalContract:Object.assign({},contract,{arrears:due,lastPaidDay:day})});
+        await persistAccount(tenant);
+        if(typeof ack==='function')ack({ok:false,arrears:due});
+        return;
+      }
+      const oldTenant=tenant.save,oldOwner=owner.save;
+      tenant.save=Object.assign({},tenant.save,{money:tenantMoney-due,rentalContract:Object.assign({},contract,{arrears:0,lastPaidDay:day})});
+      owner.save=Object.assign({},owner.save,{money:Math.max(0,Number(owner.save.money)||0)+due});
+      try{await persistAccount(tenant);await persistAccount(owner);}
+      catch(error){tenant.save=oldTenant;owner.save=oldOwner;throw error;}
+      const target=[...activePlayers.entries()].find(([,p])=>p.phone===socket.phone);
+      if(target)io.to(target[0]).emit('rentals:contract',tenant.save.rentalContract);
+      const ownerTarget=[...activePlayers.entries()].find(([,p])=>p.phone===contract.landlordPhone);
+      if(ownerTarget)io.to(ownerTarget[0]).emit('rentals:owner:balance',{money:owner.save.money});
+      if(typeof ack==='function')ack({ok:true,amount:due});
+    }catch(error){if(typeof ack==='function')ack({ok:false,error:clean(error.message,180)});}
+  });
   socket.on('player:save', async (save, ack) => {
     let ok = false;
 
@@ -1325,6 +1593,12 @@ io.on('connection', (socket) => {
       try {
         await persistAccount(account);
         ok = true;
+        try {
+          await persistSharedWorldAssets(socket.phone, save);
+          io.emit('world:assets', publicSharedWorldAssets());
+        } catch (worldError) {
+          console.error('Échec synchronisation des constructions partagées:', worldError.message);
+        }
       } catch (error) {
         account.save = previousSave;
         account.position = state.position = previousPosition;
@@ -1359,6 +1633,7 @@ function clamp(v, min = 0, max = 100) {
 }
 
 loadPersistentAccounts()
+  .then(() => loadPersistentWorld())
   .then(() => {
     server.listen(PORT, '0.0.0.0', () => {
       console.log(`Abidjan Life Online listening on ${PORT}`);
