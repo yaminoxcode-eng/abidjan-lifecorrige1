@@ -1196,7 +1196,8 @@ io.on('connection', (socket) => {
     lastUpdate: 0,
     lastPersist: 0,
     lastWorldSync: 0,
-    lastMissionMinute: Math.floor(Date.now()/60000)
+    lastMissionMinute: Math.floor(Date.now()/60000),
+    socialMessageTimes: []
   };
 
   activePlayers.set(socket.id, state);
@@ -1232,13 +1233,94 @@ io.on('connection', (socket) => {
     vehicle: state.vehicle
   });
 
-  socket.on('social:message',(payload={},ack)=>{
-    const target=String(payload.to||'');
-    const text=clean(payload.text,500);
-    if(!target||target===socket.id||!text||!activePlayers.has(target)){if(typeof ack==='function')ack({ok:false,error:'Joueur indisponible.'});return;}
-    const message={id:crypto.randomBytes(8).toString('hex'),from:socket.id,fromName:clean(state.profile?.name,24)||'Citoyen',text,createdAt:Date.now()};
-    io.to(target).emit('social:message',message);
-    if(typeof ack==='function')ack({ok:true,message});
+  socket.on('social:message', async (payload = {}, ack) => {
+    const target = String(payload.to || '');
+    const targetState = activePlayers.get(target);
+    const text = clean(payload.text, 500);
+    if (!targetState || targetState.phone === socket.phone || !text) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Joueur indisponible ou message invalide.' });
+      return;
+    }
+    if (!persistentStorageEnabled) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Messagerie indisponible : stockage permanent non configuré.' });
+      return;
+    }
+    const now = Date.now();
+    state.socialMessageTimes = (state.socialMessageTimes || []).filter(ts => now - ts < 60000);
+    if (state.socialMessageTimes.length >= 20) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Tu envoies trop de messages. Réessaie dans une minute.' });
+      return;
+    }
+    try {
+      const rows = await supabaseRequest('player_messages', {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify([{
+          sender_phone: socket.phone,
+          recipient_phone: targetState.phone,
+          body: text,
+          created_at: new Date(now).toISOString()
+        }])
+      });
+      const saved = rows?.[0];
+      if (!saved?.id) throw new Error('Message non confirmé par Supabase.');
+      state.socialMessageTimes.push(now);
+      const message = {
+        id: saved.id,
+        from: socket.id,
+        fromName: clean(state.profile?.name, 24) || 'Citoyen',
+        text: saved.body,
+        createdAt: Date.parse(saved.created_at) || now
+      };
+      io.to(target).emit('social:message', message);
+      if (typeof ack === 'function') ack({ ok: true, message });
+    } catch (error) {
+      console.error('Enregistrement message multijoueur:', error.message);
+      if (typeof ack === 'function') ack({ ok: false, error: 'Le message n’a pas été sauvegardé. Réessaie.' });
+    }
+  });
+  socket.on('social:message:history', async (_payload = {}, ack) => {
+    if (!persistentStorageEnabled) {
+      if (typeof ack === 'function') ack({ ok: false, error: 'Historique indisponible.' });
+      return;
+    }
+    const phone = encodeURIComponent(socket.phone);
+    try {
+      const [sent, received] = await Promise.all([
+        supabaseRequest('player_messages?sender_phone=eq.' + phone + '&select=id,sender_phone,recipient_phone,body,created_at,read_at&order=created_at.desc&limit=100'),
+        supabaseRequest('player_messages?recipient_phone=eq.' + phone + '&select=id,sender_phone,recipient_phone,body,created_at,read_at&order=created_at.desc&limit=100')
+      ]);
+      const now = new Date().toISOString();
+      if ((received || []).some(row => !row.read_at)) {
+        await supabaseRequest('player_messages?recipient_phone=eq.' + phone + '&read_at=is.null', {
+          method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ read_at: now })
+        });
+      }
+      const items = [...(sent || []), ...(received || [])]
+        .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))
+        .slice(-150)
+        .map(row => {
+          const outgoing = row.sender_phone === socket.phone;
+          const peerPhone = outgoing ? row.recipient_phone : row.sender_phone;
+          const peer = accounts.get(peerPhone);
+          const peerSocket = [...activePlayers.values()].find(player => player.phone === peerPhone);
+          return {
+            id: row.id,
+            from: outgoing ? socket.id : (peerSocket?.id || 'history-' + peerPhone),
+            fromName: outgoing ? (clean(state.profile?.name, 24) || 'Citoyen') : (clean(peer?.profile?.name, 24) || 'Citoyen'),
+            text: row.body,
+            createdAt: Date.parse(row.created_at) || Date.now(),
+            history: true,
+            outgoing,
+            peerPseudo: clean(peer?.profile?.pseudo, 24)
+          };
+        });
+      if (typeof ack === 'function') ack({ ok: true, items });
+      else socket.emit('social:message:history', { items });
+    } catch (error) {
+      console.error('Chargement historique messages multijoueur:', error.message);
+      if (typeof ack === 'function') ack({ ok: false, error: 'Historique des messages indisponible.' });
+    }
   });
   socket.on('social:call',(payload={},ack)=>{
     const target=String(payload.to||'');
