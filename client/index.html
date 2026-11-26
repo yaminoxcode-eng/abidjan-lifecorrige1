@@ -808,6 +808,38 @@ function pushWaveNotif(textMsg){
   lifeState.waveNotifs=lifeState.waveNotifs.slice(0,12);
   showMessage('💚 WaveABJ · '+textMsg);
 }
+async function abjPlayerSystemsRequest(path,options={}){
+ const phone=normalizeIvorianMobile(activeGameAccount),token=phone?safeGet('abj-online-token:'+phone):null;
+ if(!phone||!token)throw new Error('Connecte-toi pour synchroniser tes services.');
+ const base=String(window.ABJ_ONLINE_SERVER||'').replace(/\\/$/,'');
+ const response=await fetch(base+path,{...options,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token,...(options.headers||{})},cache:'no-store'});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(data.error||'Synchronisation impossible.');
+ return data;
+}
+async function syncAbjPlayerSystems(){
+ try{
+  const data=await abjPlayerSystemsRequest('/api/game/state');
+  lifeState.remoteGameServices=Array.isArray(data.services)?data.services:[];
+  lifeState.remoteGameDevices=Array.isArray(data.devices)?data.devices:[];
+  lifeState.remoteGameInvoices=Array.isArray(data.invoices)?data.invoices:[];
+  lifeState.remoteGameEvents=Array.isArray(data.events)?data.events:[];
+  const equipped=lifeState.remoteGameDevices.find(d=>d.equipped&&d.device_type==='phone');
+  if(equipped&&equipped.appearance&&equipped.appearance.id){
+   lifeState.phoneSkin={...lifeState.phoneSkin,...equipped.appearance};
+   applyPhoneSkin(lifeState.phoneSkin);
+  }
+  return true;
+ }catch(error){console.warn('Systèmes joueur non synchronisés :',error.message);return false;}
+}
+async function activateInternetService(){
+ const gameDay=Math.max(1,Number(lifeState.housing&&lifeState.housing.gameDay)||1);
+ const gameMonth=Math.floor((gameDay-1)/28)+1;
+ const result=await abjPlayerSystemsRequest('/api/game/services/activate',{method:'POST',body:JSON.stringify({code:'#1324564#',gameDay,gameMonth})});
+ lifeState.remoteGameServices=lifeState.remoteGameServices||[];
+ lifeState.remoteGameServices=lifeState.remoteGameServices.filter(x=>x.service_key!=='internet').concat([{service_key:'internet',status:'active',activated_game_day:gameDay,expires_game_day:result.service?.expiresGameDay||gameDay+28,last_code_game_month:gameMonth}]);
+ saveLifeProgress(false);showMessage('🌐 Internet activé pour 28 jours de jeu.');return result;
+}
 function applyPhoneSkin(skin){
   if(!skin)return;
   lifeState.phoneSkin=skin;
@@ -1266,7 +1298,7 @@ async function activateGameAccount(phone){
       if(oldSave){safeSet(saveKey,oldSave);break;}
     }
   }
-  activeGameAccount=canonical;LIFE_SAVE_KEY=saveKey;document.body.classList.toggle('abj-creator-account',creatorRoleVerified);const creatorBadge=document.getElementById('creatorTitleBadge');if(creatorBadge)creatorBadge.style.display=creatorRoleVerified?'inline-flex':'none';
+  activeGameAccount=canonical;LIFE_SAVE_KEY=saveKey;await syncAbjPlayerSystems();document.body.classList.toggle('abj-creator-account',creatorRoleVerified);const creatorBadge=document.getElementById('creatorTitleBadge');if(creatorBadge)creatorBadge.style.display=creatorRoleVerified?'inline-flex':'none';
   document.getElementById('accountOverlay').classList.remove('open');
   // Sauvegarde existante : reprendre la partie sans repasser par le créateur.
   let hasSave=false;
