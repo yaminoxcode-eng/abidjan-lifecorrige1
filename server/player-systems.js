@@ -230,8 +230,6 @@ function registerPlayerSystems(app, { auth, accounts, supabaseRequest, persistAc
       res.status(503).json({ error: 'Impossible d’équiper cet appareil.' });
     }
   });
-}
-
 
   // Durable private conversations. Phone numbers stay server-side; clients address players by unique pseudo.
   const messageRate = new Map();
@@ -320,5 +318,7 @@ function registerPlayerSystems(app, { auth, accounts, supabaseRequest, persistAc
       res.status(503).json({ error: 'Le message n’a pas été enregistré. Réessaie.' });
     }
   });
+
+}
 
 module.exports = { registerPlayerSystems };
