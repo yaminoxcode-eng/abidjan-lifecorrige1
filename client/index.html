@@ -351,6 +351,56 @@ button,input,select{font:inherit}
 }
 </style>
 
+
+<style id="abj-v153-home-mobile-repair">
+/* Accueil mobile : occuper tout l'écran et empêcher les cartes/boutons de se chevaucher. */
+#startScreen.abj-home{
+ position:fixed!important;inset:0!important;width:100vw!important;max-width:none!important;
+ height:100vh!important;height:100dvh!important;min-height:100dvh!important;
+ z-index:9998!important;overflow-x:hidden!important;overflow-y:auto!important;
+ display:flex!important;align-items:stretch!important;justify-content:flex-start!important;
+ padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 16px)!important;
+ background:radial-gradient(ellipse at 78% 20%,#1c655b 0%,transparent 38%),linear-gradient(125deg,#081d20,#102e30 52%,#173b36)!important;
+}
+#startScreen.abj-home .abj-home-shell{width:min(100%,1100px)!important;min-height:0!important;height:auto!important;margin:auto!important;justify-content:flex-start!important;gap:16px!important}
+#startScreen.abj-home .abj-home-nav{width:100%;flex-wrap:wrap;align-items:center;gap:10px}
+#startScreen.abj-home .abj-nav-tag{max-width:48%;font-size:8px;letter-spacing:.8px;padding:7px 9px;text-align:center}
+#startScreen.abj-home .abj-home-hero{width:100%;min-height:0!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:center}
+#startScreen.abj-home .abj-hero-copy{min-width:0}
+#startScreen.abj-home .abj-home-actions{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;width:100%;margin-top:12px}
+#startScreen.abj-home .abj-home-actions button{width:100%!important;min-width:0!important;min-height:48px;margin:0!important;position:relative!important;inset:auto!important;transform:none!important;white-space:normal}
+#startScreen.abj-home #abjInstallApp{display:none!important}
+#startScreen.abj-home .abj-home-features{width:100%;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#startScreen.abj-home .abj-home-features article{min-width:0}
+#startScreen.abj-home .abj-home-controls{display:none!important}
+@media(max-width:760px){
+ #startScreen.abj-home{padding:calc(env(safe-area-inset-top,0px) + 12px) 14px calc(env(safe-area-inset-bottom,0px) + 14px)!important}
+ #startScreen.abj-home .abj-home-shell{gap:13px!important}
+ #startScreen.abj-home .abj-home-nav{flex-wrap:nowrap}
+ #startScreen.abj-home .abj-brand{gap:8px;min-width:0}
+ #startScreen.abj-home .abj-brand-mark{width:40px;height:40px;flex:0 0 40px}
+ #startScreen.abj-home .abj-brand b{font-size:12px;letter-spacing:1.8px}
+ #startScreen.abj-home .abj-brand small{font-size:8px;letter-spacing:1.2px}
+ #startScreen.abj-home .abj-nav-tag{max-width:48%;font-size:7px;line-height:1.35}
+ #startScreen.abj-home .abj-home-hero{grid-template-columns:minmax(0,1fr);gap:12px}
+ #startScreen.abj-home .abj-hero-copy h1{font-size:clamp(42px,12vw,64px)!important;line-height:.92;margin:0 0 10px!important}
+ #startScreen.abj-home .abj-eyebrow{font-size:9px;margin-bottom:10px}
+ #startScreen.abj-home .abj-home-lead{font-size:13px!important;line-height:1.4;margin:0 0 10px!important}
+ #startScreen.abj-home .abj-live-strip{margin:7px 0!important;font-size:11px}
+ #startScreen.abj-home .abj-home-worldline{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:9px 10px!important;font-size:11px;line-height:1.35}
+ #startScreen.abj-home .abj-world-place{white-space:normal;overflow-wrap:anywhere}
+ #startScreen.abj-home .abj-home-actions{grid-template-columns:minmax(0,1fr);gap:8px;margin-top:9px}
+ #startScreen.abj-home #startBtn{grid-column:auto!important;min-height:52px!important;font-size:14px!important}
+ #startScreen.abj-home #homeLoginBtn{min-height:46px!important}
+ #startScreen.abj-home .abj-home-note{margin-top:4px;font-size:9px}
+ #startScreen.abj-home .abj-hero-art{height:clamp(145px,34vw,205px)!important;min-height:145px!important;width:100%;border-radius:14px}
+ #startScreen.abj-home .abj-home-features{grid-template-columns:minmax(0,1fr);gap:7px}
+ #startScreen.abj-home .abj-home-features article{grid-template-columns:32px minmax(0,1fr);padding:8px 10px}
+ #startScreen.abj-home .abj-home-features article>span{width:30px;height:30px;font-size:16px}
+ #startScreen.abj-home .abj-home-features small{font-size:9px}
+ #startScreen.abj-home .abj-home-footer{gap:8px;font-size:7px;letter-spacing:.8px;padding-top:9px}
+}
+</style>
 </head>
 <body>
 
@@ -2113,12 +2163,21 @@ async function loadAbidjanOSM() {
     try {
       const requests=endpoints.map(endpoint=>{
         const controller=new AbortController();controllers.push(controller);
-        const timeout=setTimeout(()=>controller.abort(),8000);
+        const timeout=setTimeout(()=>controller.abort(),5500);
         return fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query),signal:controller.signal})
           .then(response=>{if(!response.ok)throw new Error('Overpass HTTP '+response.status);return response.json();})
+          .then(json=>{if(!json||!Array.isArray(json.elements))throw new Error('Réponse cartographique vide');return json;})
           .finally(()=>clearTimeout(timeout));
       });
-      data=await Promise.any(requests);
+      // Démarrer en même temps le paquet cartographique de secours : le premier jeu de données
+      // valide ouvre la ville sans attendre qu'un serveur Overpass lent termine.
+      const backupController=new AbortController();controllers.push(backupController);
+      const backupTimer=setTimeout(()=>backupController.abort(),4200);
+      const backupRequest=fetch('https://d2ol7oe51mr4n9.cloudfront.net/user_3LVcgmLnYyIgIO5wyenMeyU1qx6/750912a1-208b-4fca-b488-81d5ed214b6e.gz',{cache:'force-cache',signal:backupController.signal})
+        .then(response=>{if(!response.ok||typeof DecompressionStream==='undefined')throw new Error('Paquet de secours indisponible');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();})
+        .then(json=>{if(!json||!Array.isArray(json.elements))throw new Error('Paquet de secours vide');return json;})
+        .finally(()=>clearTimeout(backupTimer));
+      data=await Promise.any([...requests,backupRequest]);
     } catch(e) { console.warn('Serveurs cartographiques mobiles indisponibles rapidement, activation du secours.',e); }
     finally { controllers.forEach(controller=>controller.abort()); }
   }
@@ -8766,8 +8825,7 @@ renderAccountSettingsApp=function(){
  section.querySelector('#abjSaveSettings').onclick=()=>{lifeState.gameSettings={...lifeState.gameSettings,graphics:graphics.value,cameraSensitivity:Number(sens.value),controlMode:controls.value,showHints:hints.checked,infiniteNeeds:infiniteNeeds.checked};applyAbjGameSettings();saveLifeProgress(false);section.querySelector('#abjSettingsStatus').textContent='Paramètres enregistrés.';};
 };
 </script>
-
-
+<script>
 /* V1.25 — chargement visible avant l'initialisation lourde + locomotion plus naturelle. */
 (function(){
   const loadStyle=document.createElement('style');
@@ -8803,7 +8861,6 @@ renderAccountSettingsApp=function(){
 })();
 
 
-<script>
 /* ABJ V1.27 — gares, aide des joueurs, commissariat et ambiance sonore. */
 (function(){
  'use strict';
@@ -15213,5 +15270,32 @@ body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!
 })();
 </script>
 
+
+<script id="abj-v153-daily-home">
+(function(){
+ try{
+  const home=document.getElementById('startScreen');
+  if(!home||!home.classList.contains('abj-home'))return;
+  const now=new Date(),dayKey=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  const dayIndex=Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())/86400000);
+  const editions=[
+   {eyebrow:'ABIDJAN · NOUVEAU DÉPART',lead:'Une nouvelle journée, une nouvelle histoire à écrire dans la ville.',tag:'La ville bouge, ta vie aussi.'},
+   {eyebrow:'ABIDJAN · CÔTÉ LAGON',lead:'Retrouve tes quartiers, tes proches et les routes de ta vie à Abidjan.',tag:'Ta prochaine aventure commence ici.'},
+   {eyebrow:'ABIDJAN · VIE URBAINE',lead:'Travaille, découvre, voyage et construis ton quotidien à ton rythme.',tag:'Chaque quartier a son histoire.'},
+   {eyebrow:'ABIDJAN · À TOI DE JOUER',lead:'De nouvelles rencontres et de nouvelles possibilités t’attendent en ville.',tag:'Vis la ville à ta manière.'},
+   {eyebrow:'ABIDJAN · DESTINATION VIE',lead:'La ville est ouverte : choisis ta route et fais évoluer ton histoire.',tag:'Aujourd’hui, tout peut commencer.'},
+   {eyebrow:'ABIDJAN · NOUVELLE ÉDITION',lead:'Les rues, les habitants et les opportunités t’attendent pour une autre journée.',tag:'Une ville, mille histoires.'},
+   {eyebrow:'ABIDJAN · TON QUOTIDIEN',lead:'Retrouve ton monde et continue à bâtir ta vie dans les communes d’Abidjan.',tag:'La suite de ton histoire se joue ici.'}
+  ];
+  const edition=editions[((dayIndex%editions.length)+editions.length)%editions.length];
+  const eyebrow=home.querySelector('.abj-eyebrow'),lead=home.querySelector('.abj-home-lead'),tag=home.querySelector('.abj-nav-tag');
+  if(eyebrow)eyebrow.textContent=edition.eyebrow;
+  if(lead)lead.textContent=edition.lead;
+  if(tag)tag.innerHTML='<i></i> '+edition.tag.toUpperCase();
+  home.dataset.dailyEdition=dayKey;
+  home.style.setProperty('--abj-daily-hue',String((dayIndex*17)%360));
+ }catch(error){console.warn('Accueil quotidien non appliqué',error);}
+})();
+</script>
 </body>
 </html>
