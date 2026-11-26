@@ -574,17 +574,26 @@ app.post('/api/auth/register', async (req,res) => {
   if (!rateLimit(req.ip + ':register', 5, 60000)) return res.status(429).json({error:'Trop de créations de compte. Réessaie dans une minute.'});
   const phone=phoneOf(req.body.phone), password=String(req.body.password||'');
   const email=clean(req.body.email,120).toLowerCase();
+  const firstName=clean(req.body.firstName,40);
+  const lastName=clean(req.body.lastName,40);
+  const pseudo=clean(req.body.pseudo,24).replace(/^@/,'');
+  const referralCode=clean(req.body.referralCode,24);
+  const identity=normalizeIdentity({birthDate:req.body.birthDate,birthPlace:req.body.birthPlace});
   if(!phone) return res.status(400).json({error:'Numéro ivoirien invalide.'});
   if(password.length<8||password.length>128) return res.status(400).json({error:'Mot de passe : 8 à 128 caractères.'});
   if(!/^\S+@\S+\.\S{2,}$/.test(email)) return res.status(400).json({error:'Adresse e-mail invalide.'});
+  if(firstName.length<2||lastName.length<2) return res.status(400).json({error:'Saisis ton prénom et ton nom.'});
+  if(!/^[a-zA-Z0-9_.-]{3,24}$/.test(pseudo)) return res.status(400).json({error:'Le pseudo doit contenir 3 à 24 caractères (lettres, chiffres, _ . -).'});
+  if(!identity) return res.status(400).json({error:'Vérifie ta date et ta commune de naissance.'});
   if(accounts.has(phone)) return res.status(409).json({error:'Ce numéro possède déjà un compte. Connecte-toi.'});
+  if([...accounts.values()].some(a=>String(a.profile?.pseudo||'').toLowerCase()===pseudo.toLowerCase())) return res.status(409).json({error:'Ce pseudo est déjà utilisé. Choisis-en un autre.'});
   if(isCreatorPhone(phone)) return res.status(403).json({error:'Le compte créateur officiel ne peut pas être créé depuis l’inscription publique.'});
   const account={
     phone,
     email,
     passwordHash:await bcrypt.hash(password,12),
     security:{},
-    profile:{name:safePlayerName(phone,clean(req.body.name,24)||'Mon personnage'),gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50},
+    profile:{name:safePlayerName(phone,firstName+' '+lastName),firstName,lastName,pseudo,referralCode:referralCode||null,birthDate:identity.birthDate,birthPlace:identity.birthPlace,gender:'homme',skin:0x7a4a24,hair:0x17120f,shirt:0xe74c3c,pants:0x2c3e50},
     position:{x:0,z:0,yaw:0},
     needs:null,
     save:null,
