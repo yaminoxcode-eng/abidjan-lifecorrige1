@@ -520,6 +520,21 @@ button,input,select{font:inherit}
     </div>
 
     <div id="accountRegisterFields" style="display:none">
+      <label for="accountFirstName">Prénom</label>
+      <input id="accountFirstName" maxlength="40" autocomplete="given-name" placeholder="Ton prénom">
+      <label for="accountLastName">Nom</label>
+      <input id="accountLastName" maxlength="40" autocomplete="family-name" placeholder="Ton nom">
+      <label for="accountPseudo">Pseudo unique</label>
+      <input id="accountPseudo" maxlength="24" autocomplete="nickname" placeholder="Ex. AbidjanPlayer">
+      <label for="accountReferralCode">Code de parrainage (facultatif)</label>
+      <input id="accountReferralCode" maxlength="24" placeholder="Pseudo de ton ami">
+      <label for="accountBirthDate">Date de naissance</label>
+      <input id="accountBirthDate" type="date" autocomplete="bday">
+      <label for="accountBirthPlace">Lieu de naissance</label>
+      <select id="accountBirthPlace">
+        <option value="">Choisir une commune</option>
+        COMMUNES_PLACEHOLDER
+      </select>
       <label for="accountEmail">Adresse e-mail</label>
       <input id="accountEmail" type="email" maxlength="120" autocomplete="email" placeholder="exemple@gmail.com">
       <div id="accountConfirmWrap"><label for="accountPasswordConfirm">Confirmer le mot de passe</label>
@@ -996,7 +1011,7 @@ function openAccountGate(){
   const conf=document.getElementById('accountPasswordConfirm'); if(conf){conf.value='';conf.type='password';}
   const np=document.getElementById('accountNewPassword'); if(np){np.value='';np.type='password';}
   const npc=document.getElementById('accountNewPasswordConfirm'); if(npc){npc.value='';npc.type='password';}
-  ['accountEmail','accountRecoverEmail','accountRecoveryCode','accountParentName','accountPetName','accountSport','accountRecoverParent','accountRecoverPet','accountRecoverSport'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['accountEmail','accountRecoverEmail','accountRecoveryCode','accountParentName','accountPetName','accountSport','accountRecoverParent','accountRecoverPet','accountRecoverSport','accountFirstName','accountLastName','accountPseudo','accountReferralCode','accountBirthDate','accountBirthPlace'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   const bd=document.getElementById('accountBirthDay'); if(bd) bd.value='';
   const bm=document.getElementById('accountBirthMonth'); if(bm) bm.value='';
   document.getElementById('accountTitle').textContent='Connexion';
@@ -1101,9 +1116,18 @@ async function accountContinue(){
 
   if(accountFlow==='registerInfo'){
     const em=String(document.getElementById('accountEmail').value||'').trim().toLowerCase();
-    if(!em||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){showAccountStatus('Informations incorrectes : l’adresse e-mail est fausse ou vide. Vérifie-la puis réessaie.',true);return;}
+    const firstName=String(document.getElementById('accountFirstName').value||'').trim();
+    const lastName=String(document.getElementById('accountLastName').value||'').trim();
+    const pseudo=String(document.getElementById('accountPseudo').value||'').trim().replace(/^@/,'');
+    const birthDate=String(document.getElementById('accountBirthDate').value||'');
+    const birthPlace=String(document.getElementById('accountBirthPlace').value||'');
+    if(firstName.length<2||lastName.length<2){showAccountStatus('Renseigne ton prénom et ton nom.',true);return;}
+    if(!/^[a-zA-Z0-9_.-]{3,24}$/.test(pseudo)){showAccountStatus('Le pseudo doit contenir 3 à 24 caractères (lettres, chiffres, _ . -).',true);return;}
+    if(!birthDate||!birthPlace){showAccountStatus('Renseigne ta date et ta commune de naissance.',true);return;}
+    if(!em||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){showAccountStatus('Informations incorrectes : vérifie ton adresse e-mail.',true);return;}
     if(findGameAccount(accounts,phone)){showAccountStatus('Ce numéro a déjà un compte. Connecte-toi ou utilise « Mot de passe oublié ».',true);return;}
     if(Object.entries(accounts).some(([k,a])=>normalizeIvorianMobile(k)!==phone&&String(a&&a.email||'').trim().toLowerCase()===em)){showAccountStatus('Cette adresse e-mail est déjà associée à un autre compte.',true);return;}
+    if(Object.values(accounts).some(a=>String(a&&a.profile&&a.profile.pseudo||'').toLowerCase()===pseudo.toLowerCase())){showAccountStatus('Ce pseudo est déjà utilisé. Choisis-en un autre.',true);return;}
     accountFlow='register';
     document.getElementById('accountTitle').textContent='Choisis ton mot de passe';
     document.getElementById('accountIntro').textContent='Étape 2 : informations validées. Choisis un mot de passe (8 caractères minimum), confirme-le puis crée ton compte.';
@@ -1123,7 +1147,14 @@ async function accountContinue(){
     if(pass!==confirm){showAccountStatus('Les deux mots de passe ne correspondent pas.',true);return;}
     const api=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
     let response,data,registrationError=null;
-    const registerBody=JSON.stringify({phone,password:pass,email});
+    const registerBody=JSON.stringify({phone,password:pass,email,
+      firstName:document.getElementById('accountFirstName').value.trim(),
+      lastName:document.getElementById('accountLastName').value.trim(),
+      pseudo:document.getElementById('accountPseudo').value.trim().replace(/^@/,''),
+      referralCode:document.getElementById('accountReferralCode').value.trim(),
+      birthDate:document.getElementById('accountBirthDate').value,
+      birthPlace:document.getElementById('accountBirthPlace').value
+    });
     // Render peut mettre quelques secondes à réveiller son serveur gratuit.
     // On retente les erreurs réseau et 502/503/504 avant d'abandonner l'inscription.
     for(let attempt=0;attempt<3;attempt++){
