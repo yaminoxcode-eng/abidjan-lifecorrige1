@@ -7700,6 +7700,43 @@ function v16ValidateTrafficRoutes(){
   {id:'lot-marcory',name:'Terrain — Marcory',commune:'Marcory',price:3100000,x:4300,z:1900}
  ];
  const rentListings=[{id:'rent-shop',name:'Magasin de quartier',commune:'Cocody',rent:95000,deposit:190000,kind:'shop',x:650,z:-3900},{id:'rent-depot',name:'Dépôt / entrepôt',commune:'Yopougon',rent:145000,deposit:290000,kind:'depot',x:-4900,z:-5200},{id:'rent-office',name:'Local administratif',commune:'Plateau',rent:180000,deposit:360000,kind:'office',x:-1100,z:-1750}];
+ // V1.51 : parcelles visibles et proposition d'achat/location à proximité.
+ const abjMarketMarkers=[];
+ let abjMarketPromptAt=0,abjMarketNearby=null;
+ function ensureAbjMarketMarkers(){
+  if(!scene||!scene.add||!window.THREE||abjMarketMarkers.length)return;
+  const listings=[...plotListings,...rentListings];
+  listings.forEach(item=>{
+   const group=new THREE.Group();group.position.set(item.x,terrainHeight(item.x,item.z)+.16,item.z);
+   const ring=new THREE.Mesh(new THREE.RingGeometry(5.2,6.3,32),new THREE.MeshBasicMaterial({color:0x49f28b,transparent:true,opacity:.9,side:THREE.DoubleSide}));
+   ring.rotation.x=-Math.PI/2;group.add(ring);
+   const core=new THREE.Mesh(new THREE.CircleGeometry(4.8,28),new THREE.MeshBasicMaterial({color:0x35d978,transparent:true,opacity:.12,side:THREE.DoubleSide}));
+   core.rotation.x=-Math.PI/2;core.position.y=.015;group.add(core);
+   const light=new THREE.PointLight(0x45f58c,1.15,24);light.position.y=2.2;group.add(light);
+   group.userData.marketListing=item;scene.add(group);abjMarketMarkers.push(group);
+  });
+ }
+ const abjMarketTick=updateLifeSimulation;
+ updateLifeSimulation=function(dt){
+  abjMarketTick(dt);
+  ensureAbjMarketMarkers();
+  if(!player||currentInterior||!worldReady)return;
+  let best=null,bestDist=Infinity;
+  for(const marker of abjMarketMarkers){
+   const item=marker.userData.marketListing,d=Math.hypot(player.position.x-item.x,player.position.z-item.z);
+   marker.visible=d<950;
+   if(d<20&&d<bestDist){best=item;bestDist=d;}
+   marker.children[0].material.opacity=.62+Math.sin((performance.now?performance.now():Date.now())/420)*.24;
+  }
+  abjMarketNearby=best;
+  const now=Date.now();
+  if(best&&now-abjMarketPromptAt>22000){
+   abjMarketPromptAt=now;
+   showMessage((best.kind?'🏬 '+best.name+' · location':'🟢 '+best.name+' · '+Number(best.price).toLocaleString('fr-FR')+' FCFA')+' — ouvre Immo ABJ pour consulter cette offre.');
+  }
+ };
+ window.ABJ_OPEN_NEARBY_PROPERTY=function(){if(!abjMarketNearby)return false;window.ABJ_OPEN_PROPERTY_MARKET?.(abjMarketNearby.id);return true;};
+
  function nearAdmin(kind){const a=adminPlaces.find(x=>x.kind===kind);if(!a||!player)return false;if(currentInterior&&lastExteriorPosition&&lastExteriorPosition.door&&lastExteriorPosition.door.buildingName===a.name)return true;return Math.hypot(player.position.x-a.x,player.position.z-a.z)<35;}
  function docs(){return state().adminDocs;}
  function pay(cost,label){if(lifeState.money<cost){showMessage('Fonds insuffisants : il manque '+(cost-lifeState.money).toLocaleString('fr-FR')+' FCFA.');return false;}lifeState.money-=cost;lifeState.bankTransactions=lifeState.bankTransactions||[];lifeState.bankTransactions.push({type:'debit',label,amount:cost,date:String(lifeState.hour).padStart(2,'0')+':'+String(Math.floor(lifeState.minute)).padStart(2,'0')});lifeState.bankTransactions=lifeState.bankTransactions.slice(-80);return true;}
@@ -7751,8 +7788,11 @@ function v16ValidateTrafficRoutes(){
  {id:'tiktok',name:'TikTok',emoji:'🎵',category:'Médias',desc:'Consulter les contenus courts simulés du jeu.'},
  {id:'inventaire',name:'Inventaire',emoji:'🎒',category:'Outils',desc:'Consulter les objets et équipements de ton personnage.'},
  {id:'afgamer',name:'AF GAMER CI',emoji:'🎮',category:'Outils',desc:'Contacter le studio et envoyer des suggestions.'},
- {id:'google',name:'Recherche ABJ',emoji:'🔎',category:'Outils',desc:'Rechercher des lieux et informations dans la ville.'}
+ {id:'google',name:'Recherche ABJ',emoji:'🔎',category:'Outils',desc:'Rechercher des lieux et informations dans la ville.'},
+ {id:'toktok',name:'TokTok',emoji:'🎬',category:'Médias',desc:'Publier des vidéos, gagner des abonnés, des vues, des likes et des revenus virtuels.'}
 ];
+ // YouTube et TikTok deviennent une seule application TokTok.
+ for(let i=appCatalog.length-1;i>=0;i--)if(appCatalog[i].id==='youtube'||appCatalog[i].id==='tiktok')appCatalog.splice(i,1);
  window.ABJ_OPEN_PROPERTY_MARKET=function(listingId){const item=(plotListings.find(p=>p.id===listingId)?'land':'rent');openPhone();openPhoneApp('immoabj');renderProjectsV19(item);};
  function addInstalledIcon(app){const host=document.getElementById('phoneApps');if(!host||host.querySelector('[data-app="'+app.id+'"]'))return;let grid=host.querySelector('.phoneAppsPage:last-child');if(!grid||grid.querySelectorAll('.phoneApp').length>=9){grid=document.createElement('div');grid.className='phoneAppsPage';host.appendChild(grid);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=app.id;b.innerHTML='<span>'+app.emoji+'</span>'+app.name;b.onclick=()=>openPhoneApp(app.id);grid.appendChild(b);}
  function renderAppStore(){
@@ -15335,5 +15375,78 @@ body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!
  }catch(error){console.warn('Conversation PNJ non initialisée',error);}
 })();
 </script>
+
+<script>
+/* V1.51 — PlayShop, TokTok, raccourcis du téléphone et compteur Messages. */
+(function(){
+ const $=id=>document.getElementById(id);
+ function getInstalled(){try{return lifeState.v19.installedApps||(lifeState.v19.installedApps=[]);}catch(e){return [];}}
+ function addIcon(id,label,emoji){
+  const host=$('phoneApps');if(!host)return;
+  if(host.querySelector('[data-app="'+id+'"]'))return;
+  let page=host.querySelector('.phoneAppsPage:last-child');
+  if(!page||page.querySelectorAll('.phoneApp').length>=9){page=document.createElement('div');page.className='phoneAppsPage';host.appendChild(page);}
+  const b=document.createElement('button');b.type='button';b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+emoji+'</span><b>'+label+'</b>';
+  b.addEventListener('click',()=>openPhoneApp(id));page.appendChild(b);
+ }
+ function refreshCoreApps(){
+  const host=$('phoneApps');if(!host)return;
+  const installed=getInstalled(),keep=new Set(['parametres','gallery','localisation','messages','appels','cheats','jeux']);
+  host.innerHTML='<div class="phoneAppsPage"></div>';
+  const first=host.firstElementChild;
+  [['parametres','Paramètres','⚙️'],['gallery','Photos & galerie','🖼️'],['localisation','Plan','🗺️'],['messages','Messages','💬'],['appels','Appels','📞'],['cheats','Codes','⌨️'],['jeux','PlayShop','🛍️']].forEach(([id,label,emoji])=>{
+   const b=document.createElement('button');b.type='button';b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+emoji+'</span><b>'+label+'</b>';b.addEventListener('click',()=>openPhoneApp(id));first.appendChild(b);
+  });
+  installed.forEach(id=>{
+   if(keep.has(id)||id==='youtube'||id==='tiktok')return;
+   const meta=(typeof appCatalog!=='undefined'?appCatalog:[]).find(x=>x.id===id);
+   if(meta)addIcon(meta.id,meta.name,meta.emoji);
+  });
+  addIcon('toktok','TokTok','🎬');
+  updateUnreadBadge();
+  if(typeof updatePhonePageDots==='function')updatePhonePageDots();
+ }
+ function updateUnreadBadge(){
+  const button=$('phoneApps')?.querySelector('[data-app="messages"]');if(!button)return;
+  let unread=0;try{unread=(lifeState.messages||[]).filter(m=>m&&m.from!=='player'&&!m.read&&!m.seen).length;}catch(e){}
+  let badge=button.querySelector('.abjUnreadBadge');
+  if(unread>0){if(!badge){badge=document.createElement('b');badge.className='abjUnreadBadge';button.appendChild(badge);}badge.textContent=String(Math.min(99,unread));}
+  else if(badge)badge.remove();
+ }
+ const style=document.createElement('style');style.textContent='.abjUnreadBadge{position:absolute;right:7px;top:6px;min-width:19px;height:19px;padding:0 5px;border-radius:12px;background:#e74c3c;color:#fff;font-size:11px;display:grid;place-items:center;z-index:4}.abjTokCard{background:#f2f6f5;border:1px solid #d6e2df;border-radius:14px;padding:12px;margin:9px 0;color:#172b30}.abjTokCard button{margin:4px 4px 0 0}';document.head.appendChild(style);
+ function renderTokTok(){
+  const c=$('phoneAppContent');if(!c)return;
+  const v=lifeState.v19||(lifeState.v19={}),t=v.toktok||(v.toktok={followers:0,views:0,likes:0,earnings:0,posts:[],lastPayoutDay:0});
+  const day=Number(lifeState.housing?.gameDay||1);
+  if(day>Number(t.lastPayoutDay||0)){
+   const payout=Math.max(0,Math.floor((Number(t.views||0)*.08)+(Number(t.likes||0)*.35)+(Number(t.followers||0)*1.5)));
+   if(payout){lifeState.money=(Number(lifeState.money)||0)+payout;t.earnings=(Number(t.earnings)||0)+payout;}
+   t.lastPayoutDay=day;
+  }
+  c.style.display='block';$('phoneHomeShell')&&($('phoneHomeShell').style.display='none');
+  c.innerHTML='<button id="tokBack">← Téléphone</button><h3>🎬 TokTok</h3><p>Ton réseau vidéo dans Abidjan Life. Les revenus sont en FCFA virtuels du jeu.</p><div class="abjTokCard"><b>📊 Ton compte créateur</b><p>👥 Abonnés : <b>'+Number(t.followers||0).toLocaleString('fr-FR')+'</b><br>❤️ Likes : <b>'+Number(t.likes||0).toLocaleString('fr-FR')+'</b><br>▶️ Vues : <b>'+Number(t.views||0).toLocaleString('fr-FR')+'</b><br>💰 Revenus cumulés : <b>'+Number(t.earnings||0).toLocaleString('fr-FR')+' FCFA</b></p></div><div class="abjTokCard"><b>➕ Publier une vidéo</b><input id="tokCaption" maxlength="90" placeholder="Titre ou description de ta vidéo" style="display:block;width:100%;padding:10px;margin:8px 0;border:1px solid #cbd8d5;border-radius:9px"><button id="tokPublish">Publier</button></div><h4>📱 Tes publications</h4>'+(t.posts.length?t.posts.slice().reverse().map((p,i)=>'<div class="abjTokCard"><b>'+escapeHTML(p.caption)+'</b><p>▶️ '+p.views+' vues · ❤️ '+p.likes+' likes</p><button data-tok-like="'+(t.posts.length-1-i)+'">❤️ J’aime</button><button data-tok-view="'+(t.posts.length-1-i)+'">▶️ Simuler des vues</button></div>').join(''):'<p>Aucune vidéo publiée pour le moment.</p>');
+  $('tokBack').onclick=()=>{c.style.display='none';showPhoneHome();};
+  $('tokPublish').onclick=()=>{const caption=$('tokCaption').value.trim();if(!caption){showMessage('Ajoute un titre à ta vidéo.');return;}t.posts.push({caption,views:0,likes:0,createdAt:Date.now()});t.followers+=1;saveLifeProgress(false);renderTokTok();showMessage('Ta vidéo est publiée sur TokTok.');};
+  c.querySelectorAll('[data-tok-like]').forEach(b=>b.onclick=()=>{const p=t.posts[Number(b.dataset.tokLike)];if(!p)return;p.likes++;t.likes++;saveLifeProgress(false);renderTokTok();});
+  c.querySelectorAll('[data-tok-view]').forEach(b=>b.onclick=()=>{const p=t.posts[Number(b.dataset.tokView)];if(!p)return;const n=5+Math.floor(Math.random()*26);p.views+=n;t.views+=n;t.followers+=Math.floor(n/12);saveLifeProgress(false);renderTokTok();});
+  saveLifeProgress(false);
+ }
+ const oldOpen=window.openPhoneApp;
+ window.openPhoneApp=function(id){
+  if(id==='appstore')id='jeux';
+  if(id==='toktok'){renderTokTok();return;}
+  if(id==='appels'&&oldOpen)return oldOpen('contacts');
+  if(id==='localisation')id='localisation';
+  return oldOpen&&oldOpen(id);
+ };
+ // PlayShop reste la seule porte d'entrée vers les applications téléchargeables.
+ const oldStore=window.renderAppStore;
+ if(typeof oldStore==='function')window.renderAppStore=function(){oldStore();const c=$('phoneAppContent');if(c){const h=c.querySelector('h3');if(h)h.textContent='🛍️ PlayShop';}};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refreshCoreApps,{once:true});else refreshCoreApps();
+ setInterval(updateUnreadBadge,1800);
+ window.ABJ_REFRESH_PHONE_APPS=refreshCoreApps;
+})();
+</script>
+
 </body>
 </html>
