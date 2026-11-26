@@ -8197,6 +8197,7 @@ window.ABJ_UPDATE_REMOTE_AVATARS=updateRemoteAvatars;
    socket=window.io(api(),{transports:['websocket','polling'],auth:{token:t,gameVersion:window.ABJ_BUILD_VERSION}});
    socket.on('connect',()=>{
     console.info('Abidjan Life multijoueur connecté');
+    socket.emit('social:message:history',{},result=>{if(result?.ok)window.dispatchEvent(new CustomEvent('abj-online-message-history',{detail:result.items||[]}));});
     let pending=window.ABJ_PENDING_REMOTE_SAVE;
     if(!pending && activeGameAccount){
      try{const raw=safeGet('abidjan-life-life-v1:'+normalizeIvorianMobile(activeGameAccount));if(raw)pending={phone:normalizeIvorianMobile(activeGameAccount),save:JSON.parse(raw)};}catch(e){window.__abjErr&&window.__abjErr(e)}
@@ -9567,9 +9568,91 @@ if(!ABJ_COURSES.some(c=>c.id==="licence-gestion"))ABJ_COURSES.push({id:"licence-
   el.textContent=text;el.style.display='block';clearTimeout(el._hide);el._hide=setTimeout(()=>el.style.display='none',5200);
  }
  window.addEventListener('abj-online-message',e=>{
-  const m=e.detail||{};lifeState.onlineMessages=lifeState.onlineMessages||[];lifeState.onlineMessages.push(m);lifeState.onlineMessages=lifeState.onlineMessages.slice(-100);saveLifeProgress(false);
+  const m=e.detail||{};lifeState.onlineMessages=lifeState.onlineMessages||[];
+  if(m.id&&!lifeState.onlineMessages.some(x=>x&&x.id===m.id))lifeState.onlineMessages.push(m);
+  lifeState.onlineMessages=lifeState.onlineMessages.slice(-150);saveLifeProgress(false);
   toast('💬 '+(m.fromName||'Joueur')+' : '+(m.text||'Nouveau message'));
+  if(document.getElementById('abjOnlineMessagesList'))renderOnlineMessagesApp();
  });
+ window.addEventListener('abj-online-message-history',e=>{
+  const history=Array.isArray(e.detail)?e.detail:[];
+  const current=Array.isArray(lifeState.onlineMessages)?lifeState.onlineMessages:[];
+  const byId=new Map();
+  [...history,...current].forEach(m=>{if(m&&m.id)byId.set(m.id,m);});
+  lifeState.onlineMessages=[...byId.values()].sort((a,b)=>Date.parse(a.createdAt||0)-Date.parse(b.createdAt||0)).slice(-150);
+  saveLifeProgress(false);
+  if(document.getElementById('abjOnlineMessagesList'))renderOnlineMessagesApp();
+ });
+ async function renderOnlineMessagesApp(){
+  const content=document.getElementById('phoneAppContent');if(!content)return;
+  content.innerHTML='<button id="abjOnlineMessagesBack">← Messages</button><h3>🌐 Messages entre joueurs</h3><p style="font-size:12px;color:#c6d8e5">Tes conversations sont sauvegardées sur le serveur et restent disponibles après reconnexion.</p><div id="abjOnlineMessagesList">Chargement de tes conversations…</div><hr style="border-color:#ffffff25"><h4>✉️ Nouveau message</h4><label>Pseudo unique du joueur<input id="abjOnlineMessagePseudo" maxlength="24" placeholder="Pseudo du destinataire"></label><label>Message<textarea id="abjOnlineMessageText" rows="3" maxlength="500" placeholder="Écris ton message…"></textarea></label><button id="abjOnlineMessageSend">Envoyer</button><p id="abjOnlineMessageStatus" style="font-size:11px;color:#ffe0a0"></p>';
+  document.getElementById('abjOnlineMessagesBack').onclick=()=>window.renderMessagesApp&&window.renderMessagesApp();
+  const list=document.getElementById('abjOnlineMessagesList');
+  try{
+   const response=await fetch(onlineApi()+'/api/social/messages',{cache:'no-store',headers:authHeaders()});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(data.error||'Historique indisponible.');
+   const items=Array.isArray(data.items)?data.items:[];
+   const local=Array.isArray(lifeState.onlineMessages)?lifeState.onlineMessages:[];
+   const merged=new Map();
+   [...items,...local].forEach(m=>{if(m&&m.id)merged.set(m.id,m);});
+   lifeState.onlineMessages=[...merged.values()].sort((a,b)=>Date.parse(a.createdAt||0)-Date.parse(b.createdAt||0)).slice(-150);
+   saveLifeProgress(false);
+   const groups=new Map();
+   lifeState.onlineMessages.forEach(m=>{const key=String(m.peerPseudo||m.peerName||'joueur');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(m);});
+   list.innerHTML=groups.size?[...groups.entries()].map(([pseudo,rows])=>{
+    const latest=rows.slice(-12);
+    const name=latest[latest.length-1]?.peerName||pseudo;
+    return '<article style="padding:10px;margin:8px 0;border:1px solid #ffffff28;border-radius:10px;background:#ffffff0d"><b>👤 '+escapeHTML(name)+(pseudo&&pseudo!==name?' · @'+escapeHTML(pseudo):'')+'</b><div style="max-height:190px;overflow:auto;margin-top:7px">'+latest.map(m=>'<div style="margin:5px 0;padding:7px;border-radius:8px;background:'+(m.direction==='outgoing'?'#176b75':'#ffffff18')+';text-align:'+(m.direction==='outgoing'?'right':'left')+'"><small style="color:#c6d8e5">'+(m.direction==='outgoing'?'Moi':escapeHTML(m.peerName||name))+'</small><div>'+escapeHTML(m.text||'')+'</div></div>').join('')+'</div></article>';
+   }).join(''):'<p style="font-size:12px;color:#c6d8e5">Aucun message privé pour le moment. Envoie un message avec le pseudo du joueur.</p>';
+  }catch(error){list.textContent=error.message||'Impossible de charger les messages.';}
+  document.getElementById('abjOnlineMessageSend').onclick=async()=>{
+   const pseudo=document.getElementById('abjOnlineMessagePseudo').value.trim().replace(/^@/,'');
+   const text=document.getElementById('abjOnlineMessageText').value.trim();
+   const status=document.getElementById('abjOnlineMessageStatus');
+   if(!/^[a-z0-9_.-]{3,24}$/i.test(pseudo)||!text){status.textContent='Vérifie le pseudo et le texte du message.';return;}
+   const button=document.getElementById('abjOnlineMessageSend');button.disabled=true;status.textContent='Envoi…';
+   try{
+    const playersResponse=await fetch(onlineApi()+'/api/players',{cache:'no-store'});
+    const playersData=await playersResponse.json().catch(()=>({}));
+    const online=(playersData.players||[]).find(p=>String(p.pseudo||'').toLowerCase()===pseudo.toLowerCase());
+    const socket=window.ABJ_GAME_SOCKET;
+    if(online&&socket?.connected){
+     socket.emit('social:message',{to:online.id,text},ack=>{
+      button.disabled=false;
+      if(!ack?.ok){status.textContent=ack?.error||'Envoi impossible.';return;}
+      const message=ack.message||{};
+      lifeState.onlineMessages=lifeState.onlineMessages||[];
+      lifeState.onlineMessages.push({id:message.id,peerPseudo:pseudo,peerName:online.name||pseudo,direction:'outgoing',text,createdAt:new Date(message.createdAt||Date.now()).toISOString(),readAt:null});
+      lifeState.onlineMessages=lifeState.onlineMessages.slice(-150);saveLifeProgress(false);
+      document.getElementById('abjOnlineMessageText').value='';status.textContent='Message envoyé et sauvegardé.';renderOnlineMessagesApp();
+     });
+    }else{
+     const response=await fetch(onlineApi()+'/api/social/messages',{method:'POST',headers:{...authHeaders(),'Content-Type':'application/json'},body:JSON.stringify({toPseudo:pseudo,text})});
+     const data=await response.json().catch(()=>({}));
+     if(!response.ok)throw new Error(data.error||'Envoi impossible.');
+     lifeState.onlineMessages=lifeState.onlineMessages||[];if(data.message)lifeState.onlineMessages.push(data.message);
+     lifeState.onlineMessages=lifeState.onlineMessages.slice(-150);saveLifeProgress(false);
+     document.getElementById('abjOnlineMessageText').value='';status.textContent='Message sauvegardé. Le joueur le recevra à sa prochaine connexion.';renderOnlineMessagesApp();
+    }
+   }catch(error){button.disabled=false;status.textContent=error.message||'Envoi impossible.';}
+  };
+ }
+ window.renderOnlineMessagesApp=renderOnlineMessagesApp;
+ const previousMessagesRender=window.renderMessagesApp;
+ if(typeof previousMessagesRender==='function'&&!window.__ABJ_ONLINE_MESSAGES_BUTTON){
+  window.__ABJ_ONLINE_MESSAGES_BUTTON=true;
+  window.renderMessagesApp=function(){
+   previousMessagesRender.apply(this,arguments);
+   const content=document.getElementById('phoneAppContent');
+   if(!content||content.querySelector('#abjOnlineMessagesOpen'))return;
+   const button=document.createElement('button');button.id='abjOnlineMessagesOpen';button.textContent='🌐 Messages entre joueurs';
+   button.style.cssText='display:block;width:100%;margin:8px 0;border:1px solid #e5c47a;background:#173b4a;color:#fff;border-radius:9px;padding:10px';
+   button.onclick=renderOnlineMessagesApp;
+   const back=content.querySelector('#phoneBack');
+   if(back&&back.nextSibling)content.insertBefore(button,back.nextSibling);else content.prepend(button);
+  };
+ }
  window.addEventListener('abj-online-call',e=>{
   const m=e.detail||{};window.__ABJ_PENDING_CALL=m;toast('📞 Appel entrant de '+(m.fromName||'un joueur')+' · ouvre Appels');
  });
