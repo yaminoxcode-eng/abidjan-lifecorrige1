@@ -7793,6 +7793,7 @@ function v16ValidateTrafficRoutes(){
 ];
  // YouTube et TikTok deviennent une seule application TokTok.
  for(let i=appCatalog.length-1;i>=0;i--)if(appCatalog[i].id==='youtube'||appCatalog[i].id==='tiktok')appCatalog.splice(i,1);
+ window.ABJ_APP_CATALOG=appCatalog;
  window.ABJ_OPEN_PROPERTY_MARKET=function(listingId){const item=(plotListings.find(p=>p.id===listingId)?'land':'rent');openPhone();openPhoneApp('immoabj');renderProjectsV19(item);};
  function addInstalledIcon(app){const host=document.getElementById('phoneApps');if(!host||host.querySelector('[data-app="'+app.id+'"]'))return;let grid=host.querySelector('.phoneAppsPage:last-child');if(!grid||grid.querySelectorAll('.phoneApp').length>=9){grid=document.createElement('div');grid.className='phoneAppsPage';host.appendChild(grid);}const b=document.createElement('button');b.className='phoneApp';b.dataset.app=app.id;b.innerHTML='<span>'+app.emoji+'</span>'+app.name;b.onclick=()=>openPhoneApp(app.id);grid.appendChild(b);}
  function renderAppStore(){
@@ -15398,8 +15399,9 @@ body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!
    const b=document.createElement('button');b.type='button';b.className='phoneApp';b.dataset.app=id;b.innerHTML='<span>'+emoji+'</span><b>'+label+'</b>';b.addEventListener('click',()=>openPhoneApp(id));first.appendChild(b);
   });
   installed.forEach(id=>{
-   if(keep.has(id)||id==='youtube'||id==='tiktok')return;
-   const meta=(typeof appCatalog!=='undefined'?appCatalog:[]).find(x=>x.id===id);
+   if(keep.has(id))return;
+   if(id==='youtube'||id==='tiktok')id='toktok';
+   const meta=(window.ABJ_APP_CATALOG||[]).find(x=>x.id===id);
    if(meta)addIcon(meta.id,meta.name,meta.emoji);
   });
   updateUnreadBadge();
