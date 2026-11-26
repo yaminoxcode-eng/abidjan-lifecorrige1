@@ -4681,7 +4681,7 @@ function interactWithFurniture(){
 }
 
 function updatePlayer(delta) {
-  if (!player || !worldReady || dialogOpen || panelOpen || elevatorMenuOpen || elevatorTravel || cameraMode || activeCourseGoRide) return;
+  if (!player || !worldReady || dialogOpen || panelOpen || elevatorMenuOpen || elevatorTravel || cameraMode || (activeCourseGoRide && activeCourseGoRide.phase === 'riding')) return;
   // Comme dans Les Sims : une fois assis/allongé, le personnage reste immobilisé
   // jusqu'à l'action explicite « Se relever » avec F.
   if(playerSitting){ keys['z']=keys['w']=keys['q']=keys['a']=keys['s']=keys['d']=keys['arrowup']=keys['arrowdown']=keys['arrowleft']=keys['arrowright']=keys['shift']=false; return; }
@@ -4858,6 +4858,14 @@ function updateNPCs(delta) {
   };
   npcs.forEach(npc=>{
     const d=npc.userData; if(d.dead||!npc.visible)return;
+    // Un PNJ engagé dans une conversation reste immobile et regarde le joueur.
+    if(d.talkingUntil){
+      if(Date.now()<d.talkingUntil){
+        if(player){const tx=player.position.x-npc.position.x,tz=player.position.z-npc.position.z;npc.rotation.y=Math.atan2(tx,tz);}
+        animateCharacter(npc,delta,false);return;
+      }
+      d.talkingUntil=0;d.targetX=undefined;d.targetZ=undefined;d.pauseTimer=0;d.changeTimer=0;
+    }
     d.vehicleCheckTimer=(d.vehicleCheckTimer||0)-delta;
     if(d.vehicleCheckTimer<=0){d.vehicleCheckTimer=.22;d.nearVehicle=__npcNearVehicle(npc.position.x,npc.position.z);}
     if(d.nearVehicle){
@@ -15295,6 +15303,36 @@ body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!
   home.dataset.dailyEdition=dayKey;
   home.style.setProperty('--abj-daily-hue',String((dayIndex*17)%360));
  }catch(error){console.warn('Accueil quotidien non appliqué',error);}
+})();
+</script>
+
+<script id="abj-v154-npc-talk-and-yango-walk">
+(function(){
+ try{
+  const original=interactWithCityLife;
+  if(typeof original==='function'&&!original.__abjConversationPatch){
+   const wrapped=function(){
+    let target=null,dist=4.6;
+    if(player&&Array.isArray(npcs))for(const npc of npcs){
+     if(!npc||!npc.visible||!npc.userData||npc.userData.dead)continue;
+     const d=Math.hypot(npc.position.x-player.position.x,npc.position.z-player.position.z);
+     if(d<dist){target=npc;dist=d;}
+    }
+    const result=original.apply(this,arguments);
+    if(target&&target.userData){
+     target.userData.talkingUntil=Date.now()+5200;
+     target.userData.pauseTimer=5.2;
+     target.userData.targetX=undefined;target.userData.targetZ=undefined;
+     target.userData.changeTimer=6;
+     target.rotation.y=Math.atan2(player.position.x-target.position.x,player.position.z-target.position.z);
+     showMessage('💬 Tu prends le temps de discuter avec '+(target.userData.name||'cet habitant')+'. Il reprendra son activité à la fin de votre échange.');
+     if(typeof messageTimer!=='undefined')messageTimer=5.2;
+    }
+    return result;
+   };
+   wrapped.__abjConversationPatch=true;interactWithCityLife=wrapped;
+  }
+ }catch(error){console.warn('Conversation PNJ non initialisée',error);}
 })();
 </script>
 </body>
