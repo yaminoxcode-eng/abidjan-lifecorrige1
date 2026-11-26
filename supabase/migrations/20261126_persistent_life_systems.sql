@@ -107,6 +107,7 @@ begin
     (case when jsonb_typeof(v_save->'bankTransactions')='array' then v_save->'bankTransactions' else '[]'::jsonb end) || v_tx, true);
   v_save := jsonb_set(v_save, '{contacts}', v_contacts, true);
   v_save := jsonb_set(v_save, '{messages}', v_messages || v_msg, true);
+  v_save := jsonb_set(v_save, '{savedAt}', to_jsonb(v_now), true);
   update public.game_accounts set save=v_save, updated_at=v_now where phone=p_player_phone;
   update public.player_invoices set status='paid', paid_at=v_now, payment_method='wave' where id=p_invoice_id;
   return jsonb_build_object('ok',true,'save',v_save,'waveBalance',v_balance-v_amount,'paidAt',v_now);
