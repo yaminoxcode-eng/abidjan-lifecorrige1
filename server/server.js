@@ -1169,6 +1169,7 @@ app.get('/api/players', (_req, res) => {
   res.json({ count: activePlayers.size, players: [...activePlayers.values()].map(p => ({
     id: p.id,
     name: clean(p.profile?.name, 24) || 'Citoyen',
+    pseudo: clean(accounts.get(p.phone)?.profile?.pseudo, 24),
     moving: !!p.moving
   })) });
 });
@@ -1272,8 +1273,22 @@ io.on('connection', (socket) => {
         text: saved.body,
         createdAt: Date.parse(saved.created_at) || now
       };
-      io.to(target).emit('social:message', message);
-      if (typeof ack === 'function') ack({ ok: true, message });
+      const senderAccount = accounts.get(socket.phone);
+      const targetAccount = accounts.get(targetState.phone);
+      const incomingMessage = {
+        ...message,
+        peerPseudo: clean(senderAccount?.profile?.pseudo, 24),
+        peerName: clean(senderAccount?.profile?.name, 24) || 'Citoyen',
+        direction: 'incoming'
+      };
+      const outgoingMessage = {
+        ...message,
+        peerPseudo: clean(targetAccount?.profile?.pseudo, 24),
+        peerName: clean(targetAccount?.profile?.name, 24) || 'Citoyen',
+        direction: 'outgoing'
+      };
+      io.to(target).emit('social:message', incomingMessage);
+      if (typeof ack === 'function') ack({ ok: true, message: outgoingMessage });
     } catch (error) {
       console.error('Enregistrement message multijoueur:', error.message);
       if (typeof ack === 'function') ack({ ok: false, error: 'Le message n’a pas été sauvegardé. Réessaie.' });
