@@ -1797,22 +1797,43 @@ function generateCity() {
     const status = document.getElementById('mapStatus');
     if (status) status.textContent = osmRoadSegments.length.toLocaleString('fr-FR') + ' segments de routes et rues · ' + allBuildings.length.toLocaleString('fr-FR') + ' bâtiments · ' + poi.length.toLocaleString('fr-FR') + ' commerces et lieux · ' + doors.length + ' maisons accessibles';
 
-    optional('arbres des rues', buildMappedStreetTrees);
-    optional('siège AF GAMER', createAFGamerHQ);
-    optional('auto-écoles', createDrivingSchools);
-    optional('dépôts de transport', createTransitDepots);
-    optional('stations et garages', createFuelStationsAndRepairGarages);
-    optional('aéroport', createAbidjanAirport);
-    optional('terrains et locations', createLandAndRentalParcels);
-
+    // Préparer seulement une petite population avant l'entrée : les PNJ et décors
+    // secondaires sont ajoutés par lots après l'ouverture pour éviter de figer le chargement.
     if (!npcPopulationCreated) {
-      optional('population initiale', () => createNPCs(mobilePerformanceMode ? 120 : 240));
+      optional('premiers habitants', () => createNPCs(mobilePerformanceMode ? 28 : 240));
       npcPopulationCreated = true;
     }
 
-    // Ouvrir le monde avant le trafic : la création des véhicules n'est pas une condition
-    // nécessaire pour jouer et ne doit plus laisser la barre bloquée à 93 %.
+    // Le monde devient jouable dès que routes, bâtiments et personnage sont prêts.
     openWorld((status ? status.textContent : '') + ' · monde jouable');
+
+    const deferredCityTasks = [
+      ['arbres des rues', buildMappedStreetTrees],
+      ['siège AF GAMER', createAFGamerHQ],
+      ['auto-écoles', createDrivingSchools],
+      ['dépôts de transport', createTransitDepots],
+      ['stations et garages', createFuelStationsAndRepairGarages],
+      ['aéroport', createAbidjanAirport],
+      ['terrains et locations', createLandAndRentalParcels]
+    ];
+    let deferredTaskIndex = 0;
+    let deferredNpcRemaining = mobilePerformanceMode ? 92 : 0;
+    const continueCityBuild = () => {
+      if (!worldReady) return;
+      if (deferredTaskIndex < deferredCityTasks.length) {
+        const task = deferredCityTasks[deferredTaskIndex++];
+        optional(task[0], task[1]);
+        requestAnimationFrame(continueCityBuild);
+        return;
+      }
+      if (deferredNpcRemaining > 0) {
+        const batch = Math.min(8, deferredNpcRemaining);
+        deferredNpcRemaining -= batch;
+        optional('population progressive', () => createNPCs(batch));
+        setTimeout(continueCityBuild, 100);
+      }
+    };
+    setTimeout(continueCityBuild, 250);
 
     const trafficTarget = mobilePerformanceMode ? 80 : 180;
     let trafficRemaining = trafficTarget;
@@ -15097,5 +15118,100 @@ body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!
  updateWorldClock();updatePlayers();setInterval(updateWorldClock,1000);setInterval(updatePlayers,30000);
 })();
 </script>
+
+<!-- Correctifs HUD mobile et mini-carte de quartier -->
+<style id="abj-v152-hud-quarter-map">
+@media (max-width:760px), (pointer:coarse) {
+  /* Les besoins restent accessibles uniquement depuis le bouton emoji. */
+  #lifeHud,#topMenu,.lifeNeed,#hungerFill,#energyFill,#faimBar,#energieBar {display:none!important;visibility:hidden!important}
+  /* Une seule source d'argent et un seul compteur de joueurs : le badge du haut. */
+  #moneyLabel,#money,#abjOnlineCount,#abjOnlinePanel {display:none!important;visibility:hidden!important}
+  #abjTopOnlineBadge {display:flex!important;position:fixed!important;left:50%!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 7px)!important;transform:translateX(-50%)!important;z-index:70!important;gap:6px!important;min-width:max-content!important}
+  #abjTopOnlineBadge .abjTopStat {min-height:32px!important;padding:5px 9px!important;font-size:12px!important}
+  /* Horloge en haut à gauche, météo et calendrier juste en dessous. */
+  body.abj-world-exploring #lifeClock {display:block!important;position:fixed!important;left:8px!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 7px)!important;z-index:71!important;padding:6px 9px!important;font-size:13px!important}
+  body.abj-world-exploring #v12Weather {display:block!important;position:fixed!important;left:8px!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 43px)!important;z-index:70!important;font-size:10px!important;padding:5px 7px!important}
+  body.abj-world-exploring #v12Calendar {display:block!important;position:fixed!important;left:8px!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 75px)!important;z-index:70!important;font-size:9px!important;padding:4px 6px!important;text-align:left!important;max-width:145px!important}
+  /* Mini-carte déplacée en haut à droite et réduite pour laisser place aux commandes. */
+  #miniMapWrap {display:block!important;position:fixed!important;left:auto!important;right:8px!important;top:calc(env(safe-area-inset-top,0px) + 7px)!important;bottom:auto!important;width:112px!important;height:112px!important;transform:none!important;z-index:68!important;pointer-events:auto!important;cursor:pointer!important;touch-action:manipulation!important;border-width:2px!important}
+  #miniMapCanvas {pointer-events:auto!important;touch-action:manipulation!important}
+  #miniMapLabel {font-size:8px!important;max-width:100px!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  /* Bouton besoins entre le compteur supérieur et la mini-carte. */
+  #needToggleEmoji {display:grid!important;visibility:visible!important;position:fixed!important;left:50%!important;right:auto!important;top:calc(env(safe-area-inset-top,0px) + 49px)!important;bottom:auto!important;transform:translateX(-50%)!important;width:42px!important;height:42px!important;font-size:23px!important;z-index:72!important;pointer-events:auto!important}
+  /* Retirer la bulle/barre flottante qui apparaissait au-dessus du personnage. */
+  #playerSpeech {display:none!important;visibility:hidden!important}
+  #respectLabel {left:8px!important;bottom:90px!important}
+}
+</style>
+<script id="abj-v152-hud-quarter-map-runtime">
+(function(){
+  function installQuarterMap(){
+    const wrap=document.getElementById('miniMapWrap');
+    if(wrap&&!wrap.dataset.quarterTap){
+      wrap.dataset.quarterTap='1';
+      wrap.setAttribute('role','button');
+      wrap.setAttribute('aria-label','Ouvrir la carte du quartier');
+      wrap.setAttribute('tabindex','0');
+      const openQuarter=()=>{
+        if(!window.gameStarted||!window.worldReady||!window.player)return;
+        try{
+          const p=window.getPlayerMapPosition?window.getPlayerMapPosition():{x:player.position.x,z:player.position.z};
+          window.mapView.centerX=p.x;window.mapView.centerZ=p.z;window.mapView.follow=false;window.mapView.zoom=4.8;
+          window.openBigMap();
+        }catch(error){console.warn('Ouverture de la carte du quartier impossible',error);}
+      };
+      wrap.addEventListener('click',openQuarter);
+      wrap.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openQuarter();}});
+    }
+    const btn=document.getElementById('needToggleEmoji');
+    if(btn){btn.style.pointerEvents='auto';btn.style.zIndex='72';}
+  }
+  function refreshQuarterMap(){
+    const c=document.getElementById('miniMapCanvas');
+    if(!c||!window.player||!window.scene||!window.gameStarted||!window.worldReady)return;
+    const ctx=c.getContext('2d');if(!ctx)return;
+    const W=c.width,H=c.height,cx=W/2,cy=H/2,R=145,range=420;
+    let pos;try{pos=window.getPlayerMapPosition();}catch(e){pos={x:player.position.x,z:player.position.z};}
+    const px=Number(pos.x)||0,pz=Number(pos.z)||0,scale=R/range;
+    ctx.clearRect(0,0,W,H);ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();
+    ctx.fillStyle='#b9c8b5';ctx.fillRect(0,0,W,H);
+    const roads=(window.osmRoadSegments&&osmRoadSegments.length)?osmRoadSegments:(scene.userData.playableUrbanCoreRoads||[]);
+    ctx.lineCap='round';
+    for(const road of roads){
+      if(!road||!road.a||!road.b)continue;
+      const mx=(road.a.x+road.b.x)/2,mz=(road.a.z+road.b.z)/2;
+      if(Math.abs(mx-px)>range*1.5||Math.abs(mz-pz)>range*1.5)continue;
+      ctx.strokeStyle=['motorway','trunk','primary'].includes(road.type)?'#d39b50':'#fffdf4';
+      ctx.lineWidth=Math.max(1.3,(Number(road.width)||5)*scale*.8);
+      ctx.beginPath();ctx.moveTo(cx+(road.a.x-px)*scale,cy+(road.a.z-pz)*scale);
+      ctx.lineTo(cx+(road.b.x-px)*scale,cy+(road.b.z-pz)*scale);ctx.stroke();
+    }
+    for(const b of (window.allBuildings||[])){
+      if(!b||!Number.isFinite(b.x)||!Number.isFinite(b.z))continue;
+      const dx=b.x-px,dz=b.z-pz;if(Math.abs(dx)>range||Math.abs(dz)>range)continue;
+      const bw=Math.max(2,Math.min(12,Number(b.w)||7)*scale),bd=Math.max(2,Math.min(12,Number(b.d)||7)*scale);
+      ctx.fillStyle=/shop|commerce|urban-shop|mairie|market/i.test(String(b.type||''))?'#d58c3d':'#64776b';
+      ctx.fillRect(cx+dx*scale-bw/2,cy+dz*scale-bd/2,bw,bd);
+    }
+    for(const v of (window.vehicles||[])){
+      if(!v||!v.visible||v.userData?.wreck)continue;
+      const dx=v.position.x-px,dz=v.position.z-pz;if(Math.abs(dx)>range||Math.abs(dz)>range)continue;
+      ctx.fillStyle=v.userData?.vType==='gbaka'?'#e58b22':'#e6bd36';
+      ctx.beginPath();ctx.arc(cx+dx*scale,cy+dz*scale,2.5,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='#1769d2';ctx.strokeStyle='#fff';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
+    const label=document.getElementById('miniMapLabel');
+    if(label)label.textContent=String(window.currentQuartier||'Quartier actuel').toUpperCase();
+  }
+  function start(){
+    installQuarterMap();
+    setInterval(installQuarterMap,1000);
+    setInterval(refreshQuarterMap,650);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
+
 </body>
 </html>
