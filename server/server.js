@@ -1359,7 +1359,7 @@ function clamp(v, min = 0, max = 100) {
     : 0;
 }
 
-registerPlayerSystems(app, { auth, accounts, supabaseRequest, persistAccount });
+registerPlayerSystems(app, { auth, accounts, supabaseRequest, persistAccount, persistentStorageEnabled });
 
 loadPersistentAccounts()
   .then(() => {
