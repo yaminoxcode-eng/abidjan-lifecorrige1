@@ -5937,6 +5937,12 @@ function renderWaveApp(){
                 const body=await result.json().catch(()=>({}));
                 if(!result.ok)throw new Error(body.error||'Paiement refusé');
                 lifeState.waveBalance=Math.max(0,Number(body.waveBalance)||0);
+                if(body.save&&typeof body.save==='object'){
+                  lifeState.bankTransactions=Array.isArray(body.save.bankTransactions)?body.save.bankTransactions:lifeState.bankTransactions;
+                  lifeState.contacts=Array.isArray(body.save.contacts)?body.save.contacts:lifeState.contacts;
+                  lifeState.messages=Array.isArray(body.save.messages)?body.save.messages:lifeState.messages;
+                  lifeState.waveNotifs=Array.isArray(body.save.waveNotifs)?body.save.waveNotifs:lifeState.waveNotifs;
+                }
                 saveLifeProgress(false);
                 showMessage('💚 Facture réglée avec Wave.');
                 renderWaveApp();
@@ -6103,7 +6109,13 @@ function renderCheatApp(){
     const c=lifeState.cheats||{},tier=getCreatorTier(),cap=getMoneyCap();
     document.getElementById('cheatStates').innerHTML='Grade : <b>'+(tier==='none'?'Joueur':'Créateur-'+tier)+'</b><br>Wave : '+Math.floor(lifeState.money).toLocaleString('fr-FR')+' F · Banque : '+Math.floor(lifeState.bankBalance||0).toLocaleString('fr-FR')+' F<br>Plafond : '+cap.toLocaleString('fr-FR')+' F · Code argent : +'+CHEAT_MONEY_AMOUNT.toLocaleString('fr-FR')+' F';
   };state();paint();
-  const submit=()=>{
+  const submit=async()=>{
+    if(buf.trim()==='#1324564#'){
+      status.textContent='Activation Internet en cours…';status.style.color='#ffe0a0';
+      try{await activateInternetService();status.textContent='✓ Internet activé pour 28 jours de jeu.';status.style.color='#8ef0ad';buf='#';paint();state();}
+      catch(error){status.textContent=error.message||'Activation Internet impossible.';status.style.color='#ff9a8c';}
+      return;
+    }
     const codes={'#102030#':'money','#100101#':'hunger','#001002#':'energy'};
     const kind=codes[buf.trim()];
     if(!kind){status.textContent='Code incorrect.';status.style.color='#ff9a8c';return;}
