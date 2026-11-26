@@ -5597,6 +5597,10 @@ function promptEquipPhone(it){
     lifeState.inventory[it.id]=(lifeState.inventory[it.id]||0)+1;
     showMessage('📱 '+it.name+' ajouté à ton sac.');
   }
+  if(activeGameAccount){
+    const eventType=ok?'device.equip':'device.store';
+    abjPlayerSystemsRequest('/api/game/events',{method:'POST',body:JSON.stringify({eventType,eventKey:eventType+':'+it.id+':'+Date.now(),payload:{deviceId:it.id,deviceType:'phone',appearance:{id:it.id,name:it.name,color:it.color,accent:it.accent}}})}).catch(error=>console.warn('Journal appareil non synchronisé :',error.message));
+  }
   saveLifeProgress(false);
 }
 const ABJ_JUMIA_ITEMS=[
