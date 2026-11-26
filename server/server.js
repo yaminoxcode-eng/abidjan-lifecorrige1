@@ -1422,7 +1422,7 @@ io.on('connection', (socket) => {
     if (payload.profile && typeof payload.profile === 'object') {
       const p = payload.profile;
 
-      state.profile = account.profile = {
+      const publicProfile = {
         name: safePlayerName(socket.phone, p.name),
         gender: p.gender === 'femme' ? 'femme' : 'homme',
         skin: Number(p.skin) || 0x7a4a24,
@@ -1432,6 +1432,17 @@ io.on('connection', (socket) => {
         bodyType: ['fin','standard','athletique','fort'].includes(p.bodyType) ? p.bodyType : 'standard',
         hairstyle: ['court','degrade','afro','tresses','long'].includes(p.hairstyle) ? p.hairstyle : 'court',
         outfit: ['urbain','chic','sport'].includes(p.outfit) ? p.outfit : 'urbain'
+      };
+      state.profile = publicProfile;
+      const identity = account.profile || {};
+      account.profile = {
+        ...publicProfile,
+        pseudo: clean(identity.pseudo, 24),
+        firstName: clean(identity.firstName, 40),
+        lastName: clean(identity.lastName, 40),
+        referralCode: identity.referralCode || null,
+        birthDate: identity.birthDate || null,
+        birthPlace: identity.birthPlace || null
       };
     }
 
