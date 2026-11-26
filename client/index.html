@@ -15153,11 +15153,11 @@ body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!
       wrap.setAttribute('aria-label','Ouvrir la carte du quartier');
       wrap.setAttribute('tabindex','0');
       const openQuarter=()=>{
-        if(!window.gameStarted||!window.worldReady||!window.player)return;
+        if(typeof gameStarted==='undefined'||!gameStarted||typeof worldReady==='undefined'||!worldReady||!player)return;
         try{
-          const p=window.getPlayerMapPosition?window.getPlayerMapPosition():{x:player.position.x,z:player.position.z};
-          window.mapView.centerX=p.x;window.mapView.centerZ=p.z;window.mapView.follow=false;window.mapView.zoom=4.8;
-          window.openBigMap();
+          const p=typeof getPlayerMapPosition==='function'?getPlayerMapPosition():{x:player.position.x,z:player.position.z};
+          mapView.centerX=p.x;mapView.centerZ=p.z;mapView.follow=false;mapView.zoom=4.8;
+          openBigMap();
         }catch(error){console.warn('Ouverture de la carte du quartier impossible',error);}
       };
       wrap.addEventListener('click',openQuarter);
@@ -15168,14 +15168,14 @@ body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!
   }
   function refreshQuarterMap(){
     const c=document.getElementById('miniMapCanvas');
-    if(!c||!window.player||!window.scene||!window.gameStarted||!window.worldReady)return;
+    if(!c||typeof player==='undefined'||!player||typeof scene==='undefined'||!scene||typeof gameStarted==='undefined'||!gameStarted||typeof worldReady==='undefined'||!worldReady)return;
     const ctx=c.getContext('2d');if(!ctx)return;
     const W=c.width,H=c.height,cx=W/2,cy=H/2,R=145,range=420;
-    let pos;try{pos=window.getPlayerMapPosition();}catch(e){pos={x:player.position.x,z:player.position.z};}
+    let pos;try{pos=getPlayerMapPosition();}catch(e){pos={x:player.position.x,z:player.position.z};}
     const px=Number(pos.x)||0,pz=Number(pos.z)||0,scale=R/range;
     ctx.clearRect(0,0,W,H);ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);ctx.clip();
     ctx.fillStyle='#b9c8b5';ctx.fillRect(0,0,W,H);
-    const roads=(window.osmRoadSegments&&osmRoadSegments.length)?osmRoadSegments:(scene.userData.playableUrbanCoreRoads||[]);
+    const roads=(osmRoadSegments&&osmRoadSegments.length)?osmRoadSegments:(scene.userData.playableUrbanCoreRoads||[]);
     ctx.lineCap='round';
     for(const road of roads){
       if(!road||!road.a||!road.b)continue;
@@ -15186,14 +15186,14 @@ body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!
       ctx.beginPath();ctx.moveTo(cx+(road.a.x-px)*scale,cy+(road.a.z-pz)*scale);
       ctx.lineTo(cx+(road.b.x-px)*scale,cy+(road.b.z-pz)*scale);ctx.stroke();
     }
-    for(const b of (window.allBuildings||[])){
+    for(const b of (allBuildings||[])){
       if(!b||!Number.isFinite(b.x)||!Number.isFinite(b.z))continue;
       const dx=b.x-px,dz=b.z-pz;if(Math.abs(dx)>range||Math.abs(dz)>range)continue;
       const bw=Math.max(2,Math.min(12,Number(b.w)||7)*scale),bd=Math.max(2,Math.min(12,Number(b.d)||7)*scale);
       ctx.fillStyle=/shop|commerce|urban-shop|mairie|market/i.test(String(b.type||''))?'#d58c3d':'#64776b';
       ctx.fillRect(cx+dx*scale-bw/2,cy+dz*scale-bd/2,bw,bd);
     }
-    for(const v of (window.vehicles||[])){
+    for(const v of (vehicles||[])){
       if(!v||!v.visible||v.userData?.wreck)continue;
       const dx=v.position.x-px,dz=v.position.z-pz;if(Math.abs(dx)>range||Math.abs(dz)>range)continue;
       ctx.fillStyle=v.userData?.vType==='gbaka'?'#e58b22':'#e6bd36';
@@ -15202,7 +15202,7 @@ body.abj-world-exploring #lifeClock {display:block!important;visibility:visible!
     ctx.fillStyle='#1769d2';ctx.strokeStyle='#fff';ctx.lineWidth=3;
     ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.restore();
     const label=document.getElementById('miniMapLabel');
-    if(label)label.textContent=String(window.currentQuartier||'Quartier actuel').toUpperCase();
+    if(label)label.textContent=String(currentQuartier||'Quartier actuel').toUpperCase();
   }
   function start(){
     installQuarterMap();
