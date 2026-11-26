@@ -692,7 +692,7 @@ function createAbidjanTerrain(){
   // Sur mobile, réduire le coût de génération CPU/GPU du terrain avant le premier rendu.
   // La surface reste continue et conserve le même relief et la même emprise de la ville.
   const mobileTerrain=!!mobilePerformanceMode||window.innerWidth<700;
-  const segments=mobileTerrain?80:160, half=CITY_SIZE/2, positions=[],uvs=[],indices=[];
+  const segments=mobileTerrain?112:160, half=CITY_SIZE/2, positions=[],uvs=[],indices=[];
   for(let iz=0;iz<=segments;iz++){const z=-half+CITY_SIZE*iz/segments;for(let ix=0;ix<=segments;ix++){const x=-half+CITY_SIZE*ix/segments;positions.push(x,terrainHeight(x,z)-.08,z);uvs.push(ix/segments,iz/segments);}}
   for(let iz=0;iz<segments;iz++)for(let ix=0;ix<segments;ix++){const a=iz*(segments+1)+ix,b=a+1,c=a+segments+1,d=c+1;indices.push(a,c,b,b,c,d);}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geo.setIndex(indices);geo.computeVertexNormals();
@@ -1698,9 +1698,9 @@ function updateDistanceManagedBuildings(delta){
   distanceCullAccumulator+=delta;
   if(distanceCullAccumulator<.35)return;
   distanceCullAccumulator=0;
-  const limit=mobilePerformanceMode?2300:4600;
+  const limit=mobilePerformanceMode?3600:4600;
   const restore=limit+(mobilePerformanceMode?300:500);
-  const detailLimit=mobilePerformanceMode?560:950;
+  const detailLimit=mobilePerformanceMode?760:950;
   const detailRestore=detailLimit+100;
   const limitSq=limit*limit,restoreSq=restore*restore;
   const detailSq=detailLimit*detailLimit,detailRestoreSq=detailRestore*detailRestore;
@@ -1881,7 +1881,7 @@ function generateCity() {
     // Préparer seulement une petite population avant l'entrée : les PNJ et décors
     // secondaires sont ajoutés par lots après l'ouverture pour éviter de figer le chargement.
     if (!npcPopulationCreated) {
-      optional('premiers habitants', () => createNPCs(mobilePerformanceMode ? 28 : 240));
+      optional('premiers habitants', () => createNPCs(mobilePerformanceMode ? 56 : 240));
       npcPopulationCreated = true;
     }
 
@@ -1898,7 +1898,7 @@ function generateCity() {
       ['terrains et locations', createLandAndRentalParcels]
     ];
     let deferredTaskIndex = 0;
-    let deferredNpcRemaining = mobilePerformanceMode ? 92 : 0;
+    let deferredNpcRemaining = mobilePerformanceMode ? 144 : 0;
     const continueCityBuild = () => {
       if (!worldReady) return;
       if (deferredTaskIndex < deferredCityTasks.length) {
@@ -1916,7 +1916,7 @@ function generateCity() {
     };
     setTimeout(continueCityBuild, 250);
 
-    const trafficTarget = mobilePerformanceMode ? 80 : 180;
+    const trafficTarget = mobilePerformanceMode ? 120 : 180;
     let trafficRemaining = trafficTarget;
     const addTrafficBatch = () => {
       if (trafficRemaining <= 0) {
@@ -2188,13 +2188,13 @@ async function loadAbidjanOSM() {
   }catch(cacheError){console.info('Cache cartographique local indisponible, téléchargement normal.',cacheError);}
   // L'ancien instantané cartographique était trop restreint : on récupère désormais les routes et bâtiments sur l'emprise élargie des 13 communes.
   const endpoints = ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
-  if (!data && mobilePerformanceMode) {
+  if (!data) {
     // Sur mobile, tester les deux serveurs en parallèle : un serveur Overpass lent ne bloque plus toute l'entrée en ville.
     const controllers=[];
     try {
       const requests=endpoints.map(endpoint=>{
         const controller=new AbortController();controllers.push(controller);
-        const timeout=setTimeout(()=>controller.abort(),5500);
+        const timeout=setTimeout(()=>controller.abort(),mobilePerformanceMode?7000:11000);
         return fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:'data='+encodeURIComponent(query),signal:controller.signal})
           .then(response=>{if(!response.ok)throw new Error('Overpass HTTP '+response.status);return response.json();})
           .then(json=>{if(!json||!Array.isArray(json.elements))throw new Error('Réponse cartographique vide');return json;})
@@ -2203,7 +2203,7 @@ async function loadAbidjanOSM() {
       // Démarrer en même temps le paquet cartographique de secours : le premier jeu de données
       // valide ouvre la ville sans attendre qu'un serveur Overpass lent termine.
       const backupController=new AbortController();controllers.push(backupController);
-      const backupTimer=setTimeout(()=>backupController.abort(),4200);
+      const backupTimer=setTimeout(()=>backupController.abort(),mobilePerformanceMode?5500:8500);
       const backupRequest=fetch('https://d2ol7oe51mr4n9.cloudfront.net/user_3LVcgmLnYyIgIO5wyenMeyU1qx6/750912a1-208b-4fca-b488-81d5ed214b6e.gz',{cache:'force-cache',signal:backupController.signal})
         .then(response=>{if(!response.ok||typeof DecompressionStream==='undefined')throw new Error('Paquet de secours indisponible');return new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();})
         .then(json=>{if(!json||!Array.isArray(json.elements))throw new Error('Paquet de secours vide');return json;})
@@ -2212,7 +2212,7 @@ async function loadAbidjanOSM() {
     } catch(e) { console.warn('Serveurs cartographiques mobiles indisponibles rapidement, activation du secours.',e); }
     finally { controllers.forEach(controller=>controller.abort()); }
   }
-  if (!data && !mobilePerformanceMode) for (const endpoint of endpoints) {
+  if (!data && false) for (const endpoint of endpoints) {
     let timeout = null;
     try {
       const controller = new AbortController();
@@ -8459,8 +8459,9 @@ function updateAirportFlights(){
  const ap=window.__ABJ_AIRPORT;if(!ap||!lifeState)return;
  const now=(Number(lifeState.hour)||0)*60+(Number(lifeState.minute)||0);
  ap.planes.forEach((plane,index)=>{
-  const flight=ap.flights.filter(f=>f.kind===(index===0?'departure':'arrival')).map(f=>({...f,delta:((now-f.minute+1440)%1440)})).filter(f=>f.delta<34).sort((a,b)=>a.delta-b.delta)[0];
-  if(!flight){plane.visible=false;return;}
+  const scheduled=ap.flights.filter(f=>f.kind===(index===0?'departure':'arrival')).map(f=>({...f,delta:((now-f.minute+1440)%1440)})).filter(f=>f.delta<34).sort((a,b)=>a.delta-b.delta)[0];
+  // Vols réguliers de liaison : l'aéroport reste vivant même entre deux horaires affichés.
+  const flight=scheduled||{kind:index===0?'departure':'arrival',delta:(now+index*45)%90};
   plane.visible=true;
   const t=flight.delta/34,dir=flight.kind==='departure'?1:-1;
   const start=flight.kind==='departure'?-1050:1050,end=flight.kind==='departure'?1150:-1150;
