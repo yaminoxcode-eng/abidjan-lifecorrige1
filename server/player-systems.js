@@ -128,40 +128,18 @@ function registerPlayerSystems(app, { auth, accounts, supabaseRequest, persistAc
     if (!account) return res.status(404).json({ error: 'Compte introuvable.' });
     const id = safeText(req.params.id, 64);
     try {
-      const rows = await supabaseRequest('player_invoices?id=eq.' + encodeURIComponent(id) +
-        '&player_phone=eq.' + encodeURIComponent(req.phone) +
-        '&select=id,provider,invoice_type,amount_fcfa,status&limit=1');
-      const invoice = rows?.[0];
-      if (!invoice) return res.status(404).json({ error: 'Facture introuvable.' });
-      if (invoice.status === 'paid') return res.status(409).json({ error: 'Cette facture est déjà payée.' });
-      const save = account.save && typeof account.save === 'object' ? account.save : {};
-      const balance = Math.max(0, Number(save.waveBalance) || 0);
-      const amount = Math.max(0, Number(invoice.amount_fcfa) || 0);
-      if (balance < amount) return res.status(409).json({ error: 'Solde Wave du jeu insuffisant.' });
-      const now = new Date().toISOString();
-      const nextSave = { ...save, waveBalance: balance - amount };
-      nextSave.bankTransactions = Array.isArray(save.bankTransactions) ? save.bankTransactions.slice(-49) : [];
-      nextSave.bankTransactions.push({ type: 'facture', provider: invoice.provider, label: invoice.invoice_type,
-        amount: -amount, method: 'Wave', at: now });
-      nextSave.messages = Array.isArray(save.messages) ? save.messages.slice(-99) : [];
-      nextSave.messages.push({ id: 'bill-' + id, from: invoice.provider.toUpperCase(), subject: 'Facture payée',
-        text: 'Ta facture ' + invoice.invoice_type + ' a été réglée depuis Wave (' + amount + ' FCFA).',
-        createdAt: now, read: false });
-      account.save = nextSave;
-      try {
-        await persistAccount(account);
-        await supabaseRequest('player_invoices?id=eq.' + encodeURIComponent(id) +
-          '&player_phone=eq.' + encodeURIComponent(req.phone), {
-          method: 'PATCH', headers: { Prefer: 'return=minimal' },
-          body: JSON.stringify({ status: 'paid', paid_at: now, payment_method: 'wave' })
-        });
-      } catch (error) {
-        account.save = save;
-        throw error;
-      }
-      res.json({ ok: true, waveBalance: nextSave.waveBalance, paidAt: now });
+      const result = await supabaseRequest('rpc/pay_player_invoice', {
+        method: 'POST', body: JSON.stringify({ p_player_phone: req.phone, p_invoice_id: id })
+      });
+      if (!result?.ok) return res.status(409).json({ error: 'Paiement non confirmé.' });
+      account.save = result.save;
+      res.json({ ok: true, waveBalance: result.waveBalance, paidAt: result.paidAt });
     } catch (error) {
-      console.error('Paiement facture:', error.message);
+      const message = String(error.message || '');
+      if (message.includes('INSUFFICIENT_WAVE_BALANCE')) return res.status(409).json({ error: 'Solde Wave du jeu insuffisant.' });
+      if (message.includes('INVOICE_ALREADY_PAID')) return res.status(409).json({ error: 'Cette facture est déjà payée.' });
+      if (message.includes('INVOICE_NOT_FOUND')) return res.status(404).json({ error: 'Facture introuvable.' });
+      console.error('Paiement facture:', message);
       res.status(503).json({ error: 'Paiement non confirmé. Aucun débit définitif ne doit être affiché.' });
     }
   });
