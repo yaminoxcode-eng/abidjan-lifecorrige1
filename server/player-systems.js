@@ -232,4 +232,93 @@ function registerPlayerSystems(app, { auth, accounts, supabaseRequest, persistAc
   });
 }
 
+
+  // Durable private conversations. Phone numbers stay server-side; clients address players by unique pseudo.
+  const messageRate = new Map();
+  app.get('/api/social/messages', auth, async (req, res) => {
+    if (!requireStorage(res)) return;
+    const phone = encodeURIComponent(req.phone);
+    try {
+      const [sent, received] = await Promise.all([
+        supabaseRequest('player_messages?sender_phone=eq.' + phone + '&select=id,sender_phone,recipient_phone,body,created_at,read_at&order=created_at.desc&limit=100'),
+        supabaseRequest('player_messages?recipient_phone=eq.' + phone + '&select=id,sender_phone,recipient_phone,body,created_at,read_at&order=created_at.desc&limit=100')
+      ]);
+      const now = new Date().toISOString();
+      if ((received || []).some(row => !row.read_at)) {
+        await supabaseRequest('player_messages?recipient_phone=eq.' + phone + '&read_at=is.null', {
+          method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ read_at: now })
+        });
+      }
+      const items = [...(sent || []), ...(received || [])]
+        .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))
+        .slice(-150)
+        .map(row => {
+          const outgoing = row.sender_phone === req.phone;
+          const peerPhone = outgoing ? row.recipient_phone : row.sender_phone;
+          const peer = accounts.get(peerPhone);
+          return {
+            id: row.id,
+            peerPseudo: safeText(peer?.profile?.pseudo, 24),
+            peerName: safeText(peer?.profile?.name, 24) || 'Citoyen',
+            direction: outgoing ? 'outgoing' : 'incoming',
+            text: row.body,
+            createdAt: row.created_at,
+            readAt: row.read_at || (!outgoing ? now : null)
+          };
+        });
+      res.set('Cache-Control', 'no-store').json({ ok: true, items });
+    } catch (error) {
+      console.error('Historique messages privés:', error.message);
+      res.status(503).json({ error: 'Historique des messages momentanément indisponible.' });
+    }
+  });
+
+  app.post('/api/social/messages', auth, async (req, res) => {
+    if (!requireStorage(res)) return;
+    const pseudo = safeText(req.body?.toPseudo, 24).replace(/^@/, '').toLowerCase();
+    const body = safeText(req.body?.text, 500);
+    if (!/^[a-z0-9_.-]{3,24}$/i.test(pseudo) || !body) {
+      return res.status(400).json({ error: 'Destinataire ou message invalide.' });
+    }
+    const now = Date.now();
+    const recent = (messageRate.get(req.phone) || []).filter(ts => now - ts < 60000);
+    if (recent.length >= 20) return res.status(429).json({ error: 'Tu envoies trop de messages. Réessaie dans une minute.' });
+    const recipient = [...accounts.values()].find(account =>
+      String(account.profile?.pseudo || '').toLowerCase() === pseudo
+    );
+    if (!recipient) return res.status(404).json({ error: 'Ce pseudo ne correspond à aucun joueur.' });
+    if (recipient.phone === req.phone) return res.status(400).json({ error: 'Tu ne peux pas t’envoyer un message.' });
+    try {
+      const rows = await supabaseRequest('player_messages', {
+        method: 'POST',
+        headers: { Prefer: 'return=representation' },
+        body: JSON.stringify([{
+          sender_phone: req.phone,
+          recipient_phone: recipient.phone,
+          body,
+          created_at: new Date(now).toISOString()
+        }])
+      });
+      const saved = rows?.[0];
+      if (!saved?.id) throw new Error('Message non confirmé par la base de données.');
+      recent.push(now);
+      messageRate.set(req.phone, recent);
+      res.status(201).json({
+        ok: true,
+        message: {
+          id: saved.id,
+          peerPseudo: safeText(recipient.profile?.pseudo, 24),
+          peerName: safeText(recipient.profile?.name, 24) || 'Citoyen',
+          direction: 'outgoing',
+          text: saved.body,
+          createdAt: saved.created_at,
+          readAt: null
+        }
+      });
+    } catch (error) {
+      console.error('Enregistrement message privé:', error.message);
+      res.status(503).json({ error: 'Le message n’a pas été enregistré. Réessaie.' });
+    }
+  });
+
 module.exports = { registerPlayerSystems };
