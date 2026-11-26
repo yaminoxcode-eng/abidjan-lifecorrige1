@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - staging/multiplayer-free-tier
+      - feature/persistent-life-systems-v150
   pull_request:
     branches:
       - main
