@@ -79,6 +79,8 @@ declare
   v_now timestamptz := now();
   v_tx jsonb;
   v_msg jsonb;
+  v_contacts jsonb;
+  v_messages jsonb;
 begin
   select save into v_save from public.game_accounts where phone = p_player_phone for update;
   if not found then raise exception 'ACCOUNT_NOT_FOUND'; end if;
@@ -92,14 +94,19 @@ begin
   if v_balance < v_amount then raise exception 'INSUFFICIENT_WAVE_BALANCE'; end if;
   v_tx := jsonb_build_object('type','facture','provider',v_invoice.provider,'label',v_invoice.invoice_type,
     'amount',-v_amount,'method','Wave','at',v_now);
-  v_msg := jsonb_build_object('id','bill-'||v_invoice.id::text,'from',upper(v_invoice.provider),
-    'subject','Facture payée','text','Ta facture '||v_invoice.invoice_type||' a été réglée depuis Wave ('||v_amount||' FCFA).',
-    'createdAt',v_now,'read',false);
+  v_msg := jsonb_build_object('id','bill-'||v_invoice.id::text,'contactId','wave','from','contact',
+    'text','Ta facture '||v_invoice.invoice_type||' a été réglée depuis Wave ('||v_amount||' FCFA).',
+    'time',to_char(v_now at time zone 'UTC','HH24:MI'));
+  v_contacts := case when jsonb_typeof(v_save->'contacts')='array' then v_save->'contacts' else '[]'::jsonb end;
+  if not exists (select 1 from jsonb_array_elements(v_contacts) c where c->>'id'='wave') then
+    v_contacts := v_contacts || jsonb_build_array(jsonb_build_object('id','wave','name','Wave ABJ','phone',''));
+  end if;
+  v_messages := case when jsonb_typeof(v_save->'messages')='array' then v_save->'messages' else '[]'::jsonb end;
   v_save := jsonb_set(v_save, '{waveBalance}', to_jsonb(v_balance-v_amount), true);
   v_save := jsonb_set(v_save, '{bankTransactions}',
     (case when jsonb_typeof(v_save->'bankTransactions')='array' then v_save->'bankTransactions' else '[]'::jsonb end) || v_tx, true);
-  v_save := jsonb_set(v_save, '{messages}',
-    (case when jsonb_typeof(v_save->'messages')='array' then v_save->'messages' else '[]'::jsonb end) || v_msg, true);
+  v_save := jsonb_set(v_save, '{contacts}', v_contacts, true);
+  v_save := jsonb_set(v_save, '{messages}', v_messages || v_msg, true);
   update public.game_accounts set save=v_save, updated_at=v_now where phone=p_player_phone;
   update public.player_invoices set status='paid', paid_at=v_now, payment_method='wave' where id=p_invoice_id;
   return jsonb_build_object('ok',true,'save',v_save,'waveBalance',v_balance-v_amount,'paidAt',v_now);
