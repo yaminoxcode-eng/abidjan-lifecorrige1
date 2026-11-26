@@ -5869,10 +5869,50 @@ function renderWaveApp(){
     '<label style="font-size:12px">Montant (min. 200)<input id="waveAmount" type="number" min="200" step="50" value="200" style="display:block;width:100%;padding:10px;margin:6px 0;border-radius:8px;background:#102637;color:#fff;border:1px solid #ffffff30"></label>'+
     '<button id="waveSend">Envoyer</button>'+
     '<p id="waveStatus" style="font-size:12px;color:#ffe0a0;min-height:18px"></p>'+
+    '<h4>Factures à régler</h4><div id="waveInvoices" style="font-size:12px;color:#c6d8e5">Chargement des factures…</div>'+
     '<h4>Notifications</h4><div style="max-height:160px;overflow:auto">'+notifs+'</div>'+
     '<p style="font-size:11px;color:#91adbd">WaveABJ est une simulation — aucun transfert réel.</p>';
   document.getElementById('phoneBack').onclick=()=>{content.style.display='none';showPhoneHome();};
   const st=document.getElementById('waveStatus');
+  const invoiceHost=document.getElementById('waveInvoices');
+  const authToken=activeGameAccount?safeGet('abj-online-token:'+normalizeIvorianMobile(activeGameAccount)):'';
+  const serverBase=String(window.ABJ_ONLINE_SERVER||'').replace(/\/$/,'');
+  if(invoiceHost && authToken && serverBase){
+    fetch(serverBase+'/api/game/invoices',{headers:{Authorization:'Bearer '+authToken},cache:'no-store'})
+      .then(async response=>({ok:response.ok,data:await response.json().catch(()=>({}))}))
+      .then(({ok,data})=>{
+        if(!invoiceHost.isConnected)return;
+        if(!ok)throw new Error(data.error||'Factures indisponibles');
+        const rows=Array.isArray(data.items)?data.items:[];
+        if(!rows.length){invoiceHost.textContent='Aucune facture enregistrée pour le moment.';return;}
+        invoiceHost.replaceChildren();
+        rows.forEach(invoice=>{
+          const card=document.createElement('div');card.style.cssText='padding:10px;margin:7px 0;border:1px solid #ffffff25;border-radius:10px;background:#ffffff0b';
+          const title=document.createElement('b');title.textContent=(String(invoice.provider||'Facture').toUpperCase())+' · '+String(invoice.invoice_type||'Service');
+          const detail=document.createElement('div');detail.style.cssText='margin:5px 0;color:#c6d8e5';
+          detail.textContent=Math.floor(Number(invoice.amount_fcfa)||0).toLocaleString('fr-FR')+' FCFA · échéance jour '+(Number(invoice.due_game_day)||'?')+' · '+(invoice.status==='paid'?'Payée':'À payer');
+          card.append(title,detail);
+          if(invoice.status!=='paid'){
+            const pay=document.createElement('button');pay.type='button';pay.textContent='Payer avec Wave';
+            pay.addEventListener('click',async()=>{
+              pay.disabled=true;pay.textContent='Paiement…';
+              try{
+                const result=await fetch(serverBase+'/api/game/invoices/'+encodeURIComponent(invoice.id)+'/pay',{method:'POST',headers:{Authorization:'Bearer '+authToken,'Content-Type':'application/json'},body:'{}',cache:'no-store'});
+                const body=await result.json().catch(()=>({}));
+                if(!result.ok)throw new Error(body.error||'Paiement refusé');
+                lifeState.waveBalance=Math.max(0,Number(body.waveBalance)||0);
+                saveLifeProgress(false);
+                showMessage('💚 Facture réglée avec Wave.');
+                renderWaveApp();
+              }catch(error){st.textContent=error.message||'Paiement impossible pour le moment.';pay.disabled=false;pay.textContent='Réessayer';}
+            });
+            card.appendChild(pay);
+          }
+          invoiceHost.appendChild(card);
+        });
+      })
+      .catch(error=>{if(invoiceHost.isConnected)invoiceHost.textContent=error.message||'Factures momentanément indisponibles.';});
+  }else if(invoiceHost){invoiceHost.textContent='Connecte-toi pour consulter tes factures.';}
   document.getElementById('wavePullBank').onclick=()=>{
     resetWaveDailyIfNeeded();
     const amount=Math.floor(Number(document.getElementById('waveFromBank').value)||0);
