@@ -1,12 +1,12 @@
 'use strict';
 
-function registerPlayerSystems(app, { auth, accounts, supabaseRequest, persistAccount }) {
+function registerPlayerSystems(app, { auth, accounts, supabaseRequest, persistAccount, persistentStorageEnabled }) {
   const jsonSize = value => {
     try { return JSON.stringify(value).length; } catch { return Infinity; }
   };
   const safeText = (value, max = 80) => String(value == null ? '' : value).trim().slice(0, max);
   const requireStorage = (res) => {
-    if (!supabaseRequest) { res.status(503).json({ error: 'Stockage permanent indisponible.' }); return false; }
+    if (!persistentStorageEnabled || !supabaseRequest) { res.status(503).json({ error: 'Stockage permanent indisponible.' }); return false; }
     return true;
   };
 
