@@ -64,3 +64,46 @@ grant select, insert, update, delete on public.player_action_events to service_r
 grant select, insert, update, delete on public.player_services to service_role;
 grant select, insert, update, delete on public.player_invoices to service_role;
 grant select, insert, update, delete on public.player_devices to service_role;
+
+-- Atomic in-game Wave settlement: locks both rows so an invoice cannot be charged twice.
+create or replace function public.pay_player_invoice(p_player_phone text, p_invoice_id uuid)
+returns jsonb
+language plpgsql
+set search_path = public
+as $$
+declare
+  v_save jsonb;
+  v_invoice public.player_invoices%rowtype;
+  v_balance numeric;
+  v_amount integer;
+  v_now timestamptz := now();
+  v_tx jsonb;
+  v_msg jsonb;
+begin
+  select save into v_save from public.game_accounts where phone = p_player_phone for update;
+  if not found then raise exception 'ACCOUNT_NOT_FOUND'; end if;
+  select * into v_invoice from public.player_invoices
+    where id = p_invoice_id and player_phone = p_player_phone for update;
+  if not found then raise exception 'INVOICE_NOT_FOUND'; end if;
+  if v_invoice.status = 'paid' then raise exception 'INVOICE_ALREADY_PAID'; end if;
+  v_save := coalesce(v_save, '{}'::jsonb);
+  v_balance := greatest(0, coalesce((v_save->>'waveBalance')::numeric, 0));
+  v_amount := greatest(0, v_invoice.amount_fcfa);
+  if v_balance < v_amount then raise exception 'INSUFFICIENT_WAVE_BALANCE'; end if;
+  v_tx := jsonb_build_object('type','facture','provider',v_invoice.provider,'label',v_invoice.invoice_type,
+    'amount',-v_amount,'method','Wave','at',v_now);
+  v_msg := jsonb_build_object('id','bill-'||v_invoice.id::text,'from',upper(v_invoice.provider),
+    'subject','Facture payée','text','Ta facture '||v_invoice.invoice_type||' a été réglée depuis Wave ('||v_amount||' FCFA).',
+    'createdAt',v_now,'read',false);
+  v_save := jsonb_set(v_save, '{waveBalance}', to_jsonb(v_balance-v_amount), true);
+  v_save := jsonb_set(v_save, '{bankTransactions}',
+    (case when jsonb_typeof(v_save->'bankTransactions')='array' then v_save->'bankTransactions' else '[]'::jsonb end) || v_tx, true);
+  v_save := jsonb_set(v_save, '{messages}',
+    (case when jsonb_typeof(v_save->'messages')='array' then v_save->'messages' else '[]'::jsonb end) || v_msg, true);
+  update public.game_accounts set save=v_save, updated_at=v_now where phone=p_player_phone;
+  update public.player_invoices set status='paid', paid_at=v_now, payment_method='wave' where id=p_invoice_id;
+  return jsonb_build_object('ok',true,'save',v_save,'waveBalance',v_balance-v_amount,'paidAt',v_now);
+end;
+$$;
+revoke all on function public.pay_player_invoice(text,uuid) from public, anon, authenticated;
+grant execute on function public.pay_player_invoice(text,uuid) to service_role;
