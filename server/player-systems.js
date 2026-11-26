@@ -10,6 +10,39 @@ function registerPlayerSystems(app, { auth, accounts, supabaseRequest, persistAc
     return true;
   };
 
+  // One authenticated restore request for the persistent phone/game systems.
+  app.get('/api/game/state', auth, async (req, res) => {
+    if (!requireStorage(res)) return;
+    const player = encodeURIComponent(req.phone);
+    try {
+      const [events, services, invoices, devices] = await Promise.all([
+        supabaseRequest('player_action_events?player_phone=eq.' + player + '&select=event_key,event_type,payload,created_at&order=created_at.desc&limit=500'),
+        supabaseRequest('player_services?player_phone=eq.' + player + '&select=service_key,status,activated_game_day,expires_game_day,last_code_game_month,metadata'),
+        supabaseRequest('player_invoices?player_phone=eq.' + player + '&select=id,provider,invoice_type,amount_fcfa,billing_game_day,due_game_day,status,paid_at,payment_method,metadata&order=created_at.desc&limit=100'),
+        supabaseRequest('player_devices?player_phone=eq.' + player + '&owned=eq.true&select=device_id,device_type,equipped,appearance&order=updated_at.desc')
+      ]);
+      res.set('Cache-Control', 'no-store').json({
+        ok: true, events: events || [], services: services || [],
+        invoices: invoices || [], devices: devices || []
+      });
+    } catch (error) {
+      console.error('Restauration systèmes joueur:', error.message);
+      res.status(503).json({ error: 'Restauration momentanément indisponible.' });
+    }
+  });
+
+  app.get('/api/game/devices', auth, async (req, res) => {
+    if (!requireStorage(res)) return;
+    try {
+      const rows = await supabaseRequest('player_devices?player_phone=eq.' + encodeURIComponent(req.phone) +
+        '&owned=eq.true&select=device_id,device_type,equipped,appearance&order=updated_at.desc');
+      res.set('Cache-Control', 'no-store').json({ items: rows || [] });
+    } catch (error) {
+      console.error('Lecture appareils joueur:', error.message);
+      res.status(503).json({ error: 'Inventaire des appareils momentanément indisponible.' });
+    }
+  });
+
   app.post('/api/game/events', auth, async (req, res) => {
     if (!requireStorage(res)) return;
     const eventType = safeText(req.body?.eventType, 48);
