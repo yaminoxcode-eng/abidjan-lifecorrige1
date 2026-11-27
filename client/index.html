@@ -1545,6 +1545,31 @@ function launchGameFromCreator(){
 }
 document.getElementById('startBtn').addEventListener('click',function(){openAccountGate();openRegisterFlow();});
 document.getElementById('homeLoginBtn').addEventListener('click',openAccountGate);
+
+/* ABJ HOTFIX 2026-11-27 : délégation fiable des actions de démarrage et de compte.
+   Le gestionnaire en capture évite qu'un autre composant intercepte ces clics. */
+document.addEventListener('click',function abjPrimaryActions(e){
+  const button=e.target&&e.target.closest?e.target.closest('#startBtn,#homeLoginBtn,#accountContinue,#accountSwitchRegister,#accountForgot,#accountBack'):null;
+  if(!button)return;
+  const actions={
+    startBtn:()=>{openAccountGate();openRegisterFlow();},
+    homeLoginBtn:()=>openAccountGate(),
+    accountContinue:()=>accountContinue(),
+    accountSwitchRegister:()=>openRegisterFlow(),
+    accountForgot:()=>openRecoverFlow(),
+    accountBack:()=>backAccountLogin()
+  };
+  const action=actions[button.id];
+  if(!action)return;
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  try{action();}catch(error){
+    console.error('ABJ action button failed:',button.id,error);
+    const status=document.getElementById('accountStatus');
+    if(status)status.textContent='Une erreur empêche cette action : '+(error&&error.message?error.message:String(error));
+  }
+},true);
+
 document.getElementById('creatorStart').addEventListener('click',launchGameFromCreator);
 document.getElementById('creatorStart').addEventListener('click',stopIdentityPreview,true);
 document.getElementById('creatorCancel').addEventListener('click',stopIdentityPreview);
