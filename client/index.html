@@ -1356,6 +1356,9 @@ async function accountContinue(){
     }
   }
 }
+// Expose explicitement l'action du formulaire au menu de compte autonome.
+window.accountContinue = accountContinue;
+
 async function activateGameAccount(phone){
   const canonical=normalizeIvorianMobile(phone);
   if(!canonical){showAccountStatus('Numéro mobile ivoirien invalide.', true);return;}
