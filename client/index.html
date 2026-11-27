@@ -630,10 +630,24 @@ button,input,select{font:inherit}
     if(target.id==='startBtn'||target.id==='accountSwitchRegister'){openMode('register');return;}
     if(target.id==='homeLoginBtn'||target.id==='accountBack'){openMode('login');return;}
     if(target.id==='accountContinue'){
-      try{
-        if(typeof accountContinue==='function'){accountContinue();return;}
-        showStatus('Le formulaire est ouvert, mais le module de connexion ne s’est pas chargé. Recharge la page.');
-      }catch(err){showStatus('Erreur du formulaire : '+(err&&err.message||err));}
+      target.disabled=true;
+      showStatus('Initialisation du module de compte…');
+      var attempts=0;
+      var waitForAccount=window.setInterval(function(){
+        attempts++;
+        if(typeof window.accountContinue==='function'){
+          window.clearInterval(waitForAccount);
+          target.disabled=false;
+          try{window.accountContinue();}
+          catch(err){showStatus('Erreur du formulaire : '+(err&&err.message||err));}
+          return;
+        }
+        if(attempts>=80){
+          window.clearInterval(waitForAccount);
+          target.disabled=false;
+          showStatus('Le module de compte ne démarre pas. Vérifie ta connexion Internet puis actualise la page.');
+        }
+      },250);
     }
   },true);
 })();
