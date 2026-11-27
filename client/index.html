@@ -580,7 +580,64 @@ button,input,select{font:inherit}
   </div>
 </div>
 
-
+<script id="abj-account-menu-bootstrap">
+/* Menu de compte autonome : les deux boutons d'accueil ouvrent toujours le bon écran. */
+(function(){
+  function byId(id){return document.getElementById(id);}
+  function showStatus(message){
+    var el=byId('accountStatus');
+    if(el){el.textContent=message;el.style.color='#ffe0a0';}
+  }
+  function openMode(mode){
+    var overlay=byId('accountOverlay');
+    if(!overlay)return;
+    overlay.classList.add('open');
+    overlay.style.display='flex';
+    overlay.style.zIndex='100010';
+    var title=byId('accountTitle'),intro=byId('accountIntro');
+    var login=byId('accountLoginFields'),register=byId('accountRegisterFields');
+    var confirm=byId('accountConfirmWrap'),continueBtn=byId('accountContinue');
+    var forgot=byId('accountForgot'),switchBtn=byId('accountSwitchRegister'),back=byId('accountBack');
+    if(mode==='register'){
+      if(title)title.textContent='Créer ton compte';
+      if(intro)intro.textContent='Renseigne tes informations pour créer ton compte et commencer à jouer.';
+      if(login)login.style.display='block';
+      if(register)register.style.display='block';
+      if(confirm)confirm.style.display='block';
+      if(forgot)forgot.style.display='none';
+      if(switchBtn)switchBtn.style.display='none';
+      if(back)back.style.display='inline-block';
+      if(continueBtn){continueBtn.style.display='block';continueBtn.textContent='Continuer';continueBtn.disabled=false;}
+      try{if(typeof accountFlow!=='undefined')accountFlow='registerInfo';if(typeof fillBirthDaySelect==='function')fillBirthDaySelect();}catch(_){}
+    }else{
+      if(title)title.textContent='Se connecter';
+      if(intro)intro.textContent='Entre ton numéro mobile et ton mot de passe pour retrouver ta partie.';
+      if(login)login.style.display='block';
+      if(register)register.style.display='none';
+      if(confirm)confirm.style.display='none';
+      if(forgot)forgot.style.display='inline-block';
+      if(switchBtn)switchBtn.style.display='inline-block';
+      if(back)back.style.display='none';
+      if(continueBtn){continueBtn.style.display='block';continueBtn.textContent='Se connecter';continueBtn.disabled=false;}
+      try{if(typeof accountFlow!=='undefined')accountFlow='login';}catch(_){}
+    }
+    showStatus('');
+  }
+  document.addEventListener('click',function(e){
+    var target=e.target&&e.target.closest?e.target.closest('#startBtn,#homeLoginBtn,#accountSwitchRegister,#accountBack,#accountContinue'):null;
+    if(!target)return;
+    e.preventDefault();e.stopImmediatePropagation();
+    if(target.id==='startBtn'||target.id==='accountSwitchRegister'){openMode('register');return;}
+    if(target.id==='homeLoginBtn'||target.id==='accountBack'){openMode('login');return;}
+    if(target.id==='accountContinue'){
+      try{
+        if(typeof accountContinue==='function'){accountContinue();return;}
+        showStatus('Le formulaire est ouvert, mais le module de connexion ne s’est pas chargé. Recharge la page.');
+      }catch(err){showStatus('Erreur du formulaire : '+(err&&err.message||err));}
+    }
+  },true);
+})();
+</script>
 
 <div id="creatorOverlay" role="dialog" aria-modal="true" aria-labelledby="creatorTitle">
   <div id="creatorCard">
