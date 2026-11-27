@@ -735,9 +735,6 @@ button,input,select{font:inherit}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
 <script>
-// Publier le gestionnaire dès le début du script, avant l'initialisation du monde 3D.
-window.accountContinue = accountContinue;
-
 
 /* Le minuteur AF GAMER est lancé dès la lecture du HTML, indépendamment des CDN. */
 window.addEventListener('keydown',function(e){if((e.key==='r'||e.key==='R')&&heldFurniture&&currentInterior){heldFurniture.rotation.y+=Math.PI/2;e.preventDefault();showMessage('Meuble orienté. Appuie sur F pour le poser.');}},true);
@@ -1158,7 +1155,7 @@ function showAccountStatus(msg, isError){
   status.style.color=isError?'#ffb4a8':'#ffe0a0';
   try{status.scrollIntoView({block:'nearest',behavior:'smooth'});}catch(e){window.__abjErr&&window.__abjErr(e)}
 }
-async function accountContinue(){
+window.accountContinue = async function accountContinue(){
   const status=document.getElementById('accountStatus');
   const cont=document.getElementById('accountContinue');
   try{
@@ -1358,7 +1355,7 @@ async function accountContinue(){
       else contBtn.textContent='Continuer';
     }
   }
-}
+};
 
 async function activateGameAccount(phone){
   const canonical=normalizeIvorianMobile(phone);
