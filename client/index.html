@@ -731,10 +731,12 @@ button,input,select{font:inherit}
 <div id="cameraOverlay"><div id="cameraPhone"><div id="cameraTop"><strong>📷 Caméra</strong><button id="cameraClose">Fermer</button></div><div id="cameraPreview"></div><label>Zoom <input id="cameraZoom" type="range" min="35" max="85" value="55"></label><div id="cameraStatus">Prêt à photographier</div><div id="cameraControls"><button id="takePhoto">● Photo</button><button id="recordVideo">◉ Vidéo</button></div></div></div><div id="elevatorMenu" role="dialog" aria-modal="true"><div id="elevatorCard"><h2>Ascenseur</h2><p>Choisis l’étage où tu souhaites aller.</p><div id="elevatorFloors"></div><button id="elevatorCancel">Annuler</button></div></div><div id="elevatorRide"><div><div id="elevatorDoors"><i></i><i></i></div><span>Ascenseur en déplacement</span><strong id="elevatorCounter">RDC</strong><span id="elevatorDestination">Destination : —</span></div></div><div id="errorBox"></div>
 <div id="touchControls" aria-label="Commandes tactiles"><div class="touchCluster touchPad"><button data-key="z" aria-label="Avancer">▲</button><button data-key="q" aria-label="Gauche">◀</button><button data-key="s" aria-label="Reculer">▼</button><button data-key="d" aria-label="Droite">▶</button></div><div class="touchCluster touchActions"><button data-action="e">E<br><small>Action</small></button><button data-action="f">F<br><small>Objet</small></button><button data-action="run">COURIR</button><button data-action="phone">📱</button></div></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script async src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script async src="https://cdn.socket.io/4.8.1/socket.io.min.js" crossorigin="anonymous"></script>
 <script>
+/* Le compte se charge sans attendre les CDN du monde 3D. */
+window.ABJ_WAIT_FOR_THREE=window.ABJ_WAIT_FOR_THREE||function(){return new Promise((resolve,reject)=>{const started=Date.now();(function check(){if(window.THREE){resolve();return;}if(Date.now()-started>20000){reject(new Error("La bibliothèque 3D ne répond pas."));return;}setTimeout(check,100);})();});};
 
 /* Le minuteur AF GAMER est lancé dès la lecture du HTML, indépendamment des CDN. */
 window.addEventListener('keydown',function(e){if((e.key==='r'||e.key==='R')&&heldFurniture&&currentInterior){heldFurniture.rotation.y+=Math.PI/2;e.preventDefault();showMessage('Meuble orienté. Appuie sur F pour le poser.');}},true);
@@ -1383,7 +1385,7 @@ async function activateGameAccount(phone){
     document.getElementById('startScreen').style.display='none';
     document.getElementById('mapStatus').textContent='Reprise de ta partie… Téléchargement des routes et bâtiments…';
     gameStarted=true;
-    try{init();animate();}
+    try{await window.ABJ_WAIT_FOR_THREE();init();animate();}
     catch(err){const box=document.getElementById('errorBox');box.style.display='block';box.textContent='ERREUR INIT: '+err.message;console.error(err);}
   } else {
     safeSet('abj-tutorial-pending:'+canonical,'1');
@@ -1596,7 +1598,7 @@ function renderIdentityPreview(){
 }
 function updateCreatorPreview(){renderIdentityPreview();syncCreatorOptionLabels();}
 
-function launchGameFromCreator(){
+async function launchGameFromCreator(){
   const value=id=>document.getElementById(id).value;
   lifeState.playerProfile={name:isCreatorAccount(activeGameAccount)?'Aski':value('creatorName').trim().slice(0,24)||'Mon personnage',gender:value('creatorGender'),skin:parseInt(value('creatorSkin')),hair:parseInt(value('creatorHair')),shirt:parseInt(value('creatorShirt')),pants:parseInt(value('creatorPants')),bodyType:value('creatorBodyType'),hairstyle:value('creatorHairstyle'),outfit:value('creatorOutfit')};
   if(creatorEditMode&&player&&scene){
@@ -1612,7 +1614,7 @@ function launchGameFromCreator(){
   document.getElementById('startScreen').style.display='none';
   document.getElementById('mapStatus').textContent='Téléchargement des routes et bâtiments…';
   gameStarted=true;
-  try{init();animate();saveLifeProgress(false);}
+  try{await window.ABJ_WAIT_FOR_THREE();init();animate();saveLifeProgress(false);}
   catch(err){const box=document.getElementById('errorBox');box.style.display='block';box.textContent='ERREUR INIT: '+err.message;console.error(err);}
 }
 document.getElementById('startBtn').addEventListener('click',function(){openAccountGate();openRegisterFlow();});
